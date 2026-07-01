@@ -12,16 +12,9 @@
           "description": "",
           "image": "https://i.ibb.co/pjGNMgYP/1782846774308.png",
           "codes": [
-            {
-              "code": "HAY-001",
-              "used": false,
-              "deviceId": null
-            },
-            {
-              "code": "HAY-002",
-              "used": false,
-              "deviceId": null
-            }
+            { "code": "HAY-001", "used": false, "deviceId": null },
+            { "code": "HAY-002", "used": false, "deviceId": null },
+            { "code": "HAY-003", "used": false, "deviceId": null }
           ],
           "semesters": [
             {
@@ -37,12 +30,6 @@
                 {
                   "number": 2,
                   "title": "اساسيات",
-                  "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
-                  "isFree": false
-                },
-                {
-                  "number": 3,
-                  "title": "اساسيات مبرهنة دايموفر",
                   "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
                   "isFree": false
                 }
@@ -85,7 +72,7 @@
     {
       "name": "التربية الإسلامية",
       "emoji": "🕌",
-      "description": "قسم التربية الإسلامية - دراسة القرآن والسنة",
+      "description": "قسم التربية الإسلامية - دراسة القرآن اسلامية",
       "teachers": []
     }
   ]
