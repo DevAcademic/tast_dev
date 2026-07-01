@@ -21,6 +21,12 @@
                   "title": "محاضرة 1",
                   "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
                   "isFree": true
+                },
+                {
+                  "number": 2,
+                  "title": "اساسيات",
+                  "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
+                  "isFree": false
                 }
               ]
             }
