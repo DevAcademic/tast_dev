@@ -297,7 +297,7 @@
     }
 
     // =============================================
-    // دوال حذف المدرس والفصل والمحاضرة
+    // دوال حذف المدرس والفصل والمحاضرة (تم إصلاحها)
     // =============================================
 
     // ===== حذف المدرس =====
@@ -375,7 +375,7 @@
         showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
     };
 
-    // ===== حذف المحاضرة =====
+    // ===== حذف المحاضرة (تم إصلاحها) =====
     window.deleteSelectedLecture = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -440,7 +440,7 @@
         semesterSelect.innerHTML = options;
     }
 
-    // ===== تحديث قائمة الفصول والمحاضرات في حذف محاضرة =====
+    // ===== تحديث قائمة الفصول والمحاضرات في حذف محاضرة (تم إصلاحها) =====
     function updateDeleteLectureSelects() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -449,6 +449,7 @@
         const semesterSelect = document.getElementById('deleteLectureSemester');
         const lectureSelect = document.getElementById('deleteLectureSelect');
 
+        // تحديث الفصول
         let semesterOptions = '<option value="">اختر الفصل...</option>';
         if (deptIndex !== -1 && data.departments[deptIndex]) {
             const teacher = data.departments[deptIndex].teachers[teacherIndex];
@@ -460,6 +461,7 @@
         }
         semesterSelect.innerHTML = semesterOptions;
 
+        // تحديث المحاضرات بناءً على الفصل المختار
         const semesterIndex = parseInt(semesterSelect.value);
         let lectureOptions = '<option value="">اختر المحاضرة...</option>';
         if (deptIndex !== -1 && data.departments[deptIndex]) {
