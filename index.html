@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 ديف أكاديمي - منصة التعلم</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <div class="logo">
+                    <span class="logo-text">ديف <span>أكاديمي</span></span>
+                </div>
+                <ul class="nav-links">
+                    <li class="active"><a href="#"><i class="fas fa-home"></i> الرئيسية</a></li>
+                    <li><a href="#"><i class="fas fa-book"></i> الأقسام</a></li>
+                    <li><a href="#"><i class="fas fa-chalkboard-teacher"></i> المدرسون</a></li>
+                    <li><a href="#"><i class="fas fa-graduation-cap"></i> جديدة</a></li>
+                </ul>
+            </div>
+            <div class="nav-right">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 ابحث عن قسم أو مدرس..." />
+                    <button id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="admin-login-btn" id="adminLoginBtn" title="لوحة الإدارة">
+                    <i class="fas fa-user-shield"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">📚 ديف <span>أكاديمي</span></h1>
+            <p class="hero-desc">منصة تعليمية متكاملة. تعلم من أفضل المدرسين في أي وقت.</p>
+            <div class="hero-buttons">
+                <button class="btn-play"><i class="fas fa-play"></i> ابدأ التعلم</button>
+                <button class="btn-info"><i class="fas fa-info-circle"></i> المزيد</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== DEPARTMENTS ROWS ===== -->
+    <div class="departments-rows" id="departmentsRows">
+        <!-- سيتم إدراج الأقسام بواسطة JavaScript -->
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <span class="logo-text">ديف <span>أكاديمي</span></span>
+                <p>© 2026 ديف أكاديمي - جميع الحقوق محفوظة</p>
+            </div>
+            <div class="footer-links">
+                <a href="#"><i class="fas fa-globe"></i> العربية</a>
+                <a href="#"><i class="fas fa-question-circle"></i> المساعدة</a>
+                <a href="#"><i class="fas fa-shield-alt"></i> الخصوصية</a>
+                <a href="#"><i class="fas fa-envelope"></i> اتصل بنا</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== MODAL: المدرسين ===== -->
+    <div class="modal-overlay" id="teachersModal">
+        <div class="modal modal-large">
+            <button class="close-btn" id="closeTeachersModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalDepartmentTitle">📚 اسم القسم</h2>
+            <div class="teachers-list" id="teachersList"></div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: الفصول ===== -->
+    <div class="modal-overlay" id="semestersModal">
+        <div class="modal modal-large">
+            <button class="close-btn" id="closeSemestersModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalTeacherTitle">👨‍🏫 اسم المدرس</h2>
+            <div class="semesters-list" id="semestersList"></div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: المحاضرات ===== -->
+    <div class="modal-overlay" id="lecturesModal">
+        <div class="modal modal-large">
+            <button class="close-btn" id="closeLecturesModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalSemesterTitle">📖 الفصل</h2>
+            <div class="lectures-list" id="lecturesList"></div>
+        </div>
+    </div>
+
+    <!-- ===== VIDEO PLAYER ===== -->
+    <div class="video-player-container" id="videoPlayer">
+        <div class="video-player-wrapper">
+            <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
+            <div class="player-container">
+                <iframe id="playerFrame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <div class="player-info" id="playerInfo">
+                <span id="playerTitle">🎬 تشغيل المحاضرة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== ADMIN LOGIN MODAL ===== -->
+    <div class="modal-overlay" id="adminLoginModal">
+        <div class="modal modal-small">
+            <button class="close-btn" id="closeAdminLogin"><i class="fas fa-times"></i></button>
+            <h2>🔐 تسجيل الدخول</h2>
+            <form id="adminLoginForm">
+                <label for="adminEmail">📧 البريد الإلكتروني</label>
+                <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" required />
+                <label for="adminPassword">🔑 كلمة المرور</label>
+                <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" required />
+                <div class="form-actions">
+                    <button type="submit" class="btn-save">تسجيل الدخول</button>
+                    <button type="button" class="btn-cancel" id="cancelAdminLogin">إلغاء</button>
+                </div>
+                <div id="adminLoginMessage"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== ADMIN PANEL ===== -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-content">
+            <div class="admin-header">
+                <h2><i class="fas fa-cog"></i> لوحة التحكم</h2>
+                <button class="admin-close" id="adminClose"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="add-teacher">➕ إضافة مدرس</button>
+                <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
+                <button class="tab-btn" data-tab="add-lecture">🎥 إضافة محاضرة</button>
+                <button class="tab-btn" data-tab="publish">📤 نشر التحديثات</button>
+            </div>
+
+            <!-- ===== إضافة مدرس ===== -->
+            <div class="tab-content active" id="tab-add-teacher">
+                <form id="addTeacherForm" class="admin-form">
+                    <h3>👨‍🏫 إضافة مدرس جديد</h3>
+                    <div class="form-group">
+                        <label>📝 اسم المدرس *</label>
+                        <input type="text" id="teacherName" placeholder="مثال: الأستاذ حيدر طابور" required />
+                    </div>
+                    <div class="form-group">
+                        <label>😊 رمز تعبيري</label>
+                        <input type="text" id="teacherEmoji" placeholder="🧑‍🏫" value="🧑‍🏫" maxlength="2" />
+                    </div>
+                    <div class="form-group">
+                        <label>📚 المادة</label>
+                        <input type="text" id="teacherSubject" placeholder="مثال: الرياضيات" />
+                    </div>
+                    <div class="form-group">
+                        <label>📄 وصف المدرس</label>
+                        <textarea id="teacherDesc" rows="2" placeholder="وصف مختصر"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>🖼️ رابط الصورة</label>
+                        <input type="url" id="teacherImage" placeholder="https://..." />
+                    </div>
+                    <div class="form-group">
+                        <label>📂 اختر القسم *</label>
+                        <select id="teacherDepartment" required></select>
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المدرس</button>
+                </form>
+            </div>
+
+            <!-- ===== إضافة فصل ===== -->
+            <div class="tab-content" id="tab-add-semester">
+                <form id="addSemesterForm" class="admin-form">
+                    <h3>📀 إضافة فصل جديد</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس *</label>
+                        <select id="semesterTeacher" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>🔢 رقم الفصل *</label>
+                        <input type="number" id="semesterNumber" placeholder="1" min="1" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📄 وصف الفصل</label>
+                        <input type="text" id="semesterDesc" placeholder="مثال: الفصل الأول - الأساسيات" />
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة الفصل</button>
+                </form>
+            </div>
+
+            <!-- ===== إضافة محاضرة ===== -->
+            <div class="tab-content" id="tab-add-lecture">
+                <form id="addLectureForm" class="admin-form">
+                    <h3>🎥 إضافة محاضرة جديدة</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس *</label>
+                        <select id="lectureTeacher" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل *</label>
+                        <select id="lectureSemester" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>🔢 رقم المحاضرة *</label>
+                        <input type="number" id="lectureNumber" placeholder="1" min="1" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📝 عنوان المحاضرة *</label>
+                        <input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📹 رابط YouTube *</label>
+                        <input type="url" id="lectureUrl" placeholder="https://youtu.be/..." required />
+                    </div>
+                    <div class="form-group">
+                        <label>🆓 مجانية؟</label>
+                        <select id="lectureFree">
+                            <option value="false">لا (مقفلة)</option>
+                            <option value="true">نعم (مجانية)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
+                </form>
+            </div>
+
+            <!-- ===== نشر التحديثات ===== -->
+            <div class="tab-content" id="tab-publish">
+                <div class="publish-section">
+                    <h3>📤 نشر التحديثات</h3>
+                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات)</p>
+                    <div class="publish-stats" id="publishStats">
+                        <span>📊 التغييرات المعلقة: <span id="pendingChanges">0</span></span>
+                    </div>
+                    <button id="publishBtn" class="btn-publish"><i class="fas fa-upload"></i> نشر التحديثات</button>
+                    <div id="publishMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script src="script.js"></script>
+</body>
+</html>
