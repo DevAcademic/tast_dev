@@ -30,7 +30,6 @@
                 <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
                     <i class="fas fa-moon"></i>
                 </button>
-                <!-- ===== زر لوحة الأدمن ===== -->
                 <button class="admin-login-btn" id="adminLoginBtn" title="لوحة الإدارة">
                     <i class="fas fa-user-shield"></i>
                     <span class="admin-label">إدارة</span>
@@ -146,6 +145,7 @@
                 <button class="tab-btn active" data-tab="add-teacher">➕ إضافة مدرس</button>
                 <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
                 <button class="tab-btn" data-tab="add-lecture">🎥 إضافة محاضرة</button>
+                <button class="tab-btn" data-tab="manage-codes">🔑 إدارة الأكواد</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر التحديثات</button>
             </div>
 
@@ -226,21 +226,43 @@
                         <input type="url" id="lectureUrl" placeholder="https://youtu.be/..." required />
                     </div>
                     <div class="form-group">
-                        <label>🆓 مجانية؟</label>
+                        <label>🔒 حالة المحاضرة *</label>
                         <select id="lectureFree">
-                            <option value="false">لا (مقفلة)</option>
-                            <option value="true">نعم (مجانية)</option>
+                            <option value="true">🆓 مجانية</option>
+                            <option value="false">🔒 مقفلة (تتطلب كود)</option>
                         </select>
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
                 </form>
             </div>
 
+            <!-- ===== إدارة الأكواد ===== -->
+            <div class="tab-content" id="tab-manage-codes">
+                <div class="codes-management">
+                    <h3>🔑 إدارة أكواد التفعيل</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="codeTeacherSelect" required></select>
+                    </div>
+                    <div class="code-actions">
+                        <button onclick="generateCodes()" class="btn-submit" style="background:var(--success);">
+                            <i class="fas fa-plus"></i> إنشاء 5 أكواد
+                        </button>
+                        <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);">
+                            <i class="fas fa-plus"></i> إنشاء 10 أكواد
+                        </button>
+                    </div>
+                    <div id="codesListContainer">
+                        <p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===== نشر التحديثات ===== -->
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
-                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات)</p>
+                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات، أكواد)</p>
                     <div class="publish-stats" id="publishStats">
                         <span>📊 التغييرات المعلقة: <span id="pendingChanges">0</span></span>
                     </div>

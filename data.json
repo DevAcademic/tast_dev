@@ -11,6 +11,11 @@
           "subject": "الرياضيات",
           "description": "",
           "image": "https://i.ibb.co/pjGNMgYP/1782846774308.png",
+          "codes": [
+            { "code": "HAY-001", "used": false, "deviceId": null },
+            { "code": "HAY-002", "used": false, "deviceId": null },
+            { "code": "HAY-003", "used": false, "deviceId": null }
+          ],
           "semesters": [
             {
               "number": 1,

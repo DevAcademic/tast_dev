@@ -12,6 +12,8 @@
     let isDarkMode = false;
     let isAdminLoggedIn = false;
     let pendingChanges = 0;
+    let activeTeacher = null;
+    let activeTeacherIndex = null;
 
     // ===== DOM ELEMENTS =====
     const departmentsRows = document.getElementById('departmentsRows');
@@ -63,6 +65,20 @@
     const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
     // =============================================
+    // DEVICE ID (معرف فريد لكل جهاز)
+    // =============================================
+    function getDeviceId() {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    }
+
+    const userDeviceId = getDeviceId();
+
+    // =============================================
     // منع F12 واختصارات المطورين
     // =============================================
     document.addEventListener('keydown', function(e) {
@@ -81,13 +97,6 @@
         showToast('warning', '⚠️ هذه الميزة غير متاحة');
         return false;
     });
-
-    // =============================================
-    // منع عرض البيانات الحساسة في Console
-    // =============================================
-    console.log = function() {};
-    console.warn = function() {};
-    console.error = function() {};
 
     // =============================================
     // TOAST SYSTEM
@@ -125,6 +134,111 @@
     }
 
     // =============================================
+    // نظام الأكواد والصلاحيات
+    // =============================================
+
+    // ===== التحقق من صلاحية الوصول للمدرس =====
+    function hasAccessToTeacher(teacher) {
+        if (!teacher || !teacher.codes) return false;
+        
+        // التحقق من localStorage
+        const savedAccess = localStorage.getItem('teacherAccess_' + teacher.name);
+        if (savedAccess === 'true') {
+            return true;
+        }
+        
+        // التحقق من الأكواد
+        const hasAccess = teacher.codes.some(c => c.used && c.deviceId === userDeviceId);
+        if (hasAccess) {
+            localStorage.setItem('teacherAccess_' + teacher.name, 'true');
+        }
+        return hasAccess;
+    }
+
+    // ===== تفعيل الكود =====
+    function verifyCode(teacher, code) {
+        if (!teacher.codes || teacher.codes.length === 0) {
+            return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
+        }
+
+        const codeData = teacher.codes.find(c => c.code === code);
+
+        if (!codeData) {
+            return { valid: false, message: 'الكود غير صحيح' };
+        }
+
+        if (codeData.used) {
+            if (codeData.deviceId === userDeviceId) {
+                return { valid: true, message: '✅ الكود مفعل على جهازك' };
+            } else {
+                return { valid: false, message: '❌ هذا الكود مستخدم من جهاز آخر' };
+            }
+        }
+
+        // تفعيل الكود
+        codeData.used = true;
+        codeData.deviceId = userDeviceId;
+        codeData.usedAt = new Date().toISOString();
+
+        // حفظ في localStorage
+        localStorage.setItem('teacherAccess_' + teacher.name, 'true');
+        
+        saveData();
+        return { valid: true, message: '✅ تم التفعيل بنجاح - جميع محاضرات المدرس مفتوحة' };
+    }
+
+    // ===== إنشاء أكواد جديدة =====
+    function generateCode(teacherName, length = 8) {
+        const prefix = teacherName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let random = '';
+        for (let i = 0; i < length; i++) {
+            random += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return `${prefix}-${random}`;
+    }
+
+    function addNewCodes(teacher, count = 5) {
+        if (!teacher.codes) teacher.codes = [];
+        const newCodes = [];
+        for (let i = 0; i < count; i++) {
+            const newCode = generateCode(teacher.name);
+            teacher.codes.push({
+                code: newCode,
+                used: false,
+                deviceId: null
+            });
+            newCodes.push(newCode);
+        }
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        return newCodes;
+    }
+
+    function deleteCode(teacher, codeToDelete) {
+        if (!teacher.codes) return false;
+        const index = teacher.codes.findIndex(c => c.code === codeToDelete);
+        if (index === -1) return false;
+        if (teacher.codes[index].used) {
+            showToast('warning', '⚠️ لا يمكن حذف كود مستخدم');
+            return false;
+        }
+        teacher.codes.splice(index, 1);
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        return true;
+    }
+
+    function getCodesStatus(teacher) {
+        if (!teacher.codes) return { total: 0, used: 0, available: 0 };
+        const total = teacher.codes.length;
+        const used = teacher.codes.filter(c => c.used).length;
+        return { total, used, available: total - used };
+    }
+
+    // =============================================
     // LOAD DATA
     // =============================================
     async function loadData() {
@@ -134,6 +248,12 @@
             const jsonData = await response.json();
             if (jsonData && jsonData.departments && Array.isArray(jsonData.departments)) {
                 data = jsonData;
+                // تهيئة الأكواد للمدرسين
+                data.departments.forEach(dept => {
+                    dept.teachers.forEach(teacher => {
+                        if (!teacher.codes) teacher.codes = [];
+                    });
+                });
                 return;
             }
             throw new Error('Invalid data format');
@@ -152,7 +272,7 @@
     }
 
     // =============================================
-    // SAVE DATA (للتخزين المحلي)
+    // SAVE DATA
     // =============================================
     function saveData() {
         try {
@@ -231,6 +351,7 @@
         if (department.teachers && department.teachers.length > 0) {
             department.teachers.forEach((teacher, idx) => {
                 const totalLectures = teacher.semesters.reduce((acc, s) => acc + s.lectures.length, 0);
+                const hasAccess = hasAccessToTeacher(teacher);
                 
                 html += `
                     <div class="teacher-item" onclick="openTeacher(${index}, ${idx})">
@@ -240,7 +361,7 @@
                                  onerror="this.style.display='none'; this.parentElement.textContent='${teacher.emoji || '👨‍🏫'}'">
                         </div>
                         <div class="teacher-info">
-                            <div class="teacher-name">${teacher.name}</div>
+                            <div class="teacher-name">${teacher.name} ${hasAccess ? '✅' : ''}</div>
                             <div class="teacher-subject">${teacher.subject || ''}</div>
                             <div class="teacher-stats">📚 ${teacher.semesters.length} فصول | 🎥 ${totalLectures} محاضرة</div>
                         </div>
@@ -266,26 +387,97 @@
         const teacher = department.teachers[teacherIndex];
         if (!teacher) return;
 
+        activeTeacher = teacher;
+        activeTeacherIndex = teacherIndex;
+        
+        const hasAccess = hasAccessToTeacher(teacher);
+        
         modalTeacherTitle.textContent = `👨‍🏫 ${teacher.name}`;
 
         let html = '';
+        
+        // عرض الفصول
         teacher.semesters.forEach((semester, idx) => {
+            // التحقق من وجود محاضرات مجانية
+            const hasFreeLecture = semester.lectures.some(l => l.isFree === true);
+            const isLocked = !hasAccess && !hasFreeLecture;
+            
             html += `
-                <div class="semester-item" onclick="openLectures(${deptIndex}, ${teacherIndex}, ${idx})">
+                <div class="semester-item ${isLocked ? 'locked' : ''}" 
+                     onclick="${isLocked ? '' : `openLectures(${deptIndex}, ${teacherIndex}, ${idx})`}">
                     <div>
                         <div class="semester-number">📖 الفصل ${semester.number}</div>
                         <div class="semester-desc">${semester.description || ''} (${semester.lectures.length} محاضرة)</div>
                     </div>
                     <div class="semester-status">
+                        ${isLocked ? '🔒 مغلق' : (hasAccess ? '✅ مفتوح' : '🆓 جزئياً')}
                         <i class="fas fa-chevron-left"></i>
                     </div>
                 </div>
             `;
         });
+        
+        // عرض معلومات الأكواد
+        const status = getCodesStatus(teacher);
+        const isActivated = hasAccessToTeacher(teacher);
+        
+        html += `
+            <div class="codes-info">
+                <div class="access-status ${isActivated ? 'active' : 'inactive'}">
+                    ${isActivated ? '✅ تم التفعيل - جميع المحاضرات مفتوحة' : '🔒 بعض المحاضرات مقفلة - أدخل كود التفعيل'}
+                </div>
+                ${!isActivated ? `
+                    <div class="code-box-mini">
+                        <p>🔑 أدخل كود التفعيل لفتح جميع المحاضرات</p>
+                        <div style="display:flex;gap:0.5rem;">
+                            <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                            <button onclick="activateCodeFromTeacher()" style="padding:0.5rem 1.2rem;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">تفعيل</button>
+                        </div>
+                        <div id="codeMessageTeacher"></div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
 
         semestersList.innerHTML = html;
         semestersModal.classList.add('active');
         document.body.style.overflow = 'hidden';
+    };
+
+    // ===== ACTIVATE CODE FROM TEACHER =====
+    window.activateCodeFromTeacher = function() {
+        const codeInput = document.getElementById('codeInputTeacher');
+        const codeMessage = document.getElementById('codeMessageTeacher');
+        const code = codeInput.value.trim().toUpperCase();
+        
+        if (!code) {
+            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
+            codeMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        if (!activeTeacher) {
+            codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
+            codeMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        const result = verifyCode(activeTeacher, code);
+        codeMessage.innerHTML = result.message;
+        codeMessage.style.color = result.valid ? '#22c55e' : '#ef4444';
+        
+        if (result.valid) {
+            showToast('success', '✅ تم التفعيل بنجاح! جميع محاضرات المدرس مفتوحة');
+            setTimeout(() => {
+                const deptIndex = data.departments.findIndex(d => d.teachers.includes(activeTeacher));
+                const teacherIndex = activeTeacherIndex;
+                if (deptIndex !== -1 && teacherIndex !== null) {
+                    openTeacher(deptIndex, teacherIndex);
+                }
+            }, 1500);
+        } else {
+            showToast('error', '❌ ' + result.message);
+        }
     };
 
     // =============================================
@@ -299,17 +491,23 @@
         const semester = teacher.semesters[semesterIndex];
         if (!semester) return;
 
+        const hasAccess = hasAccessToTeacher(teacher);
+        
         modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
         let html = '';
         semester.lectures.forEach((lecture) => {
+            const isFree = lecture.isFree === true;
+            const canWatch = isFree || hasAccess;
+            
             html += `
-                <div class="lecture-item" onclick="playVideo('${lecture.youtubeUrl}', '${lecture.title}')">
+                <div class="lecture-item ${canWatch ? '' : 'locked'}" 
+                     onclick="${canWatch ? `playVideo('${lecture.youtubeUrl}', '${lecture.title}')` : ''}">
                     <div class="lecture-number">#${lecture.number}</div>
                     <div class="lecture-title">${lecture.title}</div>
                     <div class="lecture-status">
-                        ${lecture.isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
-                        <i class="fas fa-play-circle" style="color:var(--primary);"></i>
+                        ${isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
+                        ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
                     </div>
                 </div>
             `;
@@ -390,6 +588,9 @@
             this.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            if (this.dataset.tab === 'manage-codes') {
+                updateCodesManagement();
+            }
         });
     });
 
@@ -403,8 +604,9 @@
         });
         deptSelect.innerHTML = options;
 
-        // تحديث قائمة المدرسين في إضافة فصل ومحاضرة
+        // تحديث قائمة المدرسين
         updateTeacherSelects();
+        updateCodeTeacherSelect();
     }
 
     function updateTeacherSelects() {
@@ -412,25 +614,26 @@
         const lectureTeacher = document.getElementById('lectureTeacher');
         
         let options = '<option value="">اختر المدرس...</option>';
-        data.departments.forEach(dept => {
-            dept.teachers.forEach((t, i) => {
-                options += `<option value="${i}" data-dept="${data.departments.indexOf(dept)}">${t.name}</option>`;
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
             });
         });
         semesterTeacher.innerHTML = options;
         lectureTeacher.innerHTML = options;
 
-        // تحديث قائمة الفصول في إضافة محاضرة
         updateSemesterSelects();
     }
 
     function updateSemesterSelects() {
         const lectureSemester = document.getElementById('lectureSemester');
-        const teacherIndex = document.getElementById('lectureTeacher').value;
-        const deptIndex = document.getElementById('lectureTeacher').selectedOptions[0]?.dataset.dept;
+        const teacherSelect = document.getElementById('lectureTeacher');
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(teacherSelect.value);
 
         let options = '<option value="">اختر الفصل...</option>';
-        if (deptIndex !== undefined && data.departments[deptIndex]) {
+        if (deptIndex !== -1 && data.departments[deptIndex]) {
             const teacher = data.departments[deptIndex].teachers[teacherIndex];
             if (teacher) {
                 teacher.semesters.forEach((s, i) => {
@@ -441,9 +644,121 @@
         lectureSemester.innerHTML = options;
     }
 
-    document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
+    function updateCodeTeacherSelect() {
+        const select = document.getElementById('codeTeacherSelect');
+        let options = '<option value="">اختر المدرس...</option>';
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
+            });
+        });
+        select.innerHTML = options;
+    }
 
-    // ===== ADD TEACHER =====
+    document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
+    document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
+
+    // ===== CODES MANAGEMENT =====
+    function updateCodesManagement() {
+        const select = document.getElementById('codeTeacherSelect');
+        const container = document.getElementById('codesListContainer');
+        const selectedOption = select.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(select.value);
+
+        if (deptIndex === -1 || isNaN(teacherIndex)) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>';
+            return;
+        }
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
+            return;
+        }
+
+        const status = getCodesStatus(teacher);
+        let html = `
+            <div class="codes-stats" style="display:flex;gap:1rem;justify-content:center;margin:1rem 0;padding:0.8rem;background:var(--bg);border-radius:8px;">
+                <span>📊 المجموع: ${status.total}</span>
+                <span>✅ المستخدمة: ${status.used}</span>
+                <span>🟢 المتاحة: ${status.available}</span>
+            </div>
+            <table class="codes-table">
+                <tr>
+                    <th>#</th>
+                    <th>الكود</th>
+                    <th>الحالة</th>
+                    <th>حذف</th>
+                </tr>
+        `;
+
+        if (teacher.codes && teacher.codes.length > 0) {
+            teacher.codes.forEach((c, index) => {
+                const isUsed = c.used;
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><code>${c.code}</code></td>
+                        <td>${isUsed ? '✅ مستخدم' : '🟢 متاح'}</td>
+                        <td>
+                            ${!isUsed ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;">🗑️</button>` : '—'}
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `<tr><td colspan="4" style="text-align:center;color:var(--text-light);">لا توجد أكواد</td></tr>`;
+        }
+
+        html += `</table>`;
+        container.innerHTML = html;
+    }
+
+    // ===== GENERATE CODES =====
+    window.generateCodes = function(count = 5) {
+        const select = document.getElementById('codeTeacherSelect');
+        const selectedOption = select.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(select.value);
+
+        if (deptIndex === -1 || isNaN(teacherIndex)) {
+            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
+            return;
+        }
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const newCodes = addNewCodes(teacher, count);
+        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
+        updateCodesManagement();
+        updateAdminSelects();
+    };
+
+    // ===== DELETE CODE =====
+    window.deleteThisCode = function(deptIndex, teacherIndex, code) {
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        if (deleteCode(teacher, code)) {
+            showToast('success', `✅ تم حذف الكود: ${code}`);
+            updateCodesManagement();
+            updateAdminSelects();
+        }
+    };
+
+    // =============================================
+    // ADD TEACHER
+    // =============================================
     addTeacherForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const deptIndex = parseInt(document.getElementById('teacherDepartment').value);
@@ -464,6 +779,7 @@
             subject: subject || '',
             description: description || '',
             image: image || '',
+            codes: [],
             semesters: []
         };
 
@@ -477,11 +793,14 @@
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
     });
 
-    // ===== ADD SEMESTER =====
+    // =============================================
+    // ADD SEMESTER
+    // =============================================
     addSemesterForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const teacherSelect = document.getElementById('semesterTeacher');
-        const deptIndex = parseInt(teacherSelect.selectedOptions[0]?.dataset.dept);
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
         const teacherIndex = parseInt(teacherSelect.value);
         const number = parseInt(document.getElementById('semesterNumber').value);
         const description = document.getElementById('semesterDesc').value.trim();
@@ -507,11 +826,14 @@
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
     });
 
-    // ===== ADD LECTURE =====
+    // =============================================
+    // ADD LECTURE
+    // =============================================
     addLectureForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const teacherSelect = document.getElementById('lectureTeacher');
-        const deptIndex = parseInt(teacherSelect.selectedOptions[0]?.dataset.dept);
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
         const teacherIndex = parseInt(teacherSelect.value);
         const semesterIndex = parseInt(document.getElementById('lectureSemester').value);
         const number = parseInt(document.getElementById('lectureNumber').value);
@@ -559,12 +881,10 @@
             return;
         }
 
-        // إنشاء ملف data.json جديد
         const jsonData = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
-        // تحميل الملف
         const a = document.createElement('a');
         a.href = url;
         a.download = 'data.json';
@@ -573,12 +893,10 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // عرض رسالة النشر
         const message = document.getElementById('publishMessage');
         message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح!`;
         message.style.color = '#22c55e';
         
-        // إعادة تعيين التغييرات المعلقة
         pendingChanges = 0;
         updatePendingChanges();
         showToast('success', `✅ تم نشر التغييرات بنجاح! تم تحميل ملف data.json`);
@@ -702,6 +1020,7 @@
         renderDepartments(data.departments);
         updateAdminSelects();
         console.log('📚 ديف أكاديمي - النظام جاهز!');
+        console.log('📱 معرف الجهاز:', userDeviceId);
     });
 
 })();
