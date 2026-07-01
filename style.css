@@ -223,24 +223,53 @@ body:not(.dark-mode) .theme-toggle:hover {
     background: rgba(0, 0, 0, 0.05);
 }
 
+/* ===== ADMIN LOGIN BUTTON ===== */
 .admin-login-btn {
-    background: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--primary);
+    color: white;
     border: none;
-    color: var(--text);
-    font-size: 1.2rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
     transition: var(--transition);
 }
 
 .admin-login-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--primary);
+    background: var(--primary-dark);
+    transform: scale(1.05);
 }
 
-body:not(.dark-mode) .admin-login-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
+.admin-login-btn i {
+    font-size: 1rem;
+}
+
+.admin-login-btn .admin-label {
+    font-size: 0.85rem;
+}
+
+body.dark-mode .admin-login-btn {
+    background: var(--primary);
+    color: white;
+}
+
+body.dark-mode .admin-login-btn:hover {
+    background: var(--primary-dark);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .admin-login-btn .admin-label {
+        display: none;
+    }
+    
+    .admin-login-btn {
+        padding: 0.5rem 1rem;
+    }
 }
 
 /* ===== HERO ===== */
