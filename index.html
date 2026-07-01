@@ -257,15 +257,21 @@
                     <h3>🗑️ حذف محاضرة</h3>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteLectureTeacher" required></select>
+                        <select id="deleteLectureTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>📀 اختر الفصل</label>
-                        <select id="deleteLectureSemester" required></select>
+                        <select id="deleteLectureSemester" required>
+                            <option value="">اختر المدرس أولاً</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>🎥 اختر المحاضرة المراد حذفها</label>
-                        <select id="deleteLectureSelect" required></select>
+                        <select id="deleteLectureSelect" required>
+                            <option value="">اختر الفصل أولاً</option>
+                        </select>
                     </div>
                     <button onclick="deleteSelectedLecture()" class="btn-delete">
                         <i class="fas fa-trash"></i> حذف المحاضرة
