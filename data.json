@@ -4,7 +4,29 @@
       "name": "الرياضيات",
       "emoji": "📐",
       "description": "قسم الرياضيات - دراسة الأعداد والعمليات والهندسة",
-      "teachers": []
+      "teachers": [
+        {
+          "name": "أ.حيدر طابور",
+          "emoji": "🧑‍🏫",
+          "subject": "الرياضيات",
+          "description": "",
+          "image": "https://i.ibb.co/pjGNMgYP/1782846774308.png",
+          "semesters": [
+            {
+              "number": 1,
+              "description": "الفصل 1",
+              "lectures": [
+                {
+                  "number": 1,
+                  "title": "محاضرة 1",
+                  "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
+                  "isFree": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "اللغة العربية",
