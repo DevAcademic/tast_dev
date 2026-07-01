@@ -382,13 +382,11 @@
         const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
         const teacherIndex = parseInt(teacherSelect.value);
         const semesterSelect = document.getElementById('deleteLectureSemester');
-        const lectureSelect = document.getElementById('deleteLectureSelect');
 
-        // مسح القوائم
+        // مسح القائمة وإضافة الخيار الافتراضي
         semesterSelect.innerHTML = '<option value="">اختر الفصل...</option>';
-        lectureSelect.innerHTML = '<option value="">اختر الفصل أولاً</option>';
 
-        if (deptIndex === -1 || isNaN(teacherIndex)) {
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
             return;
         }
 
@@ -404,6 +402,9 @@
             option.textContent = `الفصل ${s.number} - ${s.description || ''}`;
             semesterSelect.appendChild(option);
         });
+
+        // إعادة تعيين قائمة المحاضرات
+        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     }
 
     // ===== تحديث قائمة المحاضرات في حذف محاضرة =====
@@ -416,10 +417,14 @@
         const semesterIndex = parseInt(semesterSelect.value);
         const lectureSelect = document.getElementById('deleteLectureSelect');
 
-        // مسح القائمة
+        // مسح القائمة وإضافة الخيار الافتراضي
         lectureSelect.innerHTML = '<option value="">اختر المحاضرة...</option>';
 
-        if (deptIndex === -1 || isNaN(teacherIndex) || isNaN(semesterIndex)) {
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
+            return;
+        }
+
+        if (isNaN(semesterIndex) || semesterIndex === '') {
             return;
         }
 
@@ -442,7 +447,36 @@
         });
     }
 
-    // ===== حذف المحاضرة (نسخة مصححة) =====
+    // ===== ربط الأحداث بشكل صحيح =====
+    function setupDeleteLectureEvents() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const semesterSelect = document.getElementById('deleteLectureSemester');
+
+        if (teacherSelect) {
+            teacherSelect.removeEventListener('change', onTeacherChange);
+            teacherSelect.addEventListener('change', onTeacherChange);
+        }
+
+        if (semesterSelect) {
+            semesterSelect.removeEventListener('change', onSemesterChange);
+            semesterSelect.addEventListener('change', onSemesterChange);
+        }
+    }
+
+    function onTeacherChange() {
+        updateDeleteLectureSemesters();
+    }
+
+    function onSemesterChange() {
+        updateDeleteLectureLectures();
+    }
+
+    // استدعاء عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        setupDeleteLectureEvents();
+    });
+
+    // ===== حذف المحاضرة =====
     window.deleteSelectedLecture = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -452,17 +486,17 @@
         const lectureIndex = parseInt(document.getElementById('deleteLectureSelect').value);
 
         // التحقق من صحة الإدخالات
-        if (deptIndex === -1 || isNaN(teacherIndex)) {
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
         }
 
-        if (isNaN(semesterIndex)) {
+        if (isNaN(semesterIndex) || semesterIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار الفصل');
             return;
         }
 
-        if (isNaN(lectureIndex)) {
+        if (isNaN(lectureIndex) || lectureIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار المحاضرة');
             return;
         }
@@ -523,21 +557,6 @@
         semesterSelect.innerHTML = options;
     }
 
-    // ===== ربط الأحداث بشكل صحيح =====
-    document.addEventListener('DOMContentLoaded', function() {
-        // عند تغيير المدرس في حذف محاضرة
-        document.getElementById('deleteLectureTeacher').addEventListener('change', function() {
-            updateDeleteLectureSemesters();
-            // إعادة تعيين المحاضرات
-            document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-        });
-
-        // عند تغيير الفصل في حذف محاضرة
-        document.getElementById('deleteLectureSemester').addEventListener('change', function() {
-            updateDeleteLectureLectures();
-        });
-    });
-
     // ===== تحديث دوال التحديث =====
     function updateAdminSelects() {
         const deptSelect = document.getElementById('teacherDepartment');
@@ -562,9 +581,11 @@
                 options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
             });
         });
-        deleteSemesterTeacher.innerHTML = options;
-        deleteLectureTeacher.innerHTML = options;
         
+        if (deleteSemesterTeacher) deleteSemesterTeacher.innerHTML = options;
+        if (deleteLectureTeacher) deleteLectureTeacher.innerHTML = options;
+        
+        // تحديث القوائم المرتبطة
         updateDeleteSemesterSelects();
         updateDeleteLectureSemesters();
     }
@@ -1051,7 +1072,7 @@
 
     // ===== DELETE CODE =====
     window.deleteThisCode = function(deptIndex, teacherIndex, code) {
-        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}？`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
 
         const teacher = data.departments[deptIndex].teachers[teacherIndex];
         if (!teacher) {
