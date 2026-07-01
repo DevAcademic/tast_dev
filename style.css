@@ -1503,6 +1503,40 @@ body.dark-mode .lecture-item {
     transform: scale(1.02);
 }
 
+/* ===== DELETE BUTTONS ===== */
+.btn-delete {
+    width: 100%;
+    padding: 0.7rem;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+    transform: scale(1.02);
+}
+
+.delete-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--border);
+}
+
+.delete-section h3 {
+    color: var(--danger);
+    margin-bottom: 1rem;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .admin-panel {
