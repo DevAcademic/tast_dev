@@ -9,31 +9,31 @@
           "name": "أ.حيدر طابور",
           "emoji": "🧑‍🏫",
           "subject": "الرياضيات",
-          "description": "",
+          "description": "أستاذ مادة الرياضيات - شرح مبسط وممتع",
           "image": "https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg",
           "codes": [
             {
-              "code": "XXX-TTT",
+              "code": "MATH-2025",
               "used": false,
               "deviceId": null
             },
             {
-              "code": "XXX-KA0NNAC2",
+              "code": "HAYDAR-X7",
               "used": false,
               "deviceId": null
             },
             {
-              "code": "XXX-UN9H0YY0",
+              "code": "TABOR-99",
               "used": false,
               "deviceId": null
             },
             {
-              "code": "XXX-TMXU12F2",
+              "code": "ALGEBRA-1",
               "used": false,
               "deviceId": null
             },
             {
-              "code": "XXX-8AV8PRPY",
+              "code": "SUPER-007",
               "used": false,
               "deviceId": null
             }
@@ -41,19 +41,25 @@
           "semesters": [
             {
               "number": 1,
-              "description": "الفصل 1",
+              "description": "الفصل الأول - الأساسيات",
               "lectures": [
                 {
                   "number": 1,
-                  "title": "اساسيات",
+                  "title": "اساسيات الرياضيات",
                   "youtubeUrl": "https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ",
                   "isFree": true
+                },
+                {
+                  "number": 2,
+                  "title": "المعادلات البسيطة",
+                  "youtubeUrl": "https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ",
+                  "isFree": false
                 }
               ]
             },
             {
               "number": 2,
-              "description": "الفصل 2",
+              "description": "الفصل الثاني - المتقدم",
               "lectures": []
             }
           ]
@@ -93,7 +99,7 @@
     {
       "name": "التربية الإسلامية",
       "emoji": "🕌",
-      "description": "قسم التربية الإسلامية - دراسة القرآن اسلامية",
+      "description": "قسم التربية الإسلامية - دراسة القرآن والسنة",
       "teachers": []
     }
   ]
