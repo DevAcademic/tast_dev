@@ -44,15 +44,9 @@
               "description": "الفصل 1",
               "lectures": [
                 {
-                  "number": 2,
-                  "title": "اساسيات",
-                  "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
-                  "isFree": false
-                },
-                {
                   "number": 1,
-                  "title": "محاضرة 1",
-                  "youtubeUrl": "https://youtu.be/sNMZ74fI-_0?si=0Lx59K4sNshuOeha",
+                  "title": "اساسيات",
+                  "youtubeUrl": "https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ",
                   "isFree": true
                 }
               ]
