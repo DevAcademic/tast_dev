@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>📚 ديف أكاديمي - منصة التعلم</title>
+    <script>
+        // منع F12 واختصارات المطورين
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
+                (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+                e.preventDefault();
+                alert('⚠️ هذه الميزة غير متاحة');
+                return false;
+            }
+        });
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            alert('⚠️ هذه الميزة غير متاحة');
+            return false;
+        });
+    </script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -199,23 +217,6 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة الفصل</button>
                 </form>
-                
-                <!-- ===== حذف فصل ===== -->
-                <div class="delete-section">
-                    <h3>🗑️ حذف فصل</h3>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteSemesterTeacher" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل المراد حذفه</label>
-                        <select id="deleteSemesterSelect" required></select>
-                    </div>
-                    <button onclick="deleteSelectedSemester()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف الفصل
-                    </button>
-                    <div id="deleteSemesterMessage"></div>
-                </div>
             </div>
 
             <!-- ===== إضافة محاضرة ===== -->
@@ -251,33 +252,6 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
                 </form>
-                
-                <!-- ===== حذف محاضرة ===== -->
-                <div class="delete-section">
-                    <h3>🗑️ حذف محاضرة</h3>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteLectureTeacher" required>
-                            <option value="">اختر المدرس...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل</label>
-                        <select id="deleteLectureSemester" required>
-                            <option value="">اختر المدرس أولاً</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>🎥 اختر المحاضرة المراد حذفها</label>
-                        <select id="deleteLectureSelect" required>
-                            <option value="">اختر الفصل أولاً</option>
-                        </select>
-                    </div>
-                    <button onclick="deleteSelectedLecture()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف المحاضرة
-                    </button>
-                    <div id="deleteLectureMessage"></div>
-                </div>
             </div>
 
             <!-- ===== إدارة الأكواد ===== -->
@@ -290,7 +264,6 @@
                         <select id="codeTeacherSelect" required></select>
                     </div>
 
-                    <!-- ===== إضافة كود يدوي ===== -->
                     <div class="manual-code-section">
                         <h4>✏️ إضافة كود يدوي</h4>
                         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
@@ -309,7 +282,6 @@
                         </button>
                     </div>
 
-                    <!-- ===== حذف المدرس ===== -->
                     <button onclick="deleteSelectedTeacher()" class="btn-delete" style="margin-top:0.5rem;">
                         <i class="fas fa-trash"></i> حذف المدرس المحدد
                     </button>
@@ -324,7 +296,7 @@
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
-                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات، أكواد)</p>
+                    <p class="publish-info">انشر جميع التغييرات التي قمت بها</p>
                     <div class="publish-stats">
                         <span>📊 التغييرات المعلقة: <span id="pendingChanges">0</span></span>
                     </div>
