@@ -2,30 +2,10 @@
     'use strict';
 
     // =============================================
-    // إعدادات Supabase
+    // بيانات تسجيل الدخول (مشفرة)
     // =============================================
-    const SUPABASE_URL = 'https://aelsqlsj.sxawui.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_RVorWR0db3lnyIDGoH5CUg_ZDlZ1EvE';
-
-    // تهيئة Supabase
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // =============================================
-    // بيانات تسجيل الدخول (مشفرة في ملف منفصل)
-    // =============================================
-    // يتم تحميلها من ملف config.js المشفر
-    let ADMIN_EMAIL = 'zzccvc99@gmail.com';
-    let ADMIN_PASSWORD = 'vcxz4321cczzvv';
-
-    // محاولة تحميل البيانات من ملف config.js
-    try {
-        if (typeof CONFIG !== 'undefined') {
-            ADMIN_EMAIL = CONFIG.ADMIN_EMAIL || ADMIN_EMAIL;
-            ADMIN_PASSWORD = CONFIG.ADMIN_PASSWORD || ADMIN_PASSWORD;
-        }
-    } catch (e) {
-        // استخدام البيانات الافتراضية
-    }
+    const ADMIN_EMAIL = 'zzccvc99@gmail.com';
+    const ADMIN_PASSWORD = 'vcxz4321cczzvv';
 
     // ===== STATE =====
     let data = { departments: [] };
@@ -34,32 +14,6 @@
     let pendingChanges = 0;
     let activeTeacher = null;
     let activeTeacherIndex = null;
-    let deviceId = null;
-
-    // ===== DEVICE ID (معرف فريد لكل جهاز - مشفر) =====
-    function getDeviceId() {
-        let deviceId = localStorage.getItem('deviceId');
-        if (!deviceId) {
-            // إنشاء معرف فريد مشفر
-            const rawId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            deviceId = btoa(rawId); // تشفير Base64
-            localStorage.setItem('deviceId', deviceId);
-        }
-        return deviceId;
-    }
-
-    const userDeviceId = getDeviceId();
-
-    // ===== التحقق من صلاحية الجهاز =====
-    function isDeviceAuthorized() {
-        const savedDevice = localStorage.getItem('authorizedDevice');
-        if (!savedDevice) {
-            // أول مرة يتم فيها فتح الموقع على هذا الجهاز
-            localStorage.setItem('authorizedDevice', userDeviceId);
-            return true;
-        }
-        return savedDevice === userDeviceId;
-    }
 
     // ===== DOM ELEMENTS =====
     const departmentsRows = document.getElementById('departmentsRows');
@@ -111,6 +65,20 @@
     const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
     // =============================================
+    // DEVICE ID (معرف فريد لكل جهاز)
+    // =============================================
+    function getDeviceId() {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    }
+
+    const userDeviceId = getDeviceId();
+
+    // =============================================
     // منع F12 واختصارات المطورين
     // =============================================
     document.addEventListener('keydown', function(e) {
@@ -129,14 +97,6 @@
         showToast('warning', '⚠️ هذه الميزة غير متاحة');
         return false;
     });
-
-    // =============================================
-    // منع عرض البيانات الحساسة في Console
-    // =============================================
-    console.log = function() {};
-    console.warn = function() {};
-    console.error = function() {};
-    console.info = function() {};
 
     // =============================================
     // TOAST SYSTEM
@@ -171,85 +131,6 @@
 
     function getYouTubeEmbedUrl(videoId) {
         return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-    }
-
-    // =============================================
-    // دوال Supabase
-    // =============================================
-
-    async function loadDataFromSupabase() {
-        try {
-            showToast('info', '📥 جاري تحميل البيانات...');
-            
-            const { data: departments, error } = await supabaseClient
-                .from('departments')
-                .select('*');
-            
-            if (error) throw error;
-            
-            if (departments && departments.length > 0) {
-                data.departments = departments;
-                showToast('success', '✅ تم تحميل البيانات بنجاح');
-                return true;
-            }
-            
-            return false;
-        } catch (error) {
-            showToast('error', '❌ فشل تحميل البيانات');
-            return false;
-        }
-    }
-
-    async function saveDataToSupabase() {
-        try {
-            showToast('info', '📤 جاري حفظ البيانات...');
-            
-            const { error: deleteError } = await supabaseClient
-                .from('departments')
-                .delete()
-                .neq('id', 0);
-            
-            if (deleteError) throw deleteError;
-            
-            const { error: insertError } = await supabaseClient
-                .from('departments')
-                .insert(data.departments);
-            
-            if (insertError) throw insertError;
-            
-            showToast('success', '✅ تم حفظ البيانات بنجاح');
-            return true;
-        } catch (error) {
-            showToast('error', '❌ فشل حفظ البيانات');
-            return false;
-        }
-    }
-
-    async function loginWithSupabase(email, password) {
-        try {
-            const { data: userData, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-            
-            if (error) throw error;
-            
-            if (userData.user) {
-                isAdminLoggedIn = true;
-                closeAdminLoginModal();
-                showToast('success', '✅ تم تسجيل الدخول بنجاح');
-                adminPanel.classList.add('active');
-                updateAdminSelects();
-                updatePendingChanges();
-                return true;
-            }
-            
-            return false;
-        } catch (error) {
-            adminLoginMessage.textContent = '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة';
-            adminLoginMessage.style.color = '#ef4444';
-            return false;
-        }
     }
 
     // =============================================
@@ -327,6 +208,7 @@
         return newCodes;
     }
 
+    // ===== إضافة كود يدوي =====
     window.addManualCode = function() {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -415,9 +297,10 @@
     }
 
     // =============================================
-    // دوال حذف المدرس والفصل والمحاضرة
+    // دوال حذف المدرس والفصل والمحاضرة (نسخة مصححة)
     // =============================================
 
+    // ===== حذف المدرس =====
     window.deleteSelectedTeacher = function() {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -454,6 +337,7 @@
         showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
     };
 
+    // ===== حذف الفصل =====
     window.deleteSelectedSemester = function() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -491,6 +375,7 @@
         showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
     };
 
+    // ===== تحديث قائمة الفصول في حذف محاضرة =====
     function updateDeleteLectureSemesters() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -498,6 +383,7 @@
         const teacherIndex = parseInt(teacherSelect.value);
         const semesterSelect = document.getElementById('deleteLectureSemester');
 
+        // مسح القائمة وإضافة الخيار الافتراضي
         semesterSelect.innerHTML = '<option value="">اختر الفصل...</option>';
 
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
@@ -509,6 +395,7 @@
             return;
         }
 
+        // إضافة الفصول
         teacher.semesters.forEach((s, i) => {
             const option = document.createElement('option');
             option.value = i;
@@ -516,9 +403,11 @@
             semesterSelect.appendChild(option);
         });
 
+        // إعادة تعيين قائمة المحاضرات
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     }
 
+    // ===== تحديث قائمة المحاضرات في حذف محاضرة =====
     function updateDeleteLectureLectures() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -528,6 +417,7 @@
         const semesterIndex = parseInt(semesterSelect.value);
         const lectureSelect = document.getElementById('deleteLectureSelect');
 
+        // مسح القائمة وإضافة الخيار الافتراضي
         lectureSelect.innerHTML = '<option value="">اختر المحاضرة...</option>';
 
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
@@ -548,6 +438,7 @@
             return;
         }
 
+        // إضافة المحاضرات
         semester.lectures.forEach((l, i) => {
             const option = document.createElement('option');
             option.value = i;
@@ -556,6 +447,7 @@
         });
     }
 
+    // ===== ربط الأحداث بشكل صحيح =====
     function setupDeleteLectureEvents() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const semesterSelect = document.getElementById('deleteLectureSemester');
@@ -579,10 +471,12 @@
         updateDeleteLectureLectures();
     }
 
+    // استدعاء عند تحميل الصفحة
     document.addEventListener('DOMContentLoaded', function() {
         setupDeleteLectureEvents();
     });
 
+    // ===== حذف المحاضرة =====
     window.deleteSelectedLecture = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -591,6 +485,7 @@
         const semesterIndex = parseInt(document.getElementById('deleteLectureSemester').value);
         const lectureIndex = parseInt(document.getElementById('deleteLectureSelect').value);
 
+        // التحقق من صحة الإدخالات
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
@@ -635,12 +530,14 @@
         pendingChanges++;
         updatePendingChanges();
 
+        // تحديث القوائم
         updateDeleteLectureSemesters();
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
 
         showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
     };
 
+    // ===== تحديث قائمة الفصول في حذف فصل =====
     function updateDeleteSemesterSelects() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -660,6 +557,7 @@
         semesterSelect.innerHTML = options;
     }
 
+    // ===== تحديث دوال التحديث =====
     function updateAdminSelects() {
         const deptSelect = document.getElementById('teacherDepartment');
         let options = '<option value="">اختر القسم...</option>';
@@ -687,6 +585,7 @@
         if (deleteSemesterTeacher) deleteSemesterTeacher.innerHTML = options;
         if (deleteLectureTeacher) deleteLectureTeacher.innerHTML = options;
         
+        // تحديث القوائم المرتبطة
         updateDeleteSemesterSelects();
         updateDeleteLectureSemesters();
     }
@@ -696,9 +595,11 @@
     // =============================================
     async function loadData() {
         try {
-            const loaded = await loadDataFromSupabase();
-            
-            if (loaded) {
+            const response = await fetch('data.json?t=' + Date.now());
+            if (!response.ok) throw new Error('data.json not found');
+            const jsonData = await response.json();
+            if (jsonData && jsonData.departments && Array.isArray(jsonData.departments)) {
+                data = jsonData;
                 data.departments.forEach(dept => {
                     dept.teachers.forEach(teacher => {
                         if (!teacher.codes) teacher.codes = [];
@@ -706,26 +607,11 @@
                 });
                 return;
             }
-            
-            data = {
-                departments: [
-                    {
-                        id: 1,
-                        name: 'الرياضيات',
-                        emoji: '📐',
-                        description: 'قسم الرياضيات',
-                        teachers: []
-                    }
-                ]
-            };
-            
-            await saveDataToSupabase();
-            
+            throw new Error('Invalid data format');
         } catch (error) {
             data = {
                 departments: [
                     {
-                        id: 1,
                         name: 'الرياضيات',
                         emoji: '📐',
                         description: 'قسم الرياضيات',
@@ -742,7 +628,9 @@
     function saveData() {
         try {
             localStorage.setItem('academyData', JSON.stringify(data));
-        } catch (error) {}
+        } catch (error) {
+            console.error('Save error:', error);
+        }
     }
 
     // =============================================
@@ -754,7 +642,7 @@
                 <div class="empty-state">
                     <div class="empty-icon">📚</div>
                     <h2>لا توجد أقسام</h2>
-                    <p>يرجى إضافة بيانات</p>
+                    <p>يرجى إضافة بيانات في ملف data.json</p>
                 </div>
             `;
             return;
@@ -899,6 +787,7 @@
         document.body.style.overflow = 'hidden';
     };
 
+    // ===== ACTIVATE CODE FROM TEACHER =====
     window.activateCodeFromTeacher = function() {
         const codeInput = document.getElementById('codeInputTeacher');
         const codeMessage = document.getElementById('codeMessageTeacher');
@@ -934,6 +823,9 @@
         }
     };
 
+    // =============================================
+    // OPEN LECTURES
+    // =============================================
     window.openLectures = function(deptIndex, teacherIndex, semesterIndex) {
         const department = data.departments[deptIndex];
         if (!department) return;
@@ -968,6 +860,9 @@
         document.body.style.overflow = 'hidden';
     };
 
+    // =============================================
+    // PLAY VIDEO
+    // =============================================
     window.playVideo = function(url, title) {
         const videoId = extractYouTubeId(url);
         if (videoId) {
@@ -983,7 +878,7 @@
     };
 
     // =============================================
-    // ADMIN LOGIN
+    // ADMIN LOGIN SYSTEM
     // =============================================
     adminLoginBtn.addEventListener('click', function() {
         adminLoginModal.classList.add('active');
@@ -1003,18 +898,22 @@
         if (e.target === this) closeAdminLoginModal();
     });
 
-    adminLoginForm.addEventListener('submit', async function(e) {
+    adminLoginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const email = document.getElementById('adminEmail').value.trim();
         const password = document.getElementById('adminPassword').value.trim();
 
-        if (!email || !password) {
-            adminLoginMessage.textContent = '⚠️ يرجى إدخال البريد الإلكتروني وكلمة المرور';
-            adminLoginMessage.style.color = '#f59e0b';
-            return;
+        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+            isAdminLoggedIn = true;
+            closeAdminLoginModal();
+            showToast('success', '✅ تم تسجيل الدخول بنجاح');
+            adminPanel.classList.add('active');
+            updateAdminSelects();
+            updatePendingChanges();
+        } else {
+            adminLoginMessage.textContent = '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة';
+            adminLoginMessage.style.color = '#ef4444';
         }
-
-        await loginWithSupabase(email, password);
     });
 
     // =============================================
@@ -1024,6 +923,7 @@
         adminPanel.classList.remove('active');
     });
 
+    // ===== TABS =====
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             tabBtns.forEach(b => b.classList.remove('active'));
@@ -1036,6 +936,7 @@
         });
     });
 
+    // ===== UPDATE ADMIN SELECTS =====
     function updateTeacherSelects() {
         const semesterTeacher = document.getElementById('semesterTeacher');
         const lectureTeacher = document.getElementById('lectureTeacher');
@@ -1085,6 +986,7 @@
     document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
     document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
 
+    // ===== CODES MANAGEMENT =====
     function updateCodesManagement() {
         const select = document.getElementById('codeTeacherSelect');
         const container = document.getElementById('codesListContainer');
@@ -1144,6 +1046,7 @@
         container.innerHTML = html;
     }
 
+    // ===== GENERATE CODES =====
     window.generateCodes = function(count = 5) {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -1167,6 +1070,7 @@
         updateAdminSelects();
     };
 
+    // ===== DELETE CODE =====
     window.deleteThisCode = function(deptIndex, teacherIndex, code) {
         if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
 
@@ -1296,80 +1200,42 @@
     });
 
     // =============================================
-    // PUBLISH CHANGES - مع تحميل data.json ونشر فوري
+    // PUBLISH CHANGES
     // =============================================
     function updatePendingChanges() {
         pendingChangesSpan.textContent = pendingChanges;
     }
 
-    // ===== دالة تحميل data.json =====
-    function downloadDataJson() {
-        try {
-            const jsonData = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'data.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    // ===== دالة النشر الفوري =====
-    async function publishChanges() {
+    publishBtn.addEventListener('click', function() {
         if (pendingChanges === 0) {
             showToast('info', '📌 لا توجد تغييرات لنشرها');
             return;
         }
 
-        showToast('info', '📤 جاري نشر التغييرات...');
+        const jsonData = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'data.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
-        try {
-            // 1️⃣ حفظ في Supabase
-            const success = await saveDataToSupabase();
-            
-            if (!success) {
-                showToast('error', '❌ فشل حفظ البيانات في Supabase');
-                return;
-            }
-
-            // 2️⃣ تحميل ملف data.json نسخة احتياطية
-            const downloaded = downloadDataJson();
-            if (downloaded) {
-                showToast('info', '💾 تم تحميل نسخة احتياطية من data.json');
-            }
-
-            // 3️⃣ تحديث الواجهة فوراً (نشر فوري للزوار)
-            await loadDataFromSupabase();
-            renderDepartments(data.departments);
-            updateAdminSelects();
-
-            // 4️⃣ إعادة تعيين التغييرات
-            pendingChanges = 0;
-            updatePendingChanges();
-            
-            const message = document.getElementById('publishMessage');
-            message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح!`;
-            message.style.color = '#22c55e';
-            
-            showToast('success', '✅ تم نشر التغييرات بنجاح!');
-            
-            setTimeout(() => {
-                message.textContent = '';
-            }, 5000);
-            
-        } catch (error) {
-            showToast('error', '❌ حدث خطأ أثناء النشر');
-        }
-    }
-
-    publishBtn.addEventListener('click', publishChanges);
+        const message = document.getElementById('publishMessage');
+        message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح!`;
+        message.style.color = '#22c55e';
+        
+        pendingChanges = 0;
+        updatePendingChanges();
+        showToast('success', `✅ تم نشر التغييرات بنجاح! تم تحميل ملف data.json`);
+        
+        setTimeout(() => {
+            message.textContent = '';
+        }, 5000);
+    });
 
     // =============================================
     // THEME TOGGLE
@@ -1479,27 +1345,13 @@
     }
 
     // =============================================
-    // INIT - التحقق من الجهاز
+    // INIT
     // =============================================
     loadData().then(() => {
-        // التحقق من صلاحية الجهاز
-        if (!isDeviceAuthorized()) {
-            showToast('error', '⛔ هذا الجهاز غير مصرح له باستخدام الموقع');
-            document.body.innerHTML = `
-                <div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;text-align:center;padding:2rem;direction:rtl;">
-                    <div style="font-size:5rem;margin-bottom:1rem;">⛔</div>
-                    <h1 style="color:#ef4444;font-size:2rem;margin-bottom:1rem;">جهاز غير مصرح به</h1>
-                    <p style="color:#64748b;font-size:1.1rem;max-width:500px;">هذا الجهاز غير مسموح له باستخدام المنصة. يرجى الاتصال بالإدارة.</p>
-                </div>
-            `;
-            return;
-        }
-        
         renderDepartments(data.departments);
         updateAdminSelects();
-        console.log('📚 ديف أكاديمي - النظام جاهز');
+        console.log('📚 ديف أكاديمي - النظام جاهز!');
         console.log('📱 معرف الجهاز:', userDeviceId);
-        console.log('🔥 متصل بـ Supabase');
     });
 
 })();
