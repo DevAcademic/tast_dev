@@ -2,42 +2,6 @@
     'use strict';
 
     // =============================================
-    // مفتاح التشفير (سري)
-    // =============================================
-    const ENCRYPTION_KEY = 'DevAcademic2024SecureKey';
-
-    // =============================================
-    // دوال التشفير وفك التشفير
-    // =============================================
-    function encryptData(data) {
-        try {
-            const jsonStr = JSON.stringify(data);
-            let encrypted = '';
-            for (let i = 0; i < jsonStr.length; i++) {
-                const charCode = jsonStr.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length);
-                encrypted += String.fromCharCode(charCode);
-            }
-            return btoa(encrypted);
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function decryptData(encryptedData) {
-        try {
-            const decoded = atob(encryptedData);
-            let decrypted = '';
-            for (let i = 0; i < decoded.length; i++) {
-                const charCode = decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length);
-                decrypted += String.fromCharCode(charCode);
-            }
-            return JSON.parse(decrypted);
-        } catch (e) {
-            return null;
-        }
-    }
-
-    // =============================================
     // بيانات تسجيل الدخول (مشفرة)
     // =============================================
     const ADMIN_EMAIL = 'zzccvc99@gmail.com';
@@ -101,13 +65,12 @@
     const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
     // =============================================
-    // DEVICE ID (معرف فريد لكل جهاز - مشفر)
+    // DEVICE ID (معرف فريد لكل جهاز)
     // =============================================
     function getDeviceId() {
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
-            const rawId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            deviceId = btoa(rawId);
+            deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             localStorage.setItem('deviceId', deviceId);
         }
         return deviceId;
@@ -171,7 +134,7 @@
     }
 
     // =============================================
-    // نظام الأكواد والصلاحيات (مشفر)
+    // نظام الأكواد والصلاحيات
     // =============================================
 
     function hasAccessToTeacher(teacher) {
@@ -334,9 +297,10 @@
     }
 
     // =============================================
-    // دوال حذف المدرس والفصل والمحاضرة
+    // دوال حذف المدرس والفصل والمحاضرة (نسخة مصححة)
     // =============================================
 
+    // ===== حذف المدرس =====
     window.deleteSelectedTeacher = function() {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -373,6 +337,7 @@
         showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
     };
 
+    // ===== حذف الفصل =====
     window.deleteSelectedSemester = function() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -410,6 +375,7 @@
         showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
     };
 
+    // ===== تحديث قائمة الفصول في حذف محاضرة =====
     function updateDeleteLectureSemesters() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -417,6 +383,7 @@
         const teacherIndex = parseInt(teacherSelect.value);
         const semesterSelect = document.getElementById('deleteLectureSemester');
 
+        // مسح القائمة وإضافة الخيار الافتراضي
         semesterSelect.innerHTML = '<option value="">اختر الفصل...</option>';
 
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
@@ -428,6 +395,7 @@
             return;
         }
 
+        // إضافة الفصول
         teacher.semesters.forEach((s, i) => {
             const option = document.createElement('option');
             option.value = i;
@@ -435,9 +403,11 @@
             semesterSelect.appendChild(option);
         });
 
+        // إعادة تعيين قائمة المحاضرات
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     }
 
+    // ===== تحديث قائمة المحاضرات في حذف محاضرة =====
     function updateDeleteLectureLectures() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -447,6 +417,7 @@
         const semesterIndex = parseInt(semesterSelect.value);
         const lectureSelect = document.getElementById('deleteLectureSelect');
 
+        // مسح القائمة وإضافة الخيار الافتراضي
         lectureSelect.innerHTML = '<option value="">اختر المحاضرة...</option>';
 
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
@@ -467,6 +438,7 @@
             return;
         }
 
+        // إضافة المحاضرات
         semester.lectures.forEach((l, i) => {
             const option = document.createElement('option');
             option.value = i;
@@ -475,6 +447,7 @@
         });
     }
 
+    // ===== ربط الأحداث بشكل صحيح =====
     function setupDeleteLectureEvents() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const semesterSelect = document.getElementById('deleteLectureSemester');
@@ -498,10 +471,12 @@
         updateDeleteLectureLectures();
     }
 
+    // استدعاء عند تحميل الصفحة
     document.addEventListener('DOMContentLoaded', function() {
         setupDeleteLectureEvents();
     });
 
+    // ===== حذف المحاضرة =====
     window.deleteSelectedLecture = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -510,6 +485,7 @@
         const semesterIndex = parseInt(document.getElementById('deleteLectureSemester').value);
         const lectureIndex = parseInt(document.getElementById('deleteLectureSelect').value);
 
+        // التحقق من صحة الإدخالات
         if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
@@ -554,12 +530,14 @@
         pendingChanges++;
         updatePendingChanges();
 
+        // تحديث القوائم
         updateDeleteLectureSemesters();
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
 
         showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
     };
 
+    // ===== تحديث قائمة الفصول في حذف فصل =====
     function updateDeleteSemesterSelects() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -579,6 +557,7 @@
         semesterSelect.innerHTML = options;
     }
 
+    // ===== تحديث دوال التحديث =====
     function updateAdminSelects() {
         const deptSelect = document.getElementById('teacherDepartment');
         let options = '<option value="">اختر القسم...</option>';
@@ -606,52 +585,29 @@
         if (deleteSemesterTeacher) deleteSemesterTeacher.innerHTML = options;
         if (deleteLectureTeacher) deleteLectureTeacher.innerHTML = options;
         
+        // تحديث القوائم المرتبطة
         updateDeleteSemesterSelects();
         updateDeleteLectureSemesters();
     }
 
     // =============================================
-    // LOAD DATA - محاولة فك التشفير
+    // LOAD DATA
     // =============================================
     async function loadData() {
         try {
-            // محاولة تحميل البيانات المشفرة من localStorage
-            const encryptedSaved = localStorage.getItem('academyDataEncrypted');
-            if (encryptedSaved) {
-                const decrypted = decryptData(encryptedSaved);
-                if (decrypted && decrypted.departments) {
-                    data = decrypted;
-                    console.log('✅ تم تحميل البيانات المشفرة من localStorage');
-                    return;
-                }
-            }
-
-            // محاولة تحميل data.json العادي
             const response = await fetch('data.json?t=' + Date.now());
-            if (response.ok) {
-                const jsonData = await response.json();
-                if (jsonData && jsonData.departments) {
-                    data = jsonData;
-                    // تشفير وحفظ في localStorage
-                    const encrypted = encryptData(data);
-                    if (encrypted) {
-                        localStorage.setItem('academyDataEncrypted', encrypted);
-                    }
-                    return;
-                }
+            if (!response.ok) throw new Error('data.json not found');
+            const jsonData = await response.json();
+            if (jsonData && jsonData.departments && Array.isArray(jsonData.departments)) {
+                data = jsonData;
+                data.departments.forEach(dept => {
+                    dept.teachers.forEach(teacher => {
+                        if (!teacher.codes) teacher.codes = [];
+                    });
+                });
+                return;
             }
-
-            // بيانات افتراضية
-            data = {
-                departments: [
-                    {
-                        name: 'الرياضيات',
-                        emoji: '📐',
-                        description: 'قسم الرياضيات',
-                        teachers: []
-                    }
-                ]
-            };
+            throw new Error('Invalid data format');
         } catch (error) {
             data = {
                 departments: [
@@ -667,14 +623,11 @@
     }
 
     // =============================================
-    // SAVE DATA - تشفير وحفظ
+    // SAVE DATA
     // =============================================
     function saveData() {
         try {
-            const encrypted = encryptData(data);
-            if (encrypted) {
-                localStorage.setItem('academyDataEncrypted', encrypted);
-            }
+            localStorage.setItem('academyData', JSON.stringify(data));
         } catch (error) {
             console.error('Save error:', error);
         }
@@ -689,7 +642,7 @@
                 <div class="empty-state">
                     <div class="empty-icon">📚</div>
                     <h2>لا توجد أقسام</h2>
-                    <p>يرجى إضافة بيانات</p>
+                    <p>يرجى إضافة بيانات في ملف data.json</p>
                 </div>
             `;
             return;
@@ -834,6 +787,7 @@
         document.body.style.overflow = 'hidden';
     };
 
+    // ===== ACTIVATE CODE FROM TEACHER =====
     window.activateCodeFromTeacher = function() {
         const codeInput = document.getElementById('codeInputTeacher');
         const codeMessage = document.getElementById('codeMessageTeacher');
@@ -869,6 +823,9 @@
         }
     };
 
+    // =============================================
+    // OPEN LECTURES
+    // =============================================
     window.openLectures = function(deptIndex, teacherIndex, semesterIndex) {
         const department = data.departments[deptIndex];
         if (!department) return;
@@ -903,10 +860,14 @@
         document.body.style.overflow = 'hidden';
     };
 
+    // =============================================
+    // PLAY VIDEO
+    // =============================================
     window.playVideo = function(url, title) {
         const videoId = extractYouTubeId(url);
         if (videoId) {
-            playerFrame.src = getYouTubeEmbedUrl(videoId);
+            const embedUrl = getYouTubeEmbedUrl(videoId);
+            playerFrame.src = embedUrl;
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -917,7 +878,7 @@
     };
 
     // =============================================
-    // ADMIN LOGIN
+    // ADMIN LOGIN SYSTEM
     // =============================================
     adminLoginBtn.addEventListener('click', function() {
         adminLoginModal.classList.add('active');
@@ -962,6 +923,7 @@
         adminPanel.classList.remove('active');
     });
 
+    // ===== TABS =====
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             tabBtns.forEach(b => b.classList.remove('active'));
@@ -974,6 +936,7 @@
         });
     });
 
+    // ===== UPDATE ADMIN SELECTS =====
     function updateTeacherSelects() {
         const semesterTeacher = document.getElementById('semesterTeacher');
         const lectureTeacher = document.getElementById('lectureTeacher');
@@ -1023,6 +986,7 @@
     document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
     document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
 
+    // ===== CODES MANAGEMENT =====
     function updateCodesManagement() {
         const select = document.getElementById('codeTeacherSelect');
         const container = document.getElementById('codesListContainer');
@@ -1082,6 +1046,7 @@
         container.innerHTML = html;
     }
 
+    // ===== GENERATE CODES =====
     window.generateCodes = function(count = 5) {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -1105,6 +1070,7 @@
         updateAdminSelects();
     };
 
+    // ===== DELETE CODE =====
     window.deleteThisCode = function(deptIndex, teacherIndex, code) {
         if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
 
@@ -1234,7 +1200,7 @@
     });
 
     // =============================================
-    // PUBLISH CHANGES - تحميل ملف مشفر
+    // PUBLISH CHANGES
     // =============================================
     function updatePendingChanges() {
         pendingChangesSpan.textContent = pendingChanges;
@@ -1246,35 +1212,25 @@
             return;
         }
 
-        // تشفير البيانات
-        const encrypted = encryptData(data);
-        if (!encrypted) {
-            showToast('error', '❌ فشل تشفير البيانات');
-            return;
-        }
-
-        // إنشاء ملف مشفر
-        const blob = new Blob([encrypted], { type: 'text/plain' });
+        const jsonData = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'data.encrypted';
+        a.download = 'data.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // حفظ نسخة مشفرة في localStorage
-        localStorage.setItem('academyDataEncrypted', encrypted);
-
         const message = document.getElementById('publishMessage');
-        message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح! (ملف مشفر)`;
+        message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح!`;
         message.style.color = '#22c55e';
         
         pendingChanges = 0;
         updatePendingChanges();
-        showToast('success', `✅ تم نشر التغييرات بنجاح! تم تحميل ملف data.encrypted`);
+        showToast('success', `✅ تم نشر التغييرات بنجاح! تم تحميل ملف data.json`);
         
         setTimeout(() => {
             message.textContent = '';
@@ -1291,6 +1247,7 @@
         localStorage.setItem('devAcademicTheme', isDarkMode ? 'dark' : 'light');
         showToast('info', isDarkMode ? '🌙 تم تفعيل الوضع المظلم' : '☀️ تم تفعيل الوضع الفاتح');
     }
+
     themeToggle.addEventListener('click', toggleTheme);
 
     // =============================================
@@ -1309,6 +1266,7 @@
         );
         renderDepartments(filtered);
     }
+
     searchBtn.addEventListener('click', applyFilters);
     searchInput.addEventListener('keyup', function(e) {
         if (e.key === 'Enter') applyFilters();
@@ -1321,9 +1279,11 @@
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
+
     closeTeachersModal.addEventListener('click', () => closeModal(teachersModal));
     closeSemestersModal.addEventListener('click', () => closeModal(semestersModal));
     closeLecturesModal.addEventListener('click', () => closeModal(lecturesModal));
+
     teachersModal.addEventListener('click', function(e) {
         if (e.target === this) closeModal(this);
     });
@@ -1342,6 +1302,7 @@
         videoPlayer.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
+
     closePlayer.addEventListener('click', closeVideoPlayer);
     videoPlayer.addEventListener('click', function(e) {
         if (e.target === this) closeVideoPlayer();
@@ -1389,8 +1350,8 @@
     loadData().then(() => {
         renderDepartments(data.departments);
         updateAdminSelects();
-        console.log('📚 ديف أكاديمي - النظام جاهز');
-        console.log('🔒 جميع البيانات مشفرة');
+        console.log('📚 ديف أكاديمي - النظام جاهز!');
+        console.log('📱 معرف الجهاز:', userDeviceId);
     });
 
 })();
