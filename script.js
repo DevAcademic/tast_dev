@@ -201,20 +201,6 @@
         return { valid: true, message: '✅ تم التفعيل بنجاح - جميع محاضرات المدرس مفتوحة' };
     }
 
-    function resetCode(teacher, code) {
-        if (!teacher.codes) return false;
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) return false;
-        
-        localStorage.removeItem('teacherAccess_' + teacher.name);
-        
-        codeData.used = false;
-        codeData.deviceId = null;
-        codeData.usedAt = null;
-        saveData();
-        return true;
-    }
-
     function toggleCodeLock(teacher, code) {
         if (!teacher.codes) return false;
         const codeData = teacher.codes.find(c => c.code === code);
@@ -375,10 +361,9 @@
     };
 
     // =============================================
-    // دوال الحذف المحسنة
+    // دوال الحذف
     // =============================================
 
-    // حذف مدرس من تبويب الحذف
     window.deleteSelectedTeacherFromTab = function() {
         const select = document.getElementById('deleteTeacherSelect');
         const selectedOption = select.selectedOptions[0];
@@ -414,7 +399,6 @@
         showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
     };
 
-    // حذف فصل من تبويب الحذف
     window.deleteSelectedSemesterFromTab = function() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -459,11 +443,9 @@
         document.getElementById('deleteSemesterMessage').style.color = '#22c55e';
         showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
         
-        // تحديث قائمة الفصول
         updateDeleteSemesterSelects();
     };
 
-    // حذف محاضرة من تبويب الحذف
     window.deleteSelectedLectureFromTab = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -520,12 +502,10 @@
         document.getElementById('deleteLectureMessage').style.color = '#22c55e';
         showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
         
-        // تحديث القوائم
         updateDeleteLectureSemesters();
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     };
 
-    // تحديث قائمة الفصول عند اختيار المدرس (لحذف الفصل)
     function updateDeleteSemesterSelects() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -545,7 +525,6 @@
         semesterSelect.innerHTML = options;
     }
 
-    // تحديث قائمة الفصول (لحذف المحاضرة)
     function updateDeleteLectureSemesters() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -566,7 +545,6 @@
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     }
 
-    // تحديث قائمة المحاضرات (لحذف المحاضرة)
     function updateDeleteLectureLectures() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -609,7 +587,6 @@
     }
 
     function updateDeleteSelects() {
-        // تحديث قائمة حذف المدرس
         const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
         let options = '<option value="">اختر المدرس...</option>';
         data.departments.forEach((dept, di) => {
@@ -619,7 +596,6 @@
         });
         deleteTeacherSelect.innerHTML = options;
 
-        // تحديث قائمة حذف الفصل
         const deleteSemesterTeacher = document.getElementById('deleteSemesterTeacher');
         options = '<option value="">اختر المدرس...</option>';
         data.departments.forEach((dept, di) => {
@@ -630,7 +606,6 @@
         deleteSemesterTeacher.innerHTML = options;
         updateDeleteSemesterSelects();
 
-        // تحديث قائمة حذف المحاضرة
         const deleteLectureTeacher = document.getElementById('deleteLectureTeacher');
         options = '<option value="">اختر المدرس...</option>';
         data.departments.forEach((dept, di) => {
