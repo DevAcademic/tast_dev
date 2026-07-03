@@ -12,41 +12,11 @@
           "description": "",
           "image": "https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg",
           "codes": [
-            {
-              "code": "XXX-TTT",
-              "used": false,
-              "locked": false,
-              "deviceId": null,
-              "usedAt": null
-            },
-            {
-              "code": "XXX-KA0NNAC2",
-              "used": false,
-              "locked": false,
-              "deviceId": null,
-              "usedAt": null
-            },
-            {
-              "code": "XXX-UN9H0YY0",
-              "used": false,
-              "locked": false,
-              "deviceId": null,
-              "usedAt": null
-            },
-            {
-              "code": "XXX-TMXU12F2",
-              "used": false,
-              "locked": false,
-              "deviceId": null,
-              "usedAt": null
-            },
-            {
-              "code": "XXX-8AV8PRPY",
-              "used": false,
-              "locked": false,
-              "deviceId": null,
-              "usedAt": null
-            }
+            { "code": "XXX-TTT", "used": false, "deviceId": null, "disabled": false },
+            { "code": "XXX-KA0NNAC2", "used": false, "deviceId": null, "disabled": false },
+            { "code": "XXX-UN9H0YY0", "used": false, "deviceId": null, "disabled": false },
+            { "code": "XXX-TMXU12F2", "used": false, "deviceId": null, "disabled": false },
+            { "code": "XXX-8AV8PRPY", "used": false, "deviceId": null, "disabled": false }
           ],
           "semesters": [
             {
