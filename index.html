@@ -98,35 +98,32 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: تعديل المحاضرة ===== -->
+    <!-- ===== MODAL: تعديل المحاضرات (خاص بالإدارة) ===== -->
     <div class="modal-overlay" id="editLectureModal">
-        <div class="modal modal-large">
+        <div class="modal modal-small">
             <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
             <h2>✏️ تعديل المحاضرة</h2>
+            <p style="text-align:center;color:var(--text-light);margin-bottom:1rem;" id="editLectureInfo"></p>
             <form id="editLectureForm" class="admin-form">
-                <input type="hidden" id="editLectureDeptIndex">
-                <input type="hidden" id="editLectureTeacherIndex">
-                <input type="hidden" id="editLectureSemesterIndex">
-                <input type="hidden" id="editLectureIndex">
-                
                 <div class="form-group">
                     <label>📝 عنوان المحاضرة *</label>
-                    <input type="text" id="editLectureTitle" required />
+                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
                 </div>
                 <div class="form-group">
                     <label>📹 رابط YouTube *</label>
-                    <input type="url" id="editLectureUrl" required />
+                    <input type="url" id="editLectureUrl" placeholder="https://youtu.be/..." required />
                 </div>
                 <div class="form-group">
-                    <label>🔒 حالة المحاضرة *</label>
-                    <select id="editLectureFree">
+                    <label>🔒 حالة المحاضرة</label>
+                    <select id="editLectureIsFree">
                         <option value="true">🆓 مجانية</option>
                         <option value="false">🔒 مقفلة (تتطلب كود)</option>
                     </select>
                 </div>
+                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;"></div>
                 <div class="form-actions">
-                    <button type="button" onclick="saveEditedLecture()" class="btn-save">💾 حفظ التعديلات</button>
-                    <button type="button" onclick="document.getElementById('editLectureModal').classList.remove('active');document.body.style.overflow='auto';" class="btn-cancel">إلغاء</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                    <button type="button" class="btn-cancel" id="cancelEditLecture">إلغاء</button>
                 </div>
             </form>
         </div>
@@ -179,9 +176,9 @@
                 <button class="tab-btn active" data-tab="add-teacher">➕ إضافة مدرس</button>
                 <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
                 <button class="tab-btn" data-tab="add-lecture">🎥 إضافة محاضرة</button>
-                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
                 <button class="tab-btn" data-tab="manage-codes">🔑 إدارة الأكواد</button>
-                <button class="tab-btn" data-tab="admin-management">👥 إدارة الأدمن</button>
+                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
+                <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر التحديثات</button>
             </div>
 
@@ -235,23 +232,6 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة الفصل</button>
                 </form>
-                
-                <!-- ===== حذف فصل ===== -->
-                <div class="delete-section">
-                    <h3>🗑️ حذف فصل</h3>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteSemesterTeacher" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل المراد حذفه</label>
-                        <select id="deleteSemesterSelect" required></select>
-                    </div>
-                    <button onclick="deleteSelectedSemester()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف الفصل
-                    </button>
-                    <div id="deleteSemesterMessage"></div>
-                </div>
             </div>
 
             <!-- ===== إضافة محاضرة ===== -->
@@ -287,70 +267,6 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
                 </form>
-                
-                <!-- ===== حذف محاضرة ===== -->
-                <div class="delete-section">
-                    <h3>🗑️ حذف محاضرة</h3>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteLectureTeacher" required>
-                            <option value="">اختر المدرس...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل</label>
-                        <select id="deleteLectureSemester" required>
-                            <option value="">اختر المدرس أولاً</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>🎥 اختر المحاضرة المراد حذفها</label>
-                        <select id="deleteLectureSelect" required>
-                            <option value="">اختر الفصل أولاً</option>
-                        </select>
-                    </div>
-                    <button onclick="deleteSelectedLecture()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف المحاضرة
-                    </button>
-                    <div id="deleteLectureMessage"></div>
-                </div>
-            </div>
-
-            <!-- ===== تعديل محاضرة ===== -->
-            <div class="tab-content" id="tab-edit-lecture">
-                <div class="admin-form">
-                    <h3>✏️ تعديل محاضرة</h3>
-                    <p style="color:var(--text-light);margin-bottom:1rem;">اختر المادة ثم المدرس ثم الفصل ثم المحاضرة لتعديلها</p>
-                    
-                    <div class="form-group">
-                        <label>📚 اختر المادة *</label>
-                        <select id="editLectureDept" required>
-                            <option value="">اختر المادة...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس *</label>
-                        <select id="editLectureTeacherSelect" required>
-                            <option value="">اختر المدرس أولاً...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل *</label>
-                        <select id="editLectureSemesterSelect" required>
-                            <option value="">اختر المدرس أولاً...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>🎥 اختر المحاضرة *</label>
-                        <select id="editLectureSelect" required>
-                            <option value="">اختر الفصل أولاً...</option>
-                        </select>
-                    </div>
-                    <button type="button" onclick="openEditLectureFromSelects()" class="btn-submit">
-                        <i class="fas fa-edit"></i> تعديل المحاضرة المختارة
-                    </button>
-                    <div id="editLectureMessage"></div>
-                </div>
             </div>
 
             <!-- ===== إدارة الأكواد ===== -->
@@ -363,7 +279,6 @@
                         <select id="codeTeacherSelect" required></select>
                     </div>
 
-                    <!-- ===== إضافة كود يدوي ===== -->
                     <div class="manual-code-section">
                         <h4>✏️ إضافة كود يدوي</h4>
                         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
@@ -382,53 +297,104 @@
                         </button>
                     </div>
 
-                    <!-- ===== حذف المدرس ===== -->
-                    <button onclick="deleteSelectedTeacher()" class="btn-delete" style="margin-top:0.5rem;">
-                        <i class="fas fa-trash"></i> حذف المدرس المحدد
-                    </button>
-
                     <div id="codesListContainer">
                         <p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== إدارة الأدمن ===== -->
-            <div class="tab-content" id="tab-admin-management">
-                <div id="add-admin-section">
-                    <h3>➕ إضافة أدمن جديد</h3>
-                    <form id="addAdminForm" class="admin-form">
-                        <div class="form-group">
-                            <label>📧 البريد الإلكتروني *</label>
-                            <input type="email" id="adminEmailNew" placeholder="admin@example.com" required />
-                        </div>
-                        <div class="form-group">
-                            <label>🔑 كلمة المرور *</label>
-                            <input type="password" id="adminPasswordNew" placeholder="6 أحرف على الأقل" required minlength="6" />
-                        </div>
-                        <div class="form-group">
-                            <label>👤 الاسم</label>
-                            <input type="text" id="adminNameNew" placeholder="اسم الأدمن" />
-                        </div>
-                        <div class="form-group">
-                            <label>📚 المادة المسؤول عنها *</label>
-                            <select id="adminDepartment" required>
-                                <option value="">اختر المادة...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>👨‍🏫 المدرس المسؤول عنه *</label>
-                            <select id="adminTeacher" required>
-                                <option value="">اختر المدرس...</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-submit"><i class="fas fa-user-plus"></i> إضافة الأدمن</button>
-                    </form>
+            <!-- ===== تعديل محاضرة (خاص بالإدارة) ===== -->
+            <div class="tab-content" id="tab-edit-lecture">
+                <div class="edit-lecture-section">
+                    <h3>✏️ تعديل محاضرة</h3>
+                    <p class="edit-info">اختر المدرس ثم الفصل ثم المحاضرة لتعديلها</p>
+                    
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="editLectureTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل</label>
+                        <select id="editLectureSemester" required>
+                            <option value="">اختر المدرس أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎥 اختر المحاضرة</label>
+                        <select id="editLectureSelect" required>
+                            <option value="">اختر الفصل أولاً</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
+                        <i class="fas fa-edit"></i> فتح نافذة التعديل
+                    </button>
+                    <div id="editLectureAdminMessage"></div>
                 </div>
-                
-                <div style="margin-top:2rem;padding-top:1.5rem;border-top:2px solid var(--border);">
-                    <h3>📋 قائمة الأدمن</h3>
-                    <div id="adminsList"></div>
+            </div>
+
+            <!-- ===== حذف ===== -->
+            <div class="tab-content" id="tab-delete">
+                <div class="delete-section">
+                    <h3 style="color:var(--danger);">🗑️ حذف مدرس</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس المراد حذفه</label>
+                        <select id="deleteTeacherSelect" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedTeacherFromTab()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف المدرس
+                    </button>
+                    <div id="deleteTeacherMessage"></div>
+                </div>
+
+                <div class="delete-section" style="margin-top:2rem;">
+                    <h3 style="color:var(--danger);">🗑️ حذف فصل</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="deleteSemesterTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل المراد حذفه</label>
+                        <select id="deleteSemesterSelect" required>
+                            <option value="">اختر المدرس أولاً</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedSemesterFromTab()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف الفصل
+                    </button>
+                    <div id="deleteSemesterMessage"></div>
+                </div>
+
+                <div class="delete-section" style="margin-top:2rem;">
+                    <h3 style="color:var(--danger);">🗑️ حذف محاضرة</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="deleteLectureTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل</label>
+                        <select id="deleteLectureSemester" required>
+                            <option value="">اختر المدرس أولاً</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎥 اختر المحاضرة المراد حذفها</label>
+                        <select id="deleteLectureSelect" required>
+                            <option value="">اختر الفصل أولاً</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedLectureFromTab()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف المحاضرة
+                    </button>
+                    <div id="deleteLectureMessage"></div>
                 </div>
             </div>
 
