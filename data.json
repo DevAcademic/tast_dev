@@ -15,27 +15,37 @@
             {
               "code": "XXX-TTT",
               "used": false,
-              "deviceId": null
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
             },
             {
               "code": "XXX-KA0NNAC2",
               "used": false,
-              "deviceId": null
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
             },
             {
               "code": "XXX-UN9H0YY0",
               "used": false,
-              "deviceId": null
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
             },
             {
               "code": "XXX-TMXU12F2",
               "used": false,
-              "deviceId": null
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
             },
             {
               "code": "XXX-8AV8PRPY",
               "used": false,
-              "deviceId": null
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
             }
           ],
           "semesters": [

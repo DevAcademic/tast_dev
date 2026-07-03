@@ -64,6 +64,23 @@
     const lecturesList = document.getElementById('lecturesList');
     const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
+    // ===== EDIT LECTURE MODAL =====
+    const editLectureModal = document.getElementById('editLectureModal');
+    const closeEditLecture = document.getElementById('closeEditLecture');
+    const cancelEditLecture = document.getElementById('cancelEditLecture');
+    const editLectureForm = document.getElementById('editLectureForm');
+    const editLectureTitle = document.getElementById('editLectureTitle');
+    const editLectureUrl = document.getElementById('editLectureUrl');
+    const editLectureIsFree = document.getElementById('editLectureIsFree');
+    const editLectureMessage = document.getElementById('editLectureMessage');
+
+    let editTarget = {
+        deptIndex: -1,
+        teacherIndex: -1,
+        semesterIndex: -1,
+        lectureIndex: -1
+    };
+
     // =============================================
     // DEVICE ID
     // =============================================
@@ -145,7 +162,7 @@
             return true;
         }
         
-        const hasAccess = teacher.codes.some(c => c.used && c.deviceId === userDeviceId);
+        const hasAccess = teacher.codes.some(c => c.used && c.deviceId === userDeviceId && !c.locked);
         if (hasAccess) {
             localStorage.setItem('teacherAccess_' + teacher.name, 'true');
         }
@@ -163,11 +180,15 @@
             return { valid: false, message: 'الكود غير صحيح' };
         }
 
+        if (codeData.locked) {
+            return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
+        }
+
         if (codeData.used) {
             if (codeData.deviceId === userDeviceId) {
                 return { valid: true, message: '✅ الكود مفعل على جهازك' };
             } else {
-                return { valid: false, message: '❌ هذا الكود مستخدم من جهاز آخر' };
+                return { valid: false, message: '❌ هذا الكود مستخدم من جهاز آخر ولا يمكن تفعيله' };
             }
         }
 
@@ -178,6 +199,36 @@
         localStorage.setItem('teacherAccess_' + teacher.name, 'true');
         saveData();
         return { valid: true, message: '✅ تم التفعيل بنجاح - جميع محاضرات المدرس مفتوحة' };
+    }
+
+    function resetCode(teacher, code) {
+        if (!teacher.codes) return false;
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) return false;
+        
+        localStorage.removeItem('teacherAccess_' + teacher.name);
+        
+        codeData.used = false;
+        codeData.deviceId = null;
+        codeData.usedAt = null;
+        saveData();
+        return true;
+    }
+
+    function toggleCodeLock(teacher, code) {
+        if (!teacher.codes) return false;
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) return false;
+        
+        codeData.locked = !codeData.locked;
+        if (codeData.locked && codeData.used) {
+            localStorage.removeItem('teacherAccess_' + teacher.name);
+            codeData.used = false;
+            codeData.deviceId = null;
+            codeData.usedAt = null;
+        }
+        saveData();
+        return true;
     }
 
     function generateCode(teacherName, length = 8) {
@@ -198,7 +249,9 @@
             teacher.codes.push({
                 code: newCode,
                 used: false,
-                deviceId: null
+                locked: false,
+                deviceId: null,
+                usedAt: null
             });
             newCodes.push(newCode);
         }
@@ -259,7 +312,9 @@
         teacher.codes.push({
             code: code,
             used: false,
-            deviceId: null
+            locked: false,
+            deviceId: null,
+            usedAt: null
         });
 
         saveData();
@@ -289,23 +344,48 @@
     }
 
     function getCodesStatus(teacher) {
-        if (!teacher.codes) return { total: 0, used: 0, available: 0 };
+        if (!teacher.codes) return { total: 0, used: 0, available: 0, locked: 0 };
         const total = teacher.codes.length;
         const used = teacher.codes.filter(c => c.used).length;
-        return { total, used, available: total - used };
+        const locked = teacher.codes.filter(c => c.locked).length;
+        return { total, used, available: total - used, locked };
     }
 
+    window.toggleCodeLockAction = function(deptIndex, teacherIndex, code) {
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) {
+            showToast('error', '❌ الكود غير موجود');
+            return;
+        }
+
+        const newLockState = !codeData.locked;
+        const action = newLockState ? 'قفل' : 'فتح';
+        
+        if (toggleCodeLock(teacher, code)) {
+            showToast('success', `✅ تم ${action} الكود ${code} بنجاح`);
+            updateCodesManagement();
+            updateAdminSelects();
+        }
+    };
+
     // =============================================
-    // دوال الحذف
+    // دوال الحذف المحسنة
     // =============================================
 
-    window.deleteSelectedTeacher = function() {
-        const select = document.getElementById('codeTeacherSelect');
+    // حذف مدرس من تبويب الحذف
+    window.deleteSelectedTeacherFromTab = function() {
+        const select = document.getElementById('deleteTeacherSelect');
         const selectedOption = select.selectedOptions[0];
         const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
         const teacherIndex = parseInt(select.value);
 
-        if (deptIndex === -1 || isNaN(teacherIndex)) {
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
             showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
             return;
         }
@@ -320,24 +400,35 @@
             return;
         }
 
+        localStorage.removeItem('teacherAccess_' + teacher.name);
+
         data.departments[deptIndex].teachers.splice(teacherIndex, 1);
         saveData();
         renderDepartments(data.departments);
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
+        
+        document.getElementById('deleteTeacherMessage').innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
+        document.getElementById('deleteTeacherMessage').style.color = '#22c55e';
         showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
     };
 
-    window.deleteSelectedSemester = function() {
+    // حذف فصل من تبويب الحذف
+    window.deleteSelectedSemesterFromTab = function() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
         const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
         const teacherIndex = parseInt(teacherSelect.value);
         const semesterIndex = parseInt(document.getElementById('deleteSemesterSelect').value);
 
-        if (deptIndex === -1 || isNaN(teacherIndex) || isNaN(semesterIndex)) {
-            showToast('warning', '⚠️ يرجى اختيار المدرس والفصل');
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
+            return;
+        }
+
+        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex === -1) {
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
             return;
         }
 
@@ -363,102 +454,17 @@
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
+        
+        document.getElementById('deleteSemesterMessage').innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
+        document.getElementById('deleteSemesterMessage').style.color = '#22c55e';
         showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
+        
+        // تحديث قائمة الفصول
+        updateDeleteSemesterSelects();
     };
 
-    function updateDeleteLectureSemesters() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const selectedOption = teacherSelect.selectedOptions[0];
-        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-
-        semesterSelect.innerHTML = '<option value="">اختر الفصل...</option>';
-
-        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
-            return;
-        }
-
-        const teacher = data.departments[deptIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            return;
-        }
-
-        teacher.semesters.forEach((s, i) => {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `الفصل ${s.number} - ${s.description || ''}`;
-            semesterSelect.appendChild(option);
-        });
-
-        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
-    function updateDeleteLectureLectures() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const selectedOption = teacherSelect.selectedOptions[0];
-        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-        const semesterIndex = parseInt(semesterSelect.value);
-        const lectureSelect = document.getElementById('deleteLectureSelect');
-
-        lectureSelect.innerHTML = '<option value="">اختر المحاضرة...</option>';
-
-        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
-            return;
-        }
-
-        if (isNaN(semesterIndex) || semesterIndex === '') {
-            return;
-        }
-
-        const teacher = data.departments[deptIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            return;
-        }
-
-        const semester = teacher.semesters[semesterIndex];
-        if (!semester) {
-            return;
-        }
-
-        semester.lectures.forEach((l, i) => {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `#${l.number} - ${l.title}`;
-            lectureSelect.appendChild(option);
-        });
-    }
-
-    function setupDeleteLectureEvents() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-
-        if (teacherSelect) {
-            teacherSelect.removeEventListener('change', onTeacherChange);
-            teacherSelect.addEventListener('change', onTeacherChange);
-        }
-
-        if (semesterSelect) {
-            semesterSelect.removeEventListener('change', onSemesterChange);
-            semesterSelect.addEventListener('change', onSemesterChange);
-        }
-    }
-
-    function onTeacherChange() {
-        updateDeleteLectureSemesters();
-    }
-
-    function onSemesterChange() {
-        updateDeleteLectureLectures();
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        setupDeleteLectureEvents();
-    });
-
-    window.deleteSelectedLecture = function() {
+    // حذف محاضرة من تبويب الحذف
+    window.deleteSelectedLectureFromTab = function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
         const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
@@ -471,12 +477,12 @@
             return;
         }
 
-        if (isNaN(semesterIndex) || semesterIndex === '') {
+        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex === -1) {
             showToast('warning', '⚠️ يرجى اختيار الفصل');
             return;
         }
 
-        if (isNaN(lectureIndex) || lectureIndex === '') {
+        if (isNaN(lectureIndex) || lectureIndex === '' || lectureIndex === -1) {
             showToast('warning', '⚠️ يرجى اختيار المحاضرة');
             return;
         }
@@ -510,12 +516,16 @@
         pendingChanges++;
         updatePendingChanges();
 
+        document.getElementById('deleteLectureMessage').innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
+        document.getElementById('deleteLectureMessage').style.color = '#22c55e';
+        showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
+        
+        // تحديث القوائم
         updateDeleteLectureSemesters();
         document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-
-        showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
     };
 
+    // تحديث قائمة الفصول عند اختيار المدرس (لحذف الفصل)
     function updateDeleteSemesterSelects() {
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
         const selectedOption = teacherSelect.selectedOptions[0];
@@ -524,9 +534,9 @@
         const semesterSelect = document.getElementById('deleteSemesterSelect');
 
         let options = '<option value="">اختر الفصل...</option>';
-        if (deptIndex !== -1 && data.departments[deptIndex]) {
+        if (deptIndex !== -1 && !isNaN(teacherIndex) && teacherIndex !== '' && data.departments[deptIndex]) {
             const teacher = data.departments[deptIndex].teachers[teacherIndex];
-            if (teacher) {
+            if (teacher && teacher.semesters) {
                 teacher.semesters.forEach((s, i) => {
                     options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
                 });
@@ -534,6 +544,56 @@
         }
         semesterSelect.innerHTML = options;
     }
+
+    // تحديث قائمة الفصول (لحذف المحاضرة)
+    function updateDeleteLectureSemesters() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(teacherSelect.value);
+        const semesterSelect = document.getElementById('deleteLectureSemester');
+
+        let options = '<option value="">اختر الفصل...</option>';
+        if (deptIndex !== -1 && !isNaN(teacherIndex) && teacherIndex !== '' && data.departments[deptIndex]) {
+            const teacher = data.departments[deptIndex].teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        semesterSelect.innerHTML = options;
+        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
+    }
+
+    // تحديث قائمة المحاضرات (لحذف المحاضرة)
+    function updateDeleteLectureLectures() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(teacherSelect.value);
+        const semesterSelect = document.getElementById('deleteLectureSemester');
+        const semesterIndex = parseInt(semesterSelect.value);
+        const lectureSelect = document.getElementById('deleteLectureSelect');
+
+        let options = '<option value="">اختر المحاضرة...</option>';
+        if (deptIndex !== -1 && !isNaN(teacherIndex) && teacherIndex !== '' && data.departments[deptIndex]) {
+            const teacher = data.departments[deptIndex].teachers[teacherIndex];
+            if (teacher && teacher.semesters && !isNaN(semesterIndex) && semesterIndex !== '' && semesterIndex !== -1) {
+                const semester = teacher.semesters[semesterIndex];
+                if (semester && semester.lectures) {
+                    semester.lectures.forEach((l, i) => {
+                        options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                    });
+                }
+            }
+        }
+        lectureSelect.innerHTML = options;
+    }
+
+    // =============================================
+    // دوال تحديث القوائم المنسدلة
+    // =============================================
 
     function updateAdminSelects() {
         const deptSelect = document.getElementById('teacherDepartment');
@@ -545,12 +605,46 @@
 
         updateTeacherSelects();
         updateCodeTeacherSelect();
-        updateDeleteTeacherSelects();
+        updateDeleteSelects();
     }
 
-    function updateDeleteTeacherSelects() {
+    function updateDeleteSelects() {
+        // تحديث قائمة حذف المدرس
+        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
+        let options = '<option value="">اختر المدرس...</option>';
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
+            });
+        });
+        deleteTeacherSelect.innerHTML = options;
+
+        // تحديث قائمة حذف الفصل
         const deleteSemesterTeacher = document.getElementById('deleteSemesterTeacher');
+        options = '<option value="">اختر المدرس...</option>';
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
+            });
+        });
+        deleteSemesterTeacher.innerHTML = options;
+        updateDeleteSemesterSelects();
+
+        // تحديث قائمة حذف المحاضرة
         const deleteLectureTeacher = document.getElementById('deleteLectureTeacher');
+        options = '<option value="">اختر المدرس...</option>';
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
+            });
+        });
+        deleteLectureTeacher.innerHTML = options;
+        updateDeleteLectureSemesters();
+    }
+
+    function updateTeacherSelects() {
+        const semesterTeacher = document.getElementById('semesterTeacher');
+        const lectureTeacher = document.getElementById('lectureTeacher');
         
         let options = '<option value="">اختر المدرس...</option>';
         data.departments.forEach((dept, di) => {
@@ -558,13 +652,173 @@
                 options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
             });
         });
-        
-        if (deleteSemesterTeacher) deleteSemesterTeacher.innerHTML = options;
-        if (deleteLectureTeacher) deleteLectureTeacher.innerHTML = options;
-        
-        updateDeleteSemesterSelects();
-        updateDeleteLectureSemesters();
+        semesterTeacher.innerHTML = options;
+        lectureTeacher.innerHTML = options;
+
+        updateSemesterSelects();
     }
+
+    function updateSemesterSelects() {
+        const lectureSemester = document.getElementById('lectureSemester');
+        const teacherSelect = document.getElementById('lectureTeacher');
+        const selectedOption = teacherSelect.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(teacherSelect.value);
+
+        let options = '<option value="">اختر الفصل...</option>';
+        if (deptIndex !== -1 && !isNaN(teacherIndex) && teacherIndex !== '' && data.departments[deptIndex]) {
+            const teacher = data.departments[deptIndex].teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        lectureSemester.innerHTML = options;
+    }
+
+    function updateCodeTeacherSelect() {
+        const select = document.getElementById('codeTeacherSelect');
+        let options = '<option value="">اختر المدرس...</option>';
+        data.departments.forEach((dept, di) => {
+            dept.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
+            });
+        });
+        select.innerHTML = options;
+    }
+
+    // ===== أحداث التغيير على القوائم المنسدلة =====
+    document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
+    document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
+    document.getElementById('deleteSemesterTeacher').addEventListener('change', updateDeleteSemesterSelects);
+    document.getElementById('deleteLectureTeacher').addEventListener('change', updateDeleteLectureSemesters);
+    document.getElementById('deleteLectureSemester').addEventListener('change', updateDeleteLectureLectures);
+
+    function updateCodesManagement() {
+        const select = document.getElementById('codeTeacherSelect');
+        const container = document.getElementById('codesListContainer');
+        const selectedOption = select.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(select.value);
+
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>';
+            return;
+        }
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
+            return;
+        }
+
+        const status = getCodesStatus(teacher);
+        let html = `
+            <div class="codes-stats">
+                <span>📊 المجموع: ${status.total}</span>
+                <span>✅ المستخدمة: ${status.used}</span>
+                <span>🟢 المتاحة: ${status.available}</span>
+                <span>🔒 المقفلة: ${status.locked}</span>
+            </div>
+            <table class="codes-table">
+                <tr>
+                    <th>#</th>
+                    <th>الكود</th>
+                    <th>الحالة</th>
+                    <th>الجهاز</th>
+                    <th>قفل/فتح</th>
+                    <th>حذف</th>
+                </tr>
+        `;
+
+        if (teacher.codes && teacher.codes.length > 0) {
+            teacher.codes.forEach((c, index) => {
+                const isUsed = c.used;
+                const isLocked = c.locked || false;
+                const isMyDevice = c.deviceId === userDeviceId;
+                let statusText = '';
+                let statusColor = '';
+                
+                if (isLocked) {
+                    statusText = '🔒 مقفل';
+                    statusColor = '#f59e0b';
+                } else if (isUsed) {
+                    statusText = isMyDevice ? '✅ جهازك' : '❌ جهاز آخر';
+                    statusColor = isMyDevice ? '#22c55e' : '#ef4444';
+                } else {
+                    statusText = '🟢 متاح';
+                    statusColor = '#22c55e';
+                }
+                
+                const deviceText = c.deviceId ? c.deviceId.substring(0, 15) + '...' : '—';
+                const lockIcon = isLocked ? '🔓 فتح' : '🔒 قفل';
+                const lockStyle = isLocked ? 'background:#22c55e;' : 'background:#f59e0b;';
+                
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
+                        <td>${statusText}</td>
+                        <td style="font-size:0.8rem;color:var(--text-light);">${deviceText}</td>
+                        <td>
+                            <button onclick="toggleCodeLockAction(${deptIndex}, ${teacherIndex}, '${c.code}')" 
+                                    style="${lockStyle}color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;font-size:0.75rem;">
+                                ${lockIcon}
+                            </button>
+                        </td>
+                        <td>
+                            ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;">🗑️</button>` : '—'}
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
+        }
+
+        html += `</table>`;
+        container.innerHTML = html;
+    }
+
+    window.generateCodes = function(count = 5) {
+        const select = document.getElementById('codeTeacherSelect');
+        const selectedOption = select.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(select.value);
+
+        if (deptIndex === -1 || isNaN(teacherIndex) || teacherIndex === '') {
+            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
+            return;
+        }
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const newCodes = addNewCodes(teacher, count);
+        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
+        updateCodesManagement();
+        updateAdminSelects();
+    };
+
+    window.deleteThisCode = function(deptIndex, teacherIndex, code) {
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        if (deleteCode(teacher, code)) {
+            showToast('success', `✅ تم حذف الكود: ${code}`);
+            updateCodesManagement();
+            updateAdminSelects();
+        }
+    };
 
     // =============================================
     // LOAD DATA
@@ -581,6 +835,9 @@
                         data.departments.forEach(dept => {
                             dept.teachers.forEach(teacher => {
                                 if (!teacher.codes) teacher.codes = [];
+                                teacher.codes.forEach(c => {
+                                    if (c.locked === undefined) c.locked = false;
+                                });
                             });
                         });
                         return;
@@ -599,6 +856,9 @@
                 data.departments.forEach(dept => {
                     dept.teachers.forEach(teacher => {
                         if (!teacher.codes) teacher.codes = [];
+                        teacher.codes.forEach(c => {
+                            if (c.locked === undefined) c.locked = false;
+                        });
                     });
                 });
                 localStorage.setItem('academyData', JSON.stringify(data));
@@ -613,48 +873,13 @@
             
             data = {
                 departments: [
-                    {
-                        name: 'الرياضيات',
-                        emoji: '📐',
-                        description: 'قسم الرياضيات',
-                        teachers: []
-                    },
-                    {
-                        name: 'اللغة العربية',
-                        emoji: '📖',
-                        description: 'قسم اللغة العربية',
-                        teachers: []
-                    },
-                    {
-                        name: 'الفيزياء',
-                        emoji: '⚛️',
-                        description: 'قسم الفيزياء',
-                        teachers: []
-                    },
-                    {
-                        name: 'الأحياء',
-                        emoji: '🧬',
-                        description: 'قسم الأحياء',
-                        teachers: []
-                    },
-                    {
-                        name: 'اللغة الإنجليزية',
-                        emoji: '🇬🇧',
-                        description: 'قسم اللغة الإنجليزية',
-                        teachers: []
-                    },
-                    {
-                        name: 'التاريخ',
-                        emoji: '🏛️',
-                        description: 'قسم التاريخ',
-                        teachers: []
-                    },
-                    {
-                        name: 'التربية الإسلامية',
-                        emoji: '🕌',
-                        description: 'قسم التربية الإسلامية',
-                        teachers: []
-                    }
+                    { name: 'الرياضيات', emoji: '📐', description: 'قسم الرياضيات', teachers: [] },
+                    { name: 'اللغة العربية', emoji: '📖', description: 'قسم اللغة العربية', teachers: [] },
+                    { name: 'الفيزياء', emoji: '⚛️', description: 'قسم الفيزياء', teachers: [] },
+                    { name: 'الأحياء', emoji: '🧬', description: 'قسم الأحياء', teachers: [] },
+                    { name: 'اللغة الإنجليزية', emoji: '🇬🇧', description: 'قسم اللغة الإنجليزية', teachers: [] },
+                    { name: 'التاريخ', emoji: '🏛️', description: 'قسم التاريخ', teachers: [] },
+                    { name: 'التربية الإسلامية', emoji: '🕌', description: 'قسم التربية الإسلامية', teachers: [] }
                 ]
             };
             
@@ -877,9 +1102,16 @@
         modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
         let html = '';
-        semester.lectures.forEach((lecture) => {
+        semester.lectures.forEach((lecture, lectureIdx) => {
             const isFree = lecture.isFree === true;
             const canWatch = isFree || hasAccess;
+            
+            const editBtn = isAdminLoggedIn ? `
+                <button onclick="event.stopPropagation();openEditLecture(${deptIndex}, ${teacherIndex}, ${semesterIndex}, ${lectureIdx})" 
+                        style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;font-size:0.75rem;margin-right:0.5rem;">
+                    <i class="fas fa-edit"></i>
+                </button>
+            ` : '';
             
             html += `
                 <div class="lecture-item ${canWatch ? '' : 'locked'}" 
@@ -888,6 +1120,7 @@
                     <div class="lecture-title">${lecture.title}</div>
                     <div class="lecture-status">
                         ${isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
+                        ${editBtn}
                         ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
                     </div>
                 </div>
@@ -911,6 +1144,106 @@
             showToast('error', '❌ رابط YouTube غير صحيح');
         }
     };
+
+    // =============================================
+    // EDIT LECTURE
+    // =============================================
+    window.openEditLecture = function(deptIndex, teacherIndex, semesterIndex, lectureIndex) {
+        const department = data.departments[deptIndex];
+        if (!department) return;
+        const teacher = department.teachers[teacherIndex];
+        if (!teacher) return;
+        const semester = teacher.semesters[semesterIndex];
+        if (!semester) return;
+        const lecture = semester.lectures[lectureIndex];
+        if (!lecture) return;
+
+        editTarget = { deptIndex, teacherIndex, semesterIndex, lectureIndex };
+        
+        editLectureTitle.value = lecture.title || '';
+        editLectureUrl.value = lecture.youtubeUrl || '';
+        editLectureIsFree.value = lecture.isFree ? 'true' : 'false';
+        
+        document.querySelector('#editLectureModal h2').textContent = `✏️ تعديل المحاضرة #${lecture.number}`;
+        
+        const infoSpan = document.getElementById('editLectureInfo');
+        infoSpan.textContent = `👨‍🏫 ${teacher.name} | 📖 الفصل ${semester.number}`;
+        
+        editLectureMessage.innerHTML = '';
+        editLectureModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+
+    editLectureForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const { deptIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
+        
+        if (deptIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
+            editLectureMessage.innerHTML = '⚠️ لم يتم تحديد المحاضرة بشكل صحيح';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        const newTitle = editLectureTitle.value.trim();
+        const newUrl = editLectureUrl.value.trim();
+        const newIsFree = editLectureIsFree.value === 'true';
+        
+        if (!newTitle) {
+            editLectureMessage.innerHTML = '⚠️ يرجى إدخال عنوان المحاضرة';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        if (!newUrl) {
+            editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط YouTube';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        if (!extractYouTubeId(newUrl)) {
+            editLectureMessage.innerHTML = '⚠️ رابط YouTube غير صحيح';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
+        
+        const lecture = data.departments[deptIndex].teachers[teacherIndex].semesters[semesterIndex].lectures[lectureIndex];
+        if (!lecture) {
+            editLectureMessage.innerHTML = '❌ المحاضرة غير موجودة';
+            editLectureMessage.style.color = '#ef4444';
+            return;
+        }
+        
+        lecture.title = newTitle;
+        lecture.youtubeUrl = newUrl;
+        lecture.isFree = newIsFree;
+        
+        saveData();
+        renderDepartments(data.departments);
+        pendingChanges++;
+        updatePendingChanges();
+        
+        editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
+        editLectureMessage.style.color = '#22c55e';
+        showToast('success', `✅ تم تعديل المحاضرة "${newTitle}" بنجاح`);
+        
+        setTimeout(() => {
+            closeEditLectureModal();
+        }, 1200);
+    });
+
+    function closeEditLectureModal() {
+        editLectureModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        editTarget = { deptIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
+        editLectureMessage.innerHTML = '';
+    }
+
+    closeEditLecture.addEventListener('click', closeEditLectureModal);
+    cancelEditLecture.addEventListener('click', closeEditLectureModal);
+    editLectureModal.addEventListener('click', function(e) {
+        if (e.target === this) closeEditLectureModal();
+    });
 
     // =============================================
     // ADMIN LOGIN
@@ -967,155 +1300,11 @@
             if (this.dataset.tab === 'manage-codes') {
                 updateCodesManagement();
             }
+            if (this.dataset.tab === 'delete') {
+                updateDeleteSelects();
+            }
         });
     });
-
-    function updateTeacherSelects() {
-        const semesterTeacher = document.getElementById('semesterTeacher');
-        const lectureTeacher = document.getElementById('lectureTeacher');
-        
-        let options = '<option value="">اختر المدرس...</option>';
-        data.departments.forEach((dept, di) => {
-            dept.teachers.forEach((t, ti) => {
-                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
-            });
-        });
-        semesterTeacher.innerHTML = options;
-        lectureTeacher.innerHTML = options;
-
-        updateSemesterSelects();
-    }
-
-    function updateSemesterSelects() {
-        const lectureSemester = document.getElementById('lectureSemester');
-        const teacherSelect = document.getElementById('lectureTeacher');
-        const selectedOption = teacherSelect.selectedOptions[0];
-        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
-        const teacherIndex = parseInt(teacherSelect.value);
-
-        let options = '<option value="">اختر الفصل...</option>';
-        if (deptIndex !== -1 && data.departments[deptIndex]) {
-            const teacher = data.departments[deptIndex].teachers[teacherIndex];
-            if (teacher) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        lectureSemester.innerHTML = options;
-    }
-
-    function updateCodeTeacherSelect() {
-        const select = document.getElementById('codeTeacherSelect');
-        let options = '<option value="">اختر المدرس...</option>';
-        data.departments.forEach((dept, di) => {
-            dept.teachers.forEach((t, ti) => {
-                options += `<option value="${ti}" data-dept="${di}">${t.name}</option>`;
-            });
-        });
-        select.innerHTML = options;
-    }
-
-    document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
-    document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
-
-    function updateCodesManagement() {
-        const select = document.getElementById('codeTeacherSelect');
-        const container = document.getElementById('codesListContainer');
-        const selectedOption = select.selectedOptions[0];
-        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
-        const teacherIndex = parseInt(select.value);
-
-        if (deptIndex === -1 || isNaN(teacherIndex)) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>';
-            return;
-        }
-
-        const teacher = data.departments[deptIndex].teachers[teacherIndex];
-        if (!teacher) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
-            return;
-        }
-
-        const status = getCodesStatus(teacher);
-        let html = `
-            <div class="codes-stats">
-                <span>📊 المجموع: ${status.total}</span>
-                <span>✅ المستخدمة: ${status.used}</span>
-                <span>🟢 المتاحة: ${status.available}</span>
-            </div>
-            <table class="codes-table">
-                <tr>
-                    <th>#</th>
-                    <th>الكود</th>
-                    <th>الحالة</th>
-                    <th>حذف</th>
-                </tr>
-        `;
-
-        if (teacher.codes && teacher.codes.length > 0) {
-            teacher.codes.forEach((c, index) => {
-                const isUsed = c.used;
-                const isMyDevice = c.deviceId === userDeviceId;
-                const statusText = isUsed ? (isMyDevice ? '✅ جهازك' : '❌ جهاز آخر') : '🟢 متاح';
-                
-                html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td><code style="font-weight:700;color:${isUsed ? '#ef4444' : '#22c55e'};">${c.code}</code></td>
-                        <td>${statusText}</td>
-                        <td>
-                            ${!isUsed ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;">🗑️</button>` : '—'}
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            html += `<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
-        }
-
-        html += `</table>`;
-        container.innerHTML = html;
-    }
-
-    window.generateCodes = function(count = 5) {
-        const select = document.getElementById('codeTeacherSelect');
-        const selectedOption = select.selectedOptions[0];
-        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
-        const teacherIndex = parseInt(select.value);
-
-        if (deptIndex === -1 || isNaN(teacherIndex)) {
-            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
-            return;
-        }
-
-        const teacher = data.departments[deptIndex].teachers[teacherIndex];
-        if (!teacher) {
-            showToast('error', '❌ المدرس غير موجود');
-            return;
-        }
-
-        const newCodes = addNewCodes(teacher, count);
-        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
-        updateCodesManagement();
-        updateAdminSelects();
-    };
-
-    window.deleteThisCode = function(deptIndex, teacherIndex, code) {
-        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
-
-        const teacher = data.departments[deptIndex].teachers[teacherIndex];
-        if (!teacher) {
-            showToast('error', '❌ المدرس غير موجود');
-            return;
-        }
-
-        if (deleteCode(teacher, code)) {
-            showToast('success', `✅ تم حذف الكود: ${code}`);
-            updateCodesManagement();
-            updateAdminSelects();
-        }
-    };
 
     // =============================================
     // ADD TEACHER
@@ -1166,7 +1355,7 @@
         const number = parseInt(document.getElementById('semesterNumber').value);
         const description = document.getElementById('semesterDesc').value.trim();
 
-        if (isNaN(deptIndex) || isNaN(teacherIndex) || !number) {
+        if (isNaN(deptIndex) || isNaN(teacherIndex) || teacherIndex === '' || !number) {
             showToast('warning', '⚠️ يرجى اختيار المدرس وإدخال رقم الفصل');
             return;
         }
@@ -1202,7 +1391,7 @@
         const youtubeUrl = document.getElementById('lectureUrl').value.trim();
         const isFree = document.getElementById('lectureFree').value === 'true';
 
-        if (isNaN(deptIndex) || isNaN(teacherIndex) || isNaN(semesterIndex) || !number || !title || !youtubeUrl) {
+        if (isNaN(deptIndex) || isNaN(teacherIndex) || teacherIndex === '' || isNaN(semesterIndex) || semesterIndex === '' || !number || !title || !youtubeUrl) {
             showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
             return;
         }
@@ -1347,6 +1536,7 @@
             if (teachersModal.classList.contains('active')) closeModal(teachersModal);
             if (semestersModal.classList.contains('active')) closeModal(semestersModal);
             if (lecturesModal.classList.contains('active')) closeModal(lecturesModal);
+            if (editLectureModal.classList.contains('active')) closeEditLectureModal();
             if (adminLoginModal.classList.contains('active')) closeAdminLoginModal();
             if (adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
         }

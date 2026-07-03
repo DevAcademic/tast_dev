@@ -98,6 +98,37 @@
         </div>
     </div>
 
+    <!-- ===== MODAL: تعديل المحاضرات ===== -->
+    <div class="modal-overlay" id="editLectureModal">
+        <div class="modal modal-small">
+            <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
+            <h2>✏️ تعديل المحاضرة</h2>
+            <p style="text-align:center;color:var(--text-light);margin-bottom:1rem;" id="editLectureInfo"></p>
+            <form id="editLectureForm" class="admin-form">
+                <div class="form-group">
+                    <label>📝 عنوان المحاضرة *</label>
+                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
+                </div>
+                <div class="form-group">
+                    <label>📹 رابط YouTube *</label>
+                    <input type="url" id="editLectureUrl" placeholder="https://youtu.be/..." required />
+                </div>
+                <div class="form-group">
+                    <label>🔒 حالة المحاضرة</label>
+                    <select id="editLectureIsFree">
+                        <option value="true">🆓 مجانية</option>
+                        <option value="false">🔒 مقفلة (تتطلب كود)</option>
+                    </select>
+                </div>
+                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                    <button type="button" class="btn-cancel" id="cancelEditLecture">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ===== VIDEO PLAYER ===== -->
     <div class="video-player-container" id="videoPlayer">
         <div class="video-player-wrapper">
@@ -146,6 +177,7 @@
                 <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
                 <button class="tab-btn" data-tab="add-lecture">🎥 إضافة محاضرة</button>
                 <button class="tab-btn" data-tab="manage-codes">🔑 إدارة الأكواد</button>
+                <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر التحديثات</button>
             </div>
 
@@ -199,23 +231,6 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة الفصل</button>
                 </form>
-                
-                <!-- ===== حذف فصل ===== -->
-                <div class="delete-section">
-                    <h3>🗑️ حذف فصل</h3>
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="deleteSemesterTeacher" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل المراد حذفه</label>
-                        <select id="deleteSemesterSelect" required></select>
-                    </div>
-                    <button onclick="deleteSelectedSemester()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف الفصل
-                    </button>
-                    <div id="deleteSemesterMessage"></div>
-                </div>
             </div>
 
             <!-- ===== إضافة محاضرة ===== -->
@@ -251,10 +266,80 @@
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
                 </form>
-                
-                <!-- ===== حذف محاضرة ===== -->
+            </div>
+
+            <!-- ===== إدارة الأكواد ===== -->
+            <div class="tab-content" id="tab-manage-codes">
+                <div class="codes-management">
+                    <h3>🔑 إدارة أكواد التفعيل</h3>
+                    
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="codeTeacherSelect" required></select>
+                    </div>
+
+                    <div class="manual-code-section">
+                        <h4>✏️ إضافة كود يدوي</h4>
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود المخصص..." maxlength="20" />
+                            <button onclick="addManualCode()" class="btn-add-code">➕ إضافة الكود</button>
+                        </div>
+                        <div id="manualCodeMessage"></div>
+                    </div>
+
+                    <div class="code-actions">
+                        <button onclick="generateCodes(5)" class="btn-submit" style="background:var(--success);flex:1;">
+                            <i class="fas fa-plus"></i> إنشاء 5 أكواد
+                        </button>
+                        <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);flex:1;">
+                            <i class="fas fa-plus"></i> إنشاء 10 أكواد
+                        </button>
+                    </div>
+
+                    <div id="codesListContainer">
+                        <p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== حذف ===== -->
+            <div class="tab-content" id="tab-delete">
                 <div class="delete-section">
-                    <h3>🗑️ حذف محاضرة</h3>
+                    <h3 style="color:var(--danger);">🗑️ حذف مدرس</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس المراد حذفه</label>
+                        <select id="deleteTeacherSelect" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedTeacherFromTab()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف المدرس
+                    </button>
+                    <div id="deleteTeacherMessage"></div>
+                </div>
+
+                <div class="delete-section" style="margin-top:2rem;">
+                    <h3 style="color:var(--danger);">🗑️ حذف فصل</h3>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="deleteSemesterTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل المراد حذفه</label>
+                        <select id="deleteSemesterSelect" required>
+                            <option value="">اختر المدرس أولاً</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedSemesterFromTab()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف الفصل
+                    </button>
+                    <div id="deleteSemesterMessage"></div>
+                </div>
+
+                <div class="delete-section" style="margin-top:2rem;">
+                    <h3 style="color:var(--danger);">🗑️ حذف محاضرة</h3>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteLectureTeacher" required>
@@ -273,50 +358,10 @@
                             <option value="">اختر الفصل أولاً</option>
                         </select>
                     </div>
-                    <button onclick="deleteSelectedLecture()" class="btn-delete">
+                    <button onclick="deleteSelectedLectureFromTab()" class="btn-delete">
                         <i class="fas fa-trash"></i> حذف المحاضرة
                     </button>
                     <div id="deleteLectureMessage"></div>
-                </div>
-            </div>
-
-            <!-- ===== إدارة الأكواد ===== -->
-            <div class="tab-content" id="tab-manage-codes">
-                <div class="codes-management">
-                    <h3>🔑 إدارة أكواد التفعيل</h3>
-                    
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="codeTeacherSelect" required></select>
-                    </div>
-
-                    <!-- ===== إضافة كود يدوي ===== -->
-                    <div class="manual-code-section">
-                        <h4>✏️ إضافة كود يدوي</h4>
-                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود المخصص..." maxlength="20" />
-                            <button onclick="addManualCode()" class="btn-add-code">➕ إضافة الكود</button>
-                        </div>
-                        <div id="manualCodeMessage"></div>
-                    </div>
-
-                    <div class="code-actions">
-                        <button onclick="generateCodes()" class="btn-submit" style="background:var(--success);flex:1;">
-                            <i class="fas fa-plus"></i> إنشاء 5 أكواد
-                        </button>
-                        <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);flex:1;">
-                            <i class="fas fa-plus"></i> إنشاء 10 أكواد
-                        </button>
-                    </div>
-
-                    <!-- ===== حذف المدرس ===== -->
-                    <button onclick="deleteSelectedTeacher()" class="btn-delete" style="margin-top:0.5rem;">
-                        <i class="fas fa-trash"></i> حذف المدرس المحدد
-                    </button>
-
-                    <div id="codesListContainer">
-                        <p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>
-                    </div>
                 </div>
             </div>
 
