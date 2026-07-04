@@ -4,8 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>تسجيل الدخول / إنشاء حساب</title>
+
+    <!-- ===== Supabase SDK (مرة واحدة فقط) ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
     <style>
+        /* ========== RESET & BASE ========== */
         * {
             margin: 0;
             padding: 0;
@@ -22,15 +26,18 @@
             padding: 20px;
         }
 
+        /* ========== CARD ========== */
         .auth-card {
             width: 100%;
             max-width: 460px;
             background: rgba(255, 255, 255, 0.07);
             backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 32px;
             padding: 40px 32px;
             box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: 0.3s ease;
         }
 
         .auth-card h1 {
@@ -39,6 +46,7 @@
             font-weight: 700;
             color: #fff;
             margin-bottom: 6px;
+            letter-spacing: -0.5px;
         }
 
         .auth-card .subtitle {
@@ -55,6 +63,7 @@
             margin-bottom: 24px;
         }
 
+        /* ========== TABS ========== */
         .tabs {
             display: flex;
             background: rgba(255, 255, 255, 0.06);
@@ -87,6 +96,7 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
+        /* ========== FORMS ========== */
         .form-container {
             display: none;
             animation: fadeUp 0.35s ease;
@@ -141,6 +151,12 @@
             box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
         }
 
+        .form-group input.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+        }
+
+        /* ========== SUBMIT BTN ========== */
         .submit-btn {
             width: 100%;
             padding: 16px;
@@ -196,6 +212,7 @@
             }
         }
 
+        /* ========== MESSAGES ========== */
         .message {
             padding: 14px 18px;
             border-radius: 12px;
@@ -228,6 +245,7 @@
             color: #93c5fd;
         }
 
+        /* ========== FOOTER ========== */
         .auth-footer {
             text-align: center;
             margin-top: 24px;
@@ -247,6 +265,7 @@
             text-decoration: underline;
         }
 
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 500px) {
             .auth-card {
                 padding: 28px 18px;
@@ -268,20 +287,31 @@
                 font-size: 15px;
             }
         }
+
+        /* ========== DASHBOARD PREVIEW (اختياري) ========== */
+        .dashboard-preview {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
+    <!-- ============================================================ -->
+    <!--                     CARD تسجيل الدخول / إنشاء حساب             -->
+    <!-- ============================================================ -->
     <div class="auth-card" id="authCard">
+
         <h1>مرحباً بك</h1>
         <p class="subtitle">سجل الدخول أو أنشئ حساباً جديداً</p>
         <p class="supabase-info" id="supabaseInfo">جارِ الاتصال بالخدمة...</p>
 
+        <!-- ===== TABS ===== -->
         <div class="tabs" role="tablist">
             <button class="tab-btn active" data-tab="login" role="tab">تسجيل الدخول</button>
             <button class="tab-btn" data-tab="signup" role="tab">إنشاء حساب</button>
         </div>
 
+        <!-- ===== FORM: تسجيل الدخول ===== -->
         <div class="form-container active" id="loginForm" role="tabpanel">
             <form id="loginFormElement" novalidate>
                 <div class="form-group">
@@ -300,6 +330,7 @@
             <div class="message" id="loginMessage"></div>
         </div>
 
+        <!-- ===== FORM: إنشاء حساب ===== -->
         <div class="form-container" id="signupForm" role="tabpanel">
             <form id="signupFormElement" novalidate>
                 <div class="form-group">
@@ -327,10 +358,19 @@
         </div>
     </div>
 
+    <!-- ============================================================ -->
+    <!--                     JAVASCRIPT                                 -->
+    <!-- ============================================================ -->
     <script>
+        /* ===================================================================
+               ⚠️  استبدل القيمتين أدناه بـ بيانات مشروعك من الخدمة
+               =================================================================== */
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
 
+        /* ===================================================================
+               🔒  تهيئة Supabase – مرة واحدة فقط
+               =================================================================== */
         let supabaseClient = null;
         if (window.supabase) {
             if (!window._supabaseClient) {
@@ -338,7 +378,6 @@
             }
             supabaseClient = window._supabaseClient;
         }
-
         const supabaseInfo = document.getElementById('supabaseInfo');
         if (supabaseInfo) {
             if (supabaseClient) {
@@ -348,6 +387,9 @@
             }
         }
 
+        /* ===================================================================
+               📦  عناصر DOM
+               =================================================================== */
         const tabs = document.querySelectorAll('.tab-btn');
         const loginContainer = document.getElementById('loginForm');
         const signupContainer = document.getElementById('signupForm');
@@ -360,17 +402,26 @@
         const switchToLoginLink = document.getElementById('switchToLogin');
         const footerText = document.getElementById('footerText');
 
+        /* ===================================================================
+               🔄  تبديل التبويبات
+               =================================================================== */
         function switchTab(tabId) {
+            // تحديث الأزرار
             tabs.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
+
+            // تحديث المحتوى
             loginContainer.classList.toggle('active', tabId === 'login');
             signupContainer.classList.toggle('active', tabId === 'signup');
+
+            // مسح الرسائل السابقة
             loginMsg.className = 'message';
             loginMsg.textContent = '';
             signupMsg.className = 'message';
             signupMsg.textContent = '';
 
+            // تحديث النص السفلي
             if (tabId === 'login') {
                 footerText.innerHTML =
                     'ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>';
@@ -394,11 +445,15 @@
             });
         });
 
+        // ربط الروابط السفلية الأولية
         switchToLoginLink?.addEventListener('click', (e) => {
             e.preventDefault();
             switchTab('login');
         });
 
+        /* ===================================================================
+               💬  عرض الرسائل
+               =================================================================== */
         function showMessage(element, message, type = 'error') {
             element.className = `message ${type}`;
             element.textContent = message;
@@ -409,6 +464,9 @@
             element.textContent = '';
         }
 
+        /* ===================================================================
+               ⏳  حالة الزر (تحميل / عادي)
+               =================================================================== */
         function setLoading(btn, loading) {
             if (loading) {
                 btn.classList.add('loading');
@@ -419,10 +477,16 @@
             }
         }
 
+        /* ===================================================================
+               ✅  التحقق من صحة البريد الإلكتروني
+               =================================================================== */
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
+        /* ===================================================================
+               🔐  تسجيل الدخول
+               =================================================================== */
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessage(loginMsg);
@@ -430,6 +494,7 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
+            // التحقق الأساسي
             if (!email || !password) {
                 showMessage(loginMsg, 'يرجى ملء جميع الحقول.', 'error');
                 return;
@@ -447,8 +512,7 @@
 
             try {
                 if (!supabaseClient) {
-                    showMessage(loginMsg, '⚠️ الخدمة غير متوفرة.', 'error');
-                    return;
+            showMessage(loginMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت أو افتح المشروع من خادم محلي.', 'error');
                 }
 
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -464,9 +528,12 @@
                         name: data.user.user_metadata?.full_name || null
                     }));
                     showMessage(loginMsg, '✅ تم تسجيل الدخول بنجاح، جارِ التوجيه...', 'success');
+                    // توجيه إلى لوحة التحكم
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 800);
+                } else {
+                    showMessage(loginMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
                 }
             } catch (err) {
                 console.error('Login error:', err);
@@ -482,6 +549,9 @@
             }
         });
 
+        /* ===================================================================
+               📝  إنشاء حساب
+               =================================================================== */
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessage(signupMsg);
@@ -490,6 +560,7 @@
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
 
+            // التحقق الأساسي
             if (!name || !email || !password) {
                 showMessage(signupMsg, 'يرجى ملء جميع الحقول.', 'error');
                 return;
@@ -511,8 +582,7 @@
 
             try {
                 if (!supabaseClient) {
-                    showMessage(signupMsg, '⚠️ الخدمة غير متوفرة.', 'error');
-                    return;
+            showMessage(signupMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت أو افتح المشروع من خادم محلي.', 'error');
                 }
 
                 const { data, error } = await supabaseClient.auth.signUp({
@@ -528,24 +598,33 @@
                 if (error) throw error;
 
                 if (data?.user) {
+                    // إذا كان الحساب بحاجة تأكيد عبر البريد
                     if (data.user.confirmed_at === null) {
-                        localStorage.setItem('devAcademicUser', JSON.stringify({ email, name }));
+                        localStorage.setItem('devAcademicUser', JSON.stringify({
+                            email,
+                            name
+                        }));
                         showMessage(
                             signupMsg,
-                            '📧 تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني.',
+                            '📧 تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني عبر الرابط الذي أرسلناه لك.',
                             'info'
                         );
                     } else {
-                        localStorage.setItem('devAcademicUser', JSON.stringify({ email, name }));
+                        localStorage.setItem('devAcademicUser', JSON.stringify({
+                            email,
+                            name
+                        }));
                         showMessage(
                             signupMsg,
-                            '✅ تم إنشاء الحساب بنجاح! جارِ التوجيه...',
+                            '✅ تم إنشاء الحساب بنجاح! جارِ التوجيه إلى لوحة التحكم...',
                             'success'
                         );
                         setTimeout(() => {
                             window.location.href = 'dashboard.html';
                         }, 800);
                     }
+                } else {
+                    showMessage(signupMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
                 }
             } catch (err) {
                 console.error('Signup error:', err);
@@ -559,6 +638,10 @@
             }
         });
 
+        /* ===================================================================
+               ⚡  التحقق من جلسة المستخدم عند تحميل الصفحة
+                   (لو كان مسجلاً بالفعل، نوجهه إلى dashboard.html)
+               =================================================================== */
         (async function checkSession() {
             try {
                 const storedUser = localStorage.getItem('devAcademicUser');
@@ -571,14 +654,19 @@
 
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session?.user) {
+                    // المستخدم مسجل دخوله مسبقاً → نوجهه فوراً
                     window.location.href = 'dashboard.html';
                 }
             } catch (_) { /* تجاهل */ }
         })();
 
+        /* ===================================================================
+               ✨  إظهار التبويب الافتراضي (تسجيل الدخول)
+               =================================================================== */
         switchTab('login');
 
-        console.log('✅ Auth page ready');
+        console.log('✅ Auth page ready – Supabase initialized once.');
+        console.log('ℹ️  استبدل SUPABASE_URL و SUPABASE_ANON_KEY بقيم مشروعك.');
     </script>
 
 </body>

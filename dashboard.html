@@ -25,11 +25,11 @@
             </div>
             <div class="nav-right">
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="🔍 ابحث..." />
+                    <input type="text" id="searchInput" placeholder="🔍 ابحث عن قسم أو مدرس..." />
                     <button id="searchBtn"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="user-status" id="userStatus">جارِ التحقق...</div>
-                <button class="btn-logout" id="signOutBtn" title="تسجيل خروج"><i class="fas fa-sign-out-alt"></i></button>
+                <button class="btn-logout" id="signOutBtn" title="تسجيل خروج">خروج</button>
                 <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -101,7 +101,7 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: تعديل المحاضرات ===== -->
+    <!-- ===== MODAL: تعديل المحاضرات (خاص بالإدارة) ===== -->
     <div class="modal-overlay" id="editLectureModal">
         <div class="modal modal-small">
             <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
@@ -120,7 +120,7 @@
                     <label>🔒 حالة المحاضرة</label>
                     <select id="editLectureIsFree">
                         <option value="true">🆓 مجانية</option>
-                        <option value="false">🔒 مقفلة</option>
+                        <option value="false">🔒 مقفلة (تتطلب كود)</option>
                     </select>
                 </div>
                 <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;"></div>
@@ -152,10 +152,10 @@
     <div class="modal-overlay" id="adminLoginModal">
         <div class="modal modal-small">
             <button class="close-btn" id="closeAdminLogin"><i class="fas fa-times"></i></button>
-            <h2>🔐 تسجيل الدخول - الإدارة</h2>
+            <h2>🔐 تسجيل الدخول</h2>
             <form id="adminLoginForm">
                 <label for="adminEmail">📧 البريد الإلكتروني</label>
-                <input type="email" id="adminEmail" placeholder="أدخل البريد" required />
+                <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" required />
                 <label for="adminPassword">🔑 كلمة المرور</label>
                 <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" required />
                 <div class="form-actions">
@@ -174,7 +174,7 @@
                 <h2><i class="fas fa-cog"></i> لوحة التحكم</h2>
                 <button class="admin-close" id="adminClose"><i class="fas fa-times"></i></button>
             </div>
-
+            
             <div class="admin-tabs">
                 <button class="tab-btn active" data-tab="add-teacher">➕ إضافة مدرس</button>
                 <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
@@ -265,7 +265,7 @@
                         <label>🔒 حالة المحاضرة *</label>
                         <select id="lectureFree">
                             <option value="true">🆓 مجانية</option>
-                            <option value="false">🔒 مقفلة</option>
+                            <option value="false">🔒 مقفلة (تتطلب كود)</option>
                         </select>
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المحاضرة</button>
@@ -276,7 +276,7 @@
             <div class="tab-content" id="tab-manage-codes">
                 <div class="codes-management">
                     <h3>🔑 إدارة أكواد التفعيل</h3>
-
+                    
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="codeTeacherSelect" required></select>
@@ -285,7 +285,7 @@
                     <div class="manual-code-section">
                         <h4>✏️ إضافة كود يدوي</h4>
                         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود..." maxlength="20" />
+                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود المخصص..." maxlength="20" />
                             <button onclick="addManualCode()" class="btn-add-code">➕ إضافة الكود</button>
                         </div>
                         <div id="manualCodeMessage"></div>
@@ -306,12 +306,12 @@
                 </div>
             </div>
 
-            <!-- ===== تعديل محاضرة ===== -->
+            <!-- ===== تعديل محاضرة (خاص بالإدارة) ===== -->
             <div class="tab-content" id="tab-edit-lecture">
                 <div class="edit-lecture-section">
                     <h3>✏️ تعديل محاضرة</h3>
                     <p class="edit-info">اختر المدرس ثم الفصل ثم المحاضرة لتعديلها</p>
-
+                    
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="editLectureTeacher" required>
@@ -330,7 +330,7 @@
                             <option value="">اختر الفصل أولاً</option>
                         </select>
                     </div>
-
+                    
                     <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
                         <i class="fas fa-edit"></i> فتح نافذة التعديل
                     </button>
@@ -343,7 +343,7 @@
                 <div class="delete-section">
                     <h3 style="color:var(--danger);">🗑️ حذف مدرس</h3>
                     <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
+                        <label>👨‍🏫 اختر المدرس المراد حذفه</label>
                         <select id="deleteTeacherSelect" required>
                             <option value="">اختر المدرس...</option>
                         </select>
@@ -363,7 +363,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>📀 اختر الفصل</label>
+                        <label>📀 اختر الفصل المراد حذفه</label>
                         <select id="deleteSemesterSelect" required>
                             <option value="">اختر المدرس أولاً</option>
                         </select>
@@ -389,7 +389,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>🎥 اختر المحاضرة</label>
+                        <label>🎥 اختر المحاضرة المراد حذفها</label>
                         <select id="deleteLectureSelect" required>
                             <option value="">اختر الفصل أولاً</option>
                         </select>
@@ -405,12 +405,15 @@
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
-                    <p class="publish-info">انشر جميع التغييرات التي قمت بها</p>
+                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات، أكواد)</p>
                     <div class="publish-stats">
                         <span>📊 التغييرات المعلقة: <span id="pendingChanges">0</span></span>
                     </div>
                     <button id="publishBtn" class="btn-publish"><i class="fas fa-upload"></i> نشر التحديثات</button>
-                    <div id="publishMessage"></div>
+                    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+                        <button id="createTableBtn" class="btn-publish" style="background:#f59e0b"><i class="fas fa-database"></i> إنشاء جدول السحابة</button>
+                        <div id="publishMessage"></div>
+                    </div>
                 </div>
             </div>
         </div>
