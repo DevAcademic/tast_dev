@@ -17,6 +17,8 @@
               "used": false,
               "locked": false,
               "deviceId": null,
+              "userId": null,
+              "userEmail": null,
               "usedAt": null
             },
             {
@@ -24,6 +26,8 @@
               "used": false,
               "locked": false,
               "deviceId": null,
+              "userId": null,
+              "userEmail": null,
               "usedAt": null
             },
             {
@@ -31,6 +35,8 @@
               "used": false,
               "locked": false,
               "deviceId": null,
+              "userId": null,
+              "userEmail": null,
               "usedAt": null
             },
             {
@@ -38,6 +44,8 @@
               "used": false,
               "locked": false,
               "deviceId": null,
+              "userId": null,
+              "userEmail": null,
               "usedAt": null
             },
             {
@@ -45,6 +53,8 @@
               "used": false,
               "locked": false,
               "deviceId": null,
+              "userId": null,
+              "userEmail": null,
               "usedAt": null
             }
           ],
@@ -98,12 +108,6 @@
       "name": "اللغة الإنجليزية",
       "emoji": "🇬🇧",
       "description": "قسم اللغة الإنجليزية - دراسة القواعد والمفردات",
-      "teachers": []
-    },
-    {
-      "name": "التاريخ",
-      "emoji": "🏛️",
-      "description": "قسم التاريخ - دراسة الحضارات والأحداث التاريخية",
       "teachers": []
     },
     {

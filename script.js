@@ -167,7 +167,7 @@
     }
 
     // =============================================
-    // نظام الأكواد والصلاحيات - ربط بحساب المستخدم
+    // نظام الأكواد والصلاحيات - ربط بحساب المستخدم (الإيميل)
     // =============================================
 
     function hasAccessToTeacher(teacher) {
@@ -179,14 +179,32 @@
         // التحقق من وجود كود مفعل لهذا المدرس بحساب المستخدم الحالي
         const hasAccess = teacher.codes.some(c => 
             c.used && 
-            c.userId === currentUser.id && 
+            c.userEmail === currentUser.email && 
             !c.locked
         );
         
         return hasAccess;
     }
 
-    // ===== التحقق من الكود وحفظه بحساب المستخدم =====
+    // ===== التحقق من صحة الكود (مستعمل أو لا) =====
+    function isCodeUsed(teacher, code) {
+        if (!teacher || !teacher.codes) return false;
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) return false;
+        return codeData.used === true;
+    }
+
+    function getCodeUser(teacher, code) {
+        if (!teacher || !teacher.codes) return null;
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData || !codeData.used) return null;
+        return {
+            email: codeData.userEmail || 'غير معروف',
+            usedAt: codeData.usedAt || 'غير معروف'
+        };
+    }
+
+    // ===== التحقق من الكود وحفظه بحساب المستخدم (الإيميل) =====
     async function verifyCode(teacher, code) {
         if (!teacher.codes || teacher.codes.length === 0) {
             return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
@@ -200,7 +218,7 @@
         const codeData = teacher.codes.find(c => c.code === code);
 
         if (!codeData) {
-            return { valid: false, message: 'الكود غير صحيح' };
+            return { valid: false, message: '❌ الكود غير صحيح' };
         }
 
         // التحقق من أن الكود غير مقفل
@@ -208,19 +226,23 @@
             return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
         }
 
-        // التحقق من أن الكود مستخدم من قبل
+        // ===== التحقق من أن الكود مستخدم من قبل =====
         if (codeData.used) {
-            // إذا كان المستخدم الحالي هو من استخدم الكود
-            if (codeData.userId === currentUser.id) {
+            // إذا كان المستخدم الحالي هو من استخدم الكود (بنفس الإيميل)
+            if (codeData.userEmail === currentUser.email) {
                 return { valid: true, message: '✅ الكود مفعل على حسابك' };
             } else {
-                // البحث عن اسم المستخدم الذي استخدم الكود
+                // عرض الإيميل الذي استخدم الكود
                 const userEmail = codeData.userEmail || 'مستخدم آخر';
-                return { valid: false, message: `❌ هذا الكود مستخدم من قبل ${userEmail}` };
+                const usedAt = codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف';
+                return { 
+                    valid: false, 
+                    message: `❌ هذا الكود مستخدم من قبل البريد: ${userEmail}\n⏱️ في: ${usedAt}`
+                };
             }
         }
 
-        // ===== تفعيل الكود وحفظه بحساب المستخدم الحالي =====
+        // ===== تفعيل الكود وحفظه بحساب المستخدم الحالي (بالإيميل) =====
         codeData.used = true;
         codeData.deviceId = userDeviceId;
         codeData.userId = currentUser.id;
@@ -327,6 +349,7 @@
                 .update({
                     is_used: true,
                     user_id: currentUser.id,
+                    user_email: currentUser.email,
                     device_id: userDeviceId,
                     used_at: new Date().toISOString()
                 })
@@ -542,6 +565,65 @@
         const locked = teacher.codes.filter(c => c.locked).length;
         return { total, used, available: total - used, locked };
     }
+
+    // ===== دالة التحقق من الكود (مستعمل أو لا) مع عرض تفاصيل المستخدم =====
+    window.checkCodeStatus = function() {
+        const select = document.getElementById('codeTeacherSelect');
+        const selectedOption = select.selectedOptions[0];
+        const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
+        const teacherIndex = parseInt(select.value);
+        const codeInput = document.getElementById('manualCodeInput');
+        const codeMessage = document.getElementById('manualCodeMessage');
+        const code = codeInput.value.trim().toUpperCase();
+
+        if (deptIndex === -1 || isNaN(teacherIndex)) {
+            codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
+            codeMessage.style.color = '#f59e0b';
+            return;
+        }
+
+        if (!code) {
+            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود للتحقق';
+            codeMessage.style.color = '#f59e0b';
+            return;
+        }
+
+        const teacher = data.departments[deptIndex].teachers[teacherIndex];
+        if (!teacher) {
+            codeMessage.innerHTML = '❌ المدرس غير موجود';
+            codeMessage.style.color = '#ef4444';
+            return;
+        }
+
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) {
+            codeMessage.innerHTML = '❌ الكود غير موجود لهذا المدرس';
+            codeMessage.style.color = '#ef4444';
+            return;
+        }
+
+        if (codeData.used) {
+            const userEmail = codeData.userEmail || 'غير معروف';
+            const usedAt = codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف';
+            const isCurrentUser = currentUser && codeData.userEmail === currentUser.email;
+            
+            codeMessage.innerHTML = `
+                🔍 <strong>حالة الكود:</strong> مستخدم ✅<br>
+                📧 <strong>مستخدم من قبل:</strong> ${userEmail} ${isCurrentUser ? '(أنت)' : ''}<br>
+                ⏱️ <strong>تاريخ الاستخدام:</strong> ${usedAt}
+            `;
+            codeMessage.style.color = isCurrentUser ? '#22c55e' : '#f59e0b';
+            codeMessage.style.direction = 'rtl';
+        } else {
+            const isLocked = codeData.locked || false;
+            codeMessage.innerHTML = `
+                🔍 <strong>حالة الكود:</strong> ${isLocked ? '🔒 مقفل' : '🟢 متاح'}<br>
+                📊 <strong>يمكن استخدامه:</strong> ${isLocked ? 'لا' : 'نعم'}
+            `;
+            codeMessage.style.color = isLocked ? '#f59e0b' : '#22c55e';
+            codeMessage.style.direction = 'rtl';
+        }
+    };
 
     window.toggleCodeLockAction = function(deptIndex, teacherIndex, code) {
         const teacher = data.departments[deptIndex].teachers[teacherIndex];
@@ -1014,6 +1096,11 @@
                 <span>🟢 المتاحة: ${status.available}</span>
                 <span>🔒 المقفلة: ${status.locked}</span>
             </div>
+            <div style="margin:0.5rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <button onclick="checkCodeStatus()" class="btn-submit" style="background:var(--info);flex:1;padding:0.4rem;font-size:0.8rem;">
+                    🔍 التحقق من كود
+                </button>
+            </div>
             <div class="codes-table-wrapper">
                 <table class="codes-table">
                     <thead>
@@ -1021,7 +1108,8 @@
                             <th>#</th>
                             <th>الكود</th>
                             <th>الحالة</th>
-                            <th>المستخدم</th>
+                            <th>المستخدم (الإيميل)</th>
+                            <th>تاريخ الاستخدام</th>
                             <th>الإجراءات</th>
                         </tr>
                     </thead>
@@ -1032,10 +1120,11 @@
             teacher.codes.forEach((c, index) => {
                 const isUsed = c.used;
                 const isLocked = c.locked || false;
-                const isMyCode = c.userId === currentUser?.id;
+                const isMyCode = c.userEmail === currentUser?.email;
                 let statusText = '';
                 let statusColor = '';
                 let userDisplay = '—';
+                let usedAtDisplay = '—';
                 
                 if (isLocked) {
                     statusText = '🔒 مقفل';
@@ -1043,13 +1132,8 @@
                 } else if (isUsed) {
                     statusText = isMyCode ? '✅ حسابك' : '❌ مستخدم';
                     statusColor = isMyCode ? '#22c55e' : '#ef4444';
-                    if (c.userEmail && c.userEmail !== currentUser?.email) {
-                        userDisplay = c.userEmail;
-                    } else if (c.userEmail) {
-                        userDisplay = 'أنت';
-                    } else if (c.userId) {
-                        userDisplay = c.userId.substring(0, 10) + '...';
-                    }
+                    userDisplay = c.userEmail || 'غير معروف';
+                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : 'غير معروف';
                 } else {
                     statusText = '🟢 متاح';
                     statusColor = '#22c55e';
@@ -1063,21 +1147,22 @@
                         <td>${index + 1}</td>
                         <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
                         <td><span class="code-status ${isUsed ? 'used' : 'available'} ${isLocked ? 'locked' : ''}">${statusText}</span></td>
-                        <td style="font-size:0.8rem;color:var(--text-light);">${userDisplay}</td>
+                        <td style="font-size:0.75rem;color:var(--text-light);word-break:break-all;">${userDisplay}</td>
+                        <td style="font-size:0.7rem;color:var(--text-light);">${usedAtDisplay}</td>
                         <td>
-                            <div class="code-actions">
+                            <div class="code-actions" style="gap:0.3rem;">
                                 <button onclick="toggleCodeLockAction(${deptIndex}, ${teacherIndex}, '${c.code}')" 
-                                        class="btn-toggle-lock" style="${lockStyle}">
+                                        class="btn-toggle-lock" style="${lockStyle}color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">
                                     ${lockIcon}
                                 </button>
-                                ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" class="btn-delete-code">🗑️</button>` : ''}
+                                ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" class="btn-delete-code" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">🗑️</button>` : ''}
                             </div>
                         </td>
                     </tr>
                 `;
             });
         } else {
-            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
+            html += `<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
         }
 
         html += `
@@ -1256,7 +1341,6 @@
                     { name: 'الفيزياء', emoji: '⚛️', description: 'قسم الفيزياء - دراسة المادة والطاقة والحركة', teachers: [] },
                     { name: 'الأحياء', emoji: '🧬', description: 'قسم الأحياء - دراسة الكائنات الحية والجينات', teachers: [] },
                     { name: 'اللغة الإنجليزية', emoji: '🇬🇧', description: 'قسم اللغة الإنجليزية - دراسة القواعد والمفردات', teachers: [] },
-                    { name: 'التاريخ', emoji: '🏛️', description: 'قسم التاريخ - دراسة الحضارات والأحداث التاريخية', teachers: [] },
                     { name: 'التربية الإسلامية', emoji: '🕌', description: 'قسم التربية الإسلامية - دراسة القرآن اسلامية', teachers: [] }
                 ]
             };
