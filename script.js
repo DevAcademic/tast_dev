@@ -98,7 +98,7 @@
     };
 
     // =============================================
-    // DEVICE ID
+    // DEVICE ID (للتعرف الإضافي فقط)
     // =============================================
     function getDeviceId() {
         let deviceId = localStorage.getItem('deviceId');
@@ -167,21 +167,22 @@
     }
 
     // =============================================
-    // نظام الأكواد والصلاحيات - مع حفظ الكود بحساب المستخدم
+    // نظام الأكواد والصلاحيات - ربط بحساب المستخدم
     // =============================================
 
     function hasAccessToTeacher(teacher) {
         if (!teacher || !teacher.codes) return false;
         
-        const savedAccess = localStorage.getItem('teacherAccess_' + teacher.name);
-        if (savedAccess === 'true') {
-            return true;
-        }
+        // التحقق من أن المستخدم مسجل دخول
+        if (!currentUser) return false;
         
-        const hasAccess = teacher.codes.some(c => c.used && c.deviceId === userDeviceId && !c.locked);
-        if (hasAccess) {
-            localStorage.setItem('teacherAccess_' + teacher.name, 'true');
-        }
+        // التحقق من وجود كود مفعل لهذا المدرس بحساب المستخدم الحالي
+        const hasAccess = teacher.codes.some(c => 
+            c.used && 
+            c.userId === currentUser.id && 
+            !c.locked
+        );
+        
         return hasAccess;
     }
 
@@ -227,20 +228,19 @@
         codeData.usedAt = new Date().toISOString();
 
         // حفظ الوصول المحلي
-        localStorage.setItem('teacherAccess_' + teacher.name, 'true');
         saveData();
 
         // ===== حفظ الكود في Supabase بحساب المستخدم =====
         await syncCodeWithSupabase(teacher, codeData);
 
         // ===== إضافة الكود إلى قائمة المستخدم =====
-        await addCodeToUserCodes(currentUser.id, codeData.id, code);
+        await addCodeToUserCodes(currentUser.id, codeData.code);
 
         return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
     }
 
     // ===== إضافة الكود إلى جدول user_codes =====
-    async function addCodeToUserCodes(userId, codeId, code) {
+    async function addCodeToUserCodes(userId, code) {
         if (!supabaseClient) return;
 
         try {
@@ -256,6 +256,19 @@
                 return;
             }
 
+            // التحقق من أن الكود لم يضاف من قبل لهذا المستخدم
+            const { data: existing, error: checkError } = await supabaseClient
+                .from('user_codes')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('code_id', codeRecord.id)
+                .maybeSingle();
+
+            if (existing) {
+                console.log('✅ الكود موجود مسبقاً للمستخدم');
+                return;
+            }
+
             // إضافة الكود إلى user_codes
             const { error } = await supabaseClient
                 .from('user_codes')
@@ -263,9 +276,7 @@
                     user_id: userId,
                     code_id: codeRecord.id,
                     used_at: new Date().toISOString()
-                })
-                .onConflict('user_id, code_id')
-                .ignore();
+                });
 
             if (error) {
                 console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
@@ -363,16 +374,17 @@
                 return;
             }
 
-            // تحديث البيانات المحلية
+            // تحديث البيانات المحلية - ربط الأكواد بالمستخدم الحالي
             codesData.forEach(codeRecord => {
                 data.departments.forEach(dept => {
                     dept.teachers.forEach(teacher => {
                         if (!teacher.codes) teacher.codes = [];
                         const localCode = teacher.codes.find(c => c.code === codeRecord.code);
                         if (localCode) {
-                            localCode.used = codeRecord.is_used || true;
-                            localCode.userId = codeRecord.user_id;
-                            localCode.deviceId = codeRecord.device_id;
+                            localCode.used = true;
+                            localCode.userId = currentUser.id;
+                            localCode.userEmail = currentUser.email;
+                            localCode.deviceId = codeRecord.device_id || userDeviceId;
                             localCode.usedAt = codeRecord.used_at;
                             localCode.locked = codeRecord.is_locked || false;
                         }
@@ -397,7 +409,6 @@
         
         codeData.locked = !codeData.locked;
         if (codeData.locked && codeData.used) {
-            localStorage.removeItem('teacherAccess_' + teacher.name);
             codeData.used = false;
             codeData.deviceId = null;
             codeData.usedAt = null;
@@ -579,8 +590,6 @@
         if (!confirm(`⚠️ هل أنت متأكد من حذف المدرس "${teacher.name}"؟`)) {
             return;
         }
-
-        localStorage.removeItem('teacherAccess_' + teacher.name);
 
         data.departments[deptIndex].teachers.splice(teacherIndex, 1);
         saveData();
@@ -1005,23 +1014,25 @@
                 <span>🟢 المتاحة: ${status.available}</span>
                 <span>🔒 المقفلة: ${status.locked}</span>
             </div>
-            <table class="codes-table">
-                <tr>
-                    <th>#</th>
-                    <th>الكود</th>
-                    <th>الحالة</th>
-                    <th>المستخدم</th>
-                    <th>الجهاز</th>
-                    <th>قفل/فتح</th>
-                    <th>حذف</th>
-                </tr>
+            <div class="codes-table-wrapper">
+                <table class="codes-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الكود</th>
+                            <th>الحالة</th>
+                            <th>المستخدم</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
         `;
 
         if (teacher.codes && teacher.codes.length > 0) {
             teacher.codes.forEach((c, index) => {
                 const isUsed = c.used;
                 const isLocked = c.locked || false;
-                const isMyDevice = c.deviceId === userDeviceId;
+                const isMyCode = c.userId === currentUser?.id;
                 let statusText = '';
                 let statusColor = '';
                 let userDisplay = '—';
@@ -1030,10 +1041,12 @@
                     statusText = '🔒 مقفل';
                     statusColor = '#f59e0b';
                 } else if (isUsed) {
-                    statusText = isMyDevice ? '✅ جهازك' : '❌ مستخدم';
-                    statusColor = isMyDevice ? '#22c55e' : '#ef4444';
-                    if (c.userEmail) {
+                    statusText = isMyCode ? '✅ حسابك' : '❌ مستخدم';
+                    statusColor = isMyCode ? '#22c55e' : '#ef4444';
+                    if (c.userEmail && c.userEmail !== currentUser?.email) {
                         userDisplay = c.userEmail;
+                    } else if (c.userEmail) {
+                        userDisplay = 'أنت';
                     } else if (c.userId) {
                         userDisplay = c.userId.substring(0, 10) + '...';
                     }
@@ -1042,7 +1055,6 @@
                     statusColor = '#22c55e';
                 }
                 
-                const deviceText = c.deviceId ? c.deviceId.substring(0, 15) + '...' : '—';
                 const lockIcon = isLocked ? '🔓 فتح' : '🔒 قفل';
                 const lockStyle = isLocked ? 'background:#22c55e;' : 'background:#f59e0b;';
                 
@@ -1050,26 +1062,29 @@
                     <tr>
                         <td>${index + 1}</td>
                         <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
-                        <td>${statusText}</td>
+                        <td><span class="code-status ${isUsed ? 'used' : 'available'} ${isLocked ? 'locked' : ''}">${statusText}</span></td>
                         <td style="font-size:0.8rem;color:var(--text-light);">${userDisplay}</td>
-                        <td style="font-size:0.8rem;color:var(--text-light);">${deviceText}</td>
                         <td>
-                            <button onclick="toggleCodeLockAction(${deptIndex}, ${teacherIndex}, '${c.code}')" 
-                                    style="${lockStyle}color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;font-size:0.75rem;">
-                                ${lockIcon}
-                            </button>
-                        </td>
-                        <td>
-                            ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;">🗑️</button>` : '—'}
+                            <div class="code-actions">
+                                <button onclick="toggleCodeLockAction(${deptIndex}, ${teacherIndex}, '${c.code}')" 
+                                        class="btn-toggle-lock" style="${lockStyle}">
+                                    ${lockIcon}
+                                </button>
+                                ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${deptIndex}, ${teacherIndex}, '${c.code}')" class="btn-delete-code">🗑️</button>` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
             });
         } else {
-            html += `<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
+            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
         }
 
-        html += `</table>`;
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
         container.innerHTML = html;
     }
 
@@ -1486,8 +1501,8 @@
                 ${!isActivated ? `
                     <div class="code-box-mini">
                         <p>🔑 أدخل كود التفعيل لفتح جميع المحاضرات</p>
-                        <div style="display:flex;gap:0.5rem;">
-                            <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:120px;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
                             <button onclick="activateCodeFromTeacher()" style="padding:0.5rem 1.2rem;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">تفعيل</button>
                         </div>
                         <div id="codeMessageTeacher"></div>
