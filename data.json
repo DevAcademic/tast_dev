@@ -1,0 +1,116 @@
+{
+  "departments": [
+    {
+      "name": "الرياضيات",
+      "emoji": "📐",
+      "description": "قسم الرياضيات - دراسة الأعداد والعمليات والهندسة",
+      "teachers": [
+        {
+          "name": "أ.حيدر طابور",
+          "emoji": "🧑‍🏫",
+          "subject": "الرياضيات",
+          "description": "",
+          "image": "https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg",
+          "codes": [
+            {
+              "code": "XXX-TTT",
+              "used": false,
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
+            },
+            {
+              "code": "XXX-KA0NNAC2",
+              "used": false,
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
+            },
+            {
+              "code": "XXX-UN9H0YY0",
+              "used": false,
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
+            },
+            {
+              "code": "XXX-TMXU12F2",
+              "used": false,
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
+            },
+            {
+              "code": "XXX-8AV8PRPY",
+              "used": false,
+              "locked": false,
+              "deviceId": null,
+              "usedAt": null
+            }
+          ],
+          "semesters": [
+            {
+              "number": 1,
+              "description": "الفصل 1",
+              "lectures": [
+                {
+                  "number": 1,
+                  "title": "اساسيات",
+                  "youtubeUrl": "https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ",
+                  "isFree": true
+                },
+                {
+                  "number": 2,
+                  "title": "اساسيات 2",
+                  "youtubeUrl": "https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm",
+                  "isFree": false
+                }
+              ]
+            },
+            {
+              "number": 2,
+              "description": "الفصل 2",
+              "lectures": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "اللغة العربية",
+      "emoji": "📖",
+      "description": "قسم اللغة العربية - دراسة النحو والصرف والأدب",
+      "teachers": []
+    },
+    {
+      "name": "الفيزياء",
+      "emoji": "⚛️",
+      "description": "قسم الفيزياء - دراسة المادة والطاقة والحركة",
+      "teachers": []
+    },
+    {
+      "name": "الأحياء",
+      "emoji": "🧬",
+      "description": "قسم الأحياء - دراسة الكائنات الحية والجينات",
+      "teachers": []
+    },
+    {
+      "name": "اللغة الإنجليزية",
+      "emoji": "🇬🇧",
+      "description": "قسم اللغة الإنجليزية - دراسة القواعد والمفردات",
+      "teachers": []
+    },
+    {
+      "name": "التاريخ",
+      "emoji": "🏛️",
+      "description": "قسم التاريخ - دراسة الحضارات والأحداث التاريخية",
+      "teachers": []
+    },
+    {
+      "name": "التربية الإسلامية",
+      "emoji": "🕌",
+      "description": "قسم التربية الإسلامية - دراسة القرآن اسلامية",
+      "teachers": []
+    }
+  ]
+}

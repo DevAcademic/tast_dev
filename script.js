@@ -7,6 +7,20 @@
     const ADMIN_EMAIL = 'zzccvc99@gmail.com';
     const ADMIN_PASSWORD = 'vcxz4321cczzvv';
 
+    // =============================================
+    // Supabase config
+    // =============================================
+    const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
+    let supabaseClient = null;
+    if (window.supabase) {
+        if (!window._supabaseClient) {
+            window._supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        supabaseClient = window._supabaseClient;
+    }
+    let currentUser = null;
+
     // ===== STATE =====
     let data = { departments: [] };
     let isDarkMode = false;
@@ -27,6 +41,7 @@
 
     const themeToggle = document.getElementById('themeToggle');
     const toastContainer = document.getElementById('toastContainer');
+    const userStatusElement = document.getElementById('userStatus');
 
     // ===== ADMIN LOGIN =====
     const adminLoginBtn = document.getElementById('adminLoginBtn');
@@ -42,6 +57,7 @@
     const tabBtns = document.querySelectorAll('.tab-btn');
     const publishBtn = document.getElementById('publishBtn');
     const pendingChangesSpan = document.getElementById('pendingChanges');
+    const createTableBtn = document.getElementById('createTableBtn');
 
     // ===== ADMIN FORMS =====
     const addTeacherForm = document.getElementById('addTeacherForm');
@@ -151,7 +167,7 @@
     }
 
     // =============================================
-    // نظام الأكواد والصلاحيات
+    // نظام الأكواد والصلاحيات - مع حفظ الكود بحساب المستخدم
     // =============================================
 
     function hasAccessToTeacher(teacher) {
@@ -169,9 +185,15 @@
         return hasAccess;
     }
 
-    function verifyCode(teacher, code) {
+    // ===== التحقق من الكود وحفظه بحساب المستخدم =====
+    async function verifyCode(teacher, code) {
         if (!teacher.codes || teacher.codes.length === 0) {
             return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
+        }
+
+        // التحقق من أن المستخدم مسجل دخول
+        if (!currentUser) {
+            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود' };
         }
 
         const codeData = teacher.codes.find(c => c.code === code);
@@ -180,26 +202,193 @@
             return { valid: false, message: 'الكود غير صحيح' };
         }
 
-        if (codeData.locked) {
+        // التحقق من أن الكود غير مقفل
+        if (codeData.locked === true) {
             return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
         }
 
+        // التحقق من أن الكود مستخدم من قبل
         if (codeData.used) {
-            if (codeData.deviceId === userDeviceId) {
-                return { valid: true, message: '✅ الكود مفعل على جهازك' };
+            // إذا كان المستخدم الحالي هو من استخدم الكود
+            if (codeData.userId === currentUser.id) {
+                return { valid: true, message: '✅ الكود مفعل على حسابك' };
             } else {
-                return { valid: false, message: '❌ هذا الكود مستخدم من جهاز آخر ولا يمكن تفعيله' };
+                // البحث عن اسم المستخدم الذي استخدم الكود
+                const userEmail = codeData.userEmail || 'مستخدم آخر';
+                return { valid: false, message: `❌ هذا الكود مستخدم من قبل ${userEmail}` };
             }
         }
 
+        // ===== تفعيل الكود وحفظه بحساب المستخدم الحالي =====
         codeData.used = true;
         codeData.deviceId = userDeviceId;
+        codeData.userId = currentUser.id;
+        codeData.userEmail = currentUser.email;
         codeData.usedAt = new Date().toISOString();
 
+        // حفظ الوصول المحلي
         localStorage.setItem('teacherAccess_' + teacher.name, 'true');
         saveData();
-        return { valid: true, message: '✅ تم التفعيل بنجاح - جميع محاضرات المدرس مفتوحة' };
+
+        // ===== حفظ الكود في Supabase بحساب المستخدم =====
+        await syncCodeWithSupabase(teacher, codeData);
+
+        // ===== إضافة الكود إلى قائمة المستخدم =====
+        await addCodeToUserCodes(currentUser.id, codeData.id, code);
+
+        return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
     }
+
+    // ===== إضافة الكود إلى جدول user_codes =====
+    async function addCodeToUserCodes(userId, codeId, code) {
+        if (!supabaseClient) return;
+
+        try {
+            // التحقق من وجود الكود في جدول codes
+            const { data: codeRecord, error: codeError } = await supabaseClient
+                .from('codes')
+                .select('id')
+                .eq('code', code)
+                .single();
+
+            if (codeError) {
+                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
+                return;
+            }
+
+            // إضافة الكود إلى user_codes
+            const { error } = await supabaseClient
+                .from('user_codes')
+                .insert({
+                    user_id: userId,
+                    code_id: codeRecord.id,
+                    used_at: new Date().toISOString()
+                })
+                .onConflict('user_id, code_id')
+                .ignore();
+
+            if (error) {
+                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
+            } else {
+                console.log('✅ تم حفظ الكود في حساب المستخدم:', code);
+            }
+        } catch (error) {
+            console.warn('⚠️ خطأ في حفظ الكود:', error);
+        }
+    }
+
+    // ===== مزامنة الكود مع Supabase =====
+    async function syncCodeWithSupabase(teacher, codeData) {
+        if (!currentUser || !supabaseClient) {
+            return { success: false, error: 'No authenticated user or Supabase unavailable' };
+        }
+
+        // البحث عن القسم الذي يتبع له المدرس
+        const department = data.departments.find(dept => dept.teachers.includes(teacher));
+        const teacherDepartment = department ? department.name : null;
+
+        try {
+            // حفظ الكود في جدول teacher_codes
+            const record = {
+                code: codeData.code,
+                teacher_name: teacher.name,
+                teacher_department: teacherDepartment,
+                user_id: currentUser.id,
+                user_email: currentUser.email,
+                device_id: userDeviceId,
+                used: true,
+                locked: codeData.locked || false,
+                used_at: codeData.usedAt || new Date().toISOString(),
+            };
+
+            const { error } = await supabaseClient
+                .from('teacher_codes')
+                .upsert(record, { onConflict: 'code' });
+
+            if (error) {
+                console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
+                return { success: false, error };
+            }
+
+            // تحديث الكود في جدول codes
+            const { error: updateError } = await supabaseClient
+                .from('codes')
+                .update({
+                    is_used: true,
+                    user_id: currentUser.id,
+                    device_id: userDeviceId,
+                    used_at: new Date().toISOString()
+                })
+                .eq('code', codeData.code);
+
+            if (updateError) {
+                console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
+            }
+
+            console.log('✅ تم مزامنة الكود مع Supabase:', codeData.code);
+            return { success: true };
+        } catch (error) {
+            console.warn('⚠️ خطأ في مزامنة الكود:', error);
+            return { success: false, error };
+        }
+    }
+
+    // ===== تحميل الأكواد المخصصة للمستخدم من Supabase =====
+    async function loadUserCodesFromSupabase() {
+        if (!currentUser || !supabaseClient) return;
+
+        try {
+            // جلب الأكواد من جدول user_codes
+            const { data: userCodes, error: codesError } = await supabaseClient
+                .from('user_codes')
+                .select('code_id')
+                .eq('user_id', currentUser.id);
+
+            if (codesError) {
+                console.warn('⚠️ فشل جلب الأكواد:', codesError);
+                return;
+            }
+
+            if (!userCodes || userCodes.length === 0) return;
+
+            // جلب تفاصيل الأكواد
+            const codeIds = userCodes.map(uc => uc.code_id);
+            const { data: codesData, error: codesDataError } = await supabaseClient
+                .from('codes')
+                .select('*')
+                .in('id', codeIds);
+
+            if (codesDataError) {
+                console.warn('⚠️ فشل جلب تفاصيل الأكواد:', codesDataError);
+                return;
+            }
+
+            // تحديث البيانات المحلية
+            codesData.forEach(codeRecord => {
+                data.departments.forEach(dept => {
+                    dept.teachers.forEach(teacher => {
+                        if (!teacher.codes) teacher.codes = [];
+                        const localCode = teacher.codes.find(c => c.code === codeRecord.code);
+                        if (localCode) {
+                            localCode.used = codeRecord.is_used || true;
+                            localCode.userId = codeRecord.user_id;
+                            localCode.deviceId = codeRecord.device_id;
+                            localCode.usedAt = codeRecord.used_at;
+                            localCode.locked = codeRecord.is_locked || false;
+                        }
+                    });
+                });
+            });
+
+            console.log('✅ تم تحميل الأكواد المخصصة للمستخدم');
+        } catch (error) {
+            console.warn('⚠️ خطأ في تحميل الأكواد:', error);
+        }
+    }
+
+    // =============================================
+    // دوال إدارة الأكواد (قفل/فتح)
+    // =============================================
 
     function toggleCodeLock(teacher, code) {
         if (!teacher.codes) return false;
@@ -212,6 +401,8 @@
             codeData.used = false;
             codeData.deviceId = null;
             codeData.usedAt = null;
+            codeData.userId = null;
+            codeData.userEmail = null;
         }
         saveData();
         return true;
@@ -237,6 +428,8 @@
                 used: false,
                 locked: false,
                 deviceId: null,
+                userId: null,
+                userEmail: null,
                 usedAt: null
             });
             newCodes.push(newCode);
@@ -300,6 +493,8 @@
             used: false,
             locked: false,
             deviceId: null,
+            userId: null,
+            userEmail: null,
             usedAt: null
         });
 
@@ -815,6 +1010,7 @@
                     <th>#</th>
                     <th>الكود</th>
                     <th>الحالة</th>
+                    <th>المستخدم</th>
                     <th>الجهاز</th>
                     <th>قفل/فتح</th>
                     <th>حذف</th>
@@ -828,13 +1024,19 @@
                 const isMyDevice = c.deviceId === userDeviceId;
                 let statusText = '';
                 let statusColor = '';
+                let userDisplay = '—';
                 
                 if (isLocked) {
                     statusText = '🔒 مقفل';
                     statusColor = '#f59e0b';
                 } else if (isUsed) {
-                    statusText = isMyDevice ? '✅ جهازك' : '❌ جهاز آخر';
+                    statusText = isMyDevice ? '✅ جهازك' : '❌ مستخدم';
                     statusColor = isMyDevice ? '#22c55e' : '#ef4444';
+                    if (c.userEmail) {
+                        userDisplay = c.userEmail;
+                    } else if (c.userId) {
+                        userDisplay = c.userId.substring(0, 10) + '...';
+                    }
                 } else {
                     statusText = '🟢 متاح';
                     statusColor = '#22c55e';
@@ -849,6 +1051,7 @@
                         <td>${index + 1}</td>
                         <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
                         <td>${statusText}</td>
+                        <td style="font-size:0.8rem;color:var(--text-light);">${userDisplay}</td>
                         <td style="font-size:0.8rem;color:var(--text-light);">${deviceText}</td>
                         <td>
                             <button onclick="toggleCodeLockAction(${deptIndex}, ${teacherIndex}, '${c.code}')" 
@@ -863,7 +1066,7 @@
                 `;
             });
         } else {
-            html += `<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
+            html += `<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
         }
 
         html += `</table>`;
@@ -912,23 +1115,66 @@
     // =============================================
     // LOAD DATA
     // =============================================
+    function normalizeDataStructure(courseData) {
+        if (!courseData || !Array.isArray(courseData.departments)) {
+            courseData.departments = [];
+        }
+
+        courseData.departments.forEach(dept => {
+            if (!Array.isArray(dept.teachers)) {
+                dept.teachers = [];
+            }
+            dept.teachers.forEach(teacher => {
+                if (!Array.isArray(teacher.codes)) {
+                    teacher.codes = [];
+                }
+                if (!Array.isArray(teacher.semesters)) {
+                    teacher.semesters = [];
+                }
+                teacher.codes.forEach(c => {
+                    if (c.used === undefined) c.used = false;
+                    if (c.locked === undefined) c.locked = false;
+                    if (!('deviceId' in c)) c.deviceId = null;
+                    if (!('usedAt' in c)) c.usedAt = null;
+                    if (!('userId' in c)) c.userId = null;
+                    if (!('userEmail' in c)) c.userEmail = null;
+                });
+                teacher.semesters.forEach(semester => {
+                    if (!Array.isArray(semester.lectures)) {
+                        semester.lectures = [];
+                    }
+                    semester.lectures.forEach(lecture => {
+                        if (lecture.isFree === undefined) lecture.isFree = false;
+                        if (!('youtubeUrl' in lecture)) lecture.youtubeUrl = '';
+                        if (!('title' in lecture)) lecture.title = '';
+                        if (lecture.number === undefined) lecture.number = 0;
+                    });
+                });
+            });
+        });
+    }
+
     async function loadData() {
         try {
+            if (supabaseClient) {
+                const remoteData = await getSupabaseAcademyData();
+                if (remoteData && remoteData.departments && Array.isArray(remoteData.departments)) {
+                    data = remoteData;
+                    normalizeDataStructure(data);
+                    localStorage.setItem('academyData', JSON.stringify(data));
+                    console.log('✅ تم تحميل البيانات من Supabase');
+                    return;
+                }
+            }
+
             const savedData = localStorage.getItem('academyData');
             if (savedData) {
                 try {
                     const parsed = JSON.parse(savedData);
                     if (parsed && parsed.departments && Array.isArray(parsed.departments)) {
                         data = parsed;
+                        normalizeDataStructure(data);
                         console.log('✅ تم تحميل البيانات من localStorage');
-                        data.departments.forEach(dept => {
-                            dept.teachers.forEach(teacher => {
-                                if (!teacher.codes) teacher.codes = [];
-                                teacher.codes.forEach(c => {
-                                    if (c.locked === undefined) c.locked = false;
-                                });
-                            });
-                        });
                         return;
                     }
                 } catch (e) {
@@ -942,14 +1188,7 @@
             const jsonData = await response.json();
             if (jsonData && jsonData.departments && Array.isArray(jsonData.departments)) {
                 data = jsonData;
-                data.departments.forEach(dept => {
-                    dept.teachers.forEach(teacher => {
-                        if (!teacher.codes) teacher.codes = [];
-                        teacher.codes.forEach(c => {
-                            if (c.locked === undefined) c.locked = false;
-                        });
-                    });
-                });
+                normalizeDataStructure(data);
                 localStorage.setItem('academyData', JSON.stringify(data));
                 console.log('✅ تم تحميل البيانات من data.json');
                 return;
@@ -962,16 +1201,51 @@
             
             data = {
                 departments: [
-                    { name: 'الرياضيات', emoji: '📐', description: 'قسم الرياضيات', teachers: [] },
-                    { name: 'اللغة العربية', emoji: '📖', description: 'قسم اللغة العربية', teachers: [] },
-                    { name: 'الفيزياء', emoji: '⚛️', description: 'قسم الفيزياء', teachers: [] },
-                    { name: 'الأحياء', emoji: '🧬', description: 'قسم الأحياء', teachers: [] },
-                    { name: 'اللغة الإنجليزية', emoji: '🇬🇧', description: 'قسم اللغة الإنجليزية', teachers: [] },
-                    { name: 'التاريخ', emoji: '🏛️', description: 'قسم التاريخ', teachers: [] },
-                    { name: 'التربية الإسلامية', emoji: '🕌', description: 'قسم التربية الإسلامية', teachers: [] }
+                    {
+                        name: 'الرياضيات',
+                        emoji: '📐',
+                        description: 'قسم الرياضيات - دراسة الأعداد والعمليات والهندسة',
+                        teachers: [
+                            {
+                                name: 'أ.حيدر طابور',
+                                emoji: '🧑‍🏫',
+                                subject: 'الرياضيات',
+                                description: '',
+                                image: 'https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg',
+                                codes: [
+                                    { code: 'XXX-TTT', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                                    { code: 'XXX-KA0NNAC2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                                    { code: 'XXX-UN9H0YY0', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                                    { code: 'XXX-TMXU12F2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                                    { code: 'XXX-8AV8PRPY', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null }
+                                ],
+                                semesters: [
+                                    {
+                                        number: 1,
+                                        description: 'الفصل 1',
+                                        lectures: [
+                                            { number: 1, title: 'اساسيات', youtubeUrl: 'https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ', isFree: true },
+                                            { number: 2, title: 'اساسيات 2', youtubeUrl: 'https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm', isFree: false }
+                                        ]
+                                    },
+                                    {
+                                        number: 2,
+                                        description: 'الفصل 2',
+                                        lectures: []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    { name: 'اللغة العربية', emoji: '📖', description: 'قسم اللغة العربية - دراسة النحو والصرف والأدب', teachers: [] },
+                    { name: 'الفيزياء', emoji: '⚛️', description: 'قسم الفيزياء - دراسة المادة والطاقة والحركة', teachers: [] },
+                    { name: 'الأحياء', emoji: '🧬', description: 'قسم الأحياء - دراسة الكائنات الحية والجينات', teachers: [] },
+                    { name: 'اللغة الإنجليزية', emoji: '🇬🇧', description: 'قسم اللغة الإنجليزية - دراسة القواعد والمفردات', teachers: [] },
+                    { name: 'التاريخ', emoji: '🏛️', description: 'قسم التاريخ - دراسة الحضارات والأحداث التاريخية', teachers: [] },
+                    { name: 'التربية الإسلامية', emoji: '🕌', description: 'قسم التربية الإسلامية - دراسة القرآن اسلامية', teachers: [] }
                 ]
             };
-            
+            normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
             showToast('info', '📝 يتم عرض بيانات افتراضية');
         }
@@ -987,6 +1261,86 @@
         } catch (error) {
             console.error('❌ خطأ في حفظ البيانات:', error);
             showToast('error', '⚠️ فشل حفظ البيانات محلياً');
+        }
+    }
+
+    async function getSupabaseAcademyData() {
+        if (!supabaseClient) return null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('academy_data')
+                .select('content')
+                .eq('id', 'main')
+                .maybeSingle();
+
+            if (error) {
+                console.warn('Supabase academy data lookup failed:', error.message || error);
+                return null;
+            }
+
+            return data?.content || null;
+        } catch (error) {
+            console.warn('Supabase academy data exception:', error);
+            return null;
+        }
+    }
+
+    async function saveSupabaseAcademyData() {
+        if (!supabaseClient) {
+            return { success: false, error: 'Supabase غير متاح' };
+        }
+
+        try {
+            const record = {
+                id: 'main',
+                content: data,
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient
+                .from('academy_data')
+                .upsert(record, { onConflict: 'id' });
+
+            if (error) {
+                console.warn('Supabase academy data save failed:', error.message || error);
+                return { success: false, error };
+            }
+
+            localStorage.setItem('academyData', JSON.stringify(data));
+            return { success: true };
+        } catch (error) {
+            console.warn('Supabase academy data save exception:', error);
+            return { success: false, error };
+        }
+    }
+
+    async function subscribeAcademyDataUpdates() {
+        if (!supabaseClient) return;
+
+        try {
+            const channel = supabaseClient
+                .channel('public:academy_data')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data', filter: 'id=eq.main' }, (payload) => {
+                    if (!payload?.new?.content) return;
+                    try {
+                        const remoteData = payload.new.content;
+                        if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
+                            data = remoteData;
+                            normalizeDataStructure(data);
+                            saveData();
+                            renderDepartments(data.departments);
+                            updateAdminSelects();
+                            showToast('info', '🔄 تم تحديث البيانات تلقائياً من السحابة');
+                        }
+                    } catch (err) {
+                        console.warn('Realtime parse error:', err);
+                    }
+                })
+                .subscribe();
+
+            console.log('✅ subscribed to Supabase academy data updates', channel);
+        } catch (error) {
+            console.warn('Supabase realtime subscription failed:', error);
         }
     }
 
@@ -1015,9 +1369,9 @@
         `;
 
         departments.forEach((department, index) => {
-            const teacherCount = department.teachers ? department.teachers.length : 0;
-            const totalLectures = department.teachers.reduce((acc, t) => {
-                return acc + t.semesters.reduce((acc2, s) => acc2 + s.lectures.length, 0);
+            const teacherCount = Array.isArray(department.teachers) ? department.teachers.length : 0;
+            const totalLectures = (Array.isArray(department.teachers) ? department.teachers : []).reduce((acc, t) => {
+                return acc + (Array.isArray(t.semesters) ? t.semesters.reduce((acc2, s) => acc2 + (Array.isArray(s.lectures) ? s.lectures.length : 0), 0) : 0);
             }, 0);
 
             html += `
@@ -1056,9 +1410,10 @@
         modalDepartmentTitle.textContent = `📚 ${department.name}`;
 
         let html = '';
-        if (department.teachers && department.teachers.length > 0) {
-            department.teachers.forEach((teacher, idx) => {
-                const totalLectures = teacher.semesters.reduce((acc, s) => acc + s.lectures.length, 0);
+        const teachers = Array.isArray(department.teachers) ? department.teachers : [];
+        if (teachers.length > 0) {
+            teachers.forEach((teacher, idx) => {
+                const totalLectures = Array.isArray(teacher.semesters) ? teacher.semesters.reduce((acc, s) => acc + (Array.isArray(s.lectures) ? s.lectures.length : 0), 0) : 0;
                 const hasAccess = hasAccessToTeacher(teacher);
                 
                 html += `
@@ -1099,10 +1454,12 @@
         activeTeacherIndex = teacherIndex;
         const hasAccess = hasAccessToTeacher(teacher);
         modalTeacherTitle.textContent = `👨‍🏫 ${teacher.name}`;
+        const semesters = Array.isArray(teacher.semesters) ? teacher.semesters : [];
 
         let html = '';
-        teacher.semesters.forEach((semester, idx) => {
-            const hasFreeLecture = semester.lectures.some(l => l.isFree === true);
+        semesters.forEach((semester, idx) => {
+            const lectures = Array.isArray(semester.lectures) ? semester.lectures : [];
+            const hasFreeLecture = lectures.some(l => l.isFree === true);
             const isLocked = !hasAccess && !hasFreeLecture;
             
             html += `
@@ -1144,7 +1501,7 @@
         document.body.style.overflow = 'hidden';
     };
 
-    window.activateCodeFromTeacher = function() {
+    window.activateCodeFromTeacher = async function() {
         const codeInput = document.getElementById('codeInputTeacher');
         const codeMessage = document.getElementById('codeMessageTeacher');
         const code = codeInput.value.trim().toUpperCase();
@@ -1161,12 +1518,22 @@
             return;
         }
         
-        const result = verifyCode(activeTeacher, code);
+        // التحقق من أن المستخدم مسجل دخول
+        if (!currentUser) {
+            codeMessage.innerHTML = '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود';
+            codeMessage.style.color = '#ef4444';
+            showToast('error', '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود');
+            return;
+        }
+        
+        const result = await verifyCode(activeTeacher, code);
         codeMessage.innerHTML = result.message;
         codeMessage.style.color = result.valid ? '#22c55e' : '#ef4444';
         
         if (result.valid) {
-            showToast('success', '✅ تم التفعيل بنجاح! جميع محاضرات المدرس مفتوحة');
+            showToast('success', '✅ تم التفعيل بنجاح! تم حفظ الكود في حسابك');
+            // تحديث الواجهة
+            loadUserCodesFromSupabase();
             setTimeout(() => {
                 const deptIndex = data.departments.findIndex(d => d.teachers.includes(activeTeacher));
                 const teacherIndex = activeTeacherIndex;
@@ -1191,7 +1558,8 @@
         modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
         let html = '';
-        semester.lectures.forEach((lecture) => {
+        const lectures = Array.isArray(semester.lectures) ? semester.lectures : [];
+        lectures.forEach((lecture) => {
             const isFree = lecture.isFree === true;
             const canWatch = isFree || hasAccess;
             
@@ -1359,6 +1727,12 @@
             adminPanel.classList.add('active');
             updateAdminSelects();
             updatePendingChanges();
+            currentUser = {
+                id: 'admin_' + Date.now(),
+                email: email,
+                user_metadata: { full_name: 'المشرف' }
+            };
+            localStorage.setItem('devAcademicUser', JSON.stringify({ email: email, name: 'المشرف' }));
         } else {
             adminLoginMessage.textContent = '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة';
             adminLoginMessage.style.color = '#ef4444';
@@ -1509,36 +1883,93 @@
         pendingChangesSpan.textContent = pendingChanges;
     }
 
-    publishBtn.addEventListener('click', function() {
+    publishBtn.addEventListener('click', async function() {
         if (pendingChanges === 0) {
             showToast('info', '📌 لا توجد تغييرات لنشرها');
+            return;
+        }
+
+        if (!supabaseClient) {
+            showToast('error', '❌ Supabase غير متاح. لا يمكن نشر التغييرات الآن');
+            return;
+        }
+
+        // تحقق من الجلسة
+        try {
+            const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+            if (sessionError) console.warn('Session check error:', sessionError);
+            console.log('Publish diagnostic - currentUser:', currentUser, 'session:', sessionData?.session || null);
+            if (!sessionData?.session?.user) {
+                showToast('error', '❌ لا توجد جلسة مستخدم صالحة. يرجى تسجيل الدخول ثم المحاولة.');
+                return;
+            }
+        } catch (diagErr) {
+            console.warn('Session diagnostic failed:', diagErr);
+        }
+
+        // تأكد أن المستخدم مسجل وأنه مشرف
+        if (!(isAdminLoggedIn || ((currentUser || {}).email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase())) {
+            showToast('error', '❌ يجب تسجيل الدخول كمشرف لنشر التحديثات');
+            return;
+        }
+
+        const publishResult = await saveSupabaseAcademyData();
+        if (!publishResult.success) {
+            console.error('Publish failed:', publishResult.error);
+            const detail = publishResult.error?.message || (typeof publishResult.error === 'string' ? publishResult.error : JSON.stringify(publishResult.error));
+            showToast('error', `❌ فشل نشر التحديثات على السحابة: ${detail}`);
+            const pubMsgEl = document.getElementById('publishMessage');
+            if (pubMsgEl) {
+                if (/find the table|does not exist|relation .* does not exist|find the table 'public.academy_data'/i.test(detail)) {
+                    pubMsgEl.innerHTML = `❌ جدول <strong>academy_data</strong> غير موجود في مشروع Supabase. افتح لوحة Supabase → SQL Editor ثم شغّل الأمر التالي:<br><pre style="text-align:left;background:#111;color:#fff;padding:8px;border-radius:6px;">create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);</pre>`;
+                } else {
+                    pubMsgEl.textContent = '❌ فشل النشر: ' + detail;
+                }
+            }
             return;
         }
 
         const jsonData = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'data.json';
+        a.download = 'academy-data-backup.json';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
         const message = document.getElementById('publishMessage');
-        message.textContent = `✅ تم نشر ${pendingChanges} تغيير بنجاح!`;
+        message.textContent = `✅ تم نشر ${pendingChanges} تغييراً بنجاح لجميع المستخدمين`; 
         message.style.color = '#22c55e';
         
         pendingChanges = 0;
         updatePendingChanges();
-        showToast('success', `✅ تم نشر التغييرات بنجاح! تم تحميل ملف data.json`);
+        showToast('success', '✅ تم نشر التحديث لجميع المستخدمين وتم تنزيل نسخة احتياطية');
         
         setTimeout(() => {
             message.textContent = '';
         }, 5000);
     });
+
+    // زر نسخ SQL لإنشاء جدول academy_data في Supabase
+    if (createTableBtn) {
+        createTableBtn.addEventListener('click', async function() {
+            const sql = `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
+            try {
+                await navigator.clipboard.writeText(sql);
+                showToast('info', '✅ تم نسخ أمر إنشاء الجدول إلى الحافظة. افتح Supabase SQL Editor والصق وشغّل.');
+                const pubMsgEl = document.getElementById('publishMessage');
+                if (pubMsgEl) pubMsgEl.innerHTML = 'انسخ SQL إلى SQL Editor في Supabase ثم اضغط Run.';
+            } catch (err) {
+                console.warn('Clipboard failed:', err);
+                showToast('error', '❌ فشل نسخ SQL تلقائياً. انسخ النص يدوياً من الوثيقة.');
+                const pubMsgEl = document.getElementById('publishMessage');
+                if (pubMsgEl) pubMsgEl.innerHTML = '<pre style="text-align:left;background:#111;color:#fff;padding:8px;border-radius:6px;">create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);</pre>';
+            }
+        });
+    }
 
     // =============================================
     // THEME TOGGLE
@@ -1638,6 +2069,110 @@
         }
     });
 
+    async function initSupabaseAuth() {
+        if (!userStatusElement) return;
+
+        const storedUser = localStorage.getItem('devAcademicUser');
+        let fallbackUser = null;
+        if (storedUser) {
+            try {
+                fallbackUser = JSON.parse(storedUser);
+            } catch (e) {
+                fallbackUser = null;
+            }
+        }
+
+        if (!supabaseClient) {
+            if (fallbackUser) {
+                currentUser = {
+                    id: 'user_' + Date.now(),
+                    email: fallbackUser.email,
+                    user_metadata: { full_name: fallbackUser.name }
+                };
+                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
+                return;
+            }
+            userStatusElement.textContent = '⚠️ Supabase غير متاح';
+            return;
+        }
+
+        try {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            if (error) {
+                console.warn('Supabase session check failed:', error.message || error);
+                if (fallbackUser) {
+                    currentUser = {
+                        id: 'user_' + Date.now(),
+                        email: fallbackUser.email,
+                        user_metadata: { full_name: fallbackUser.name }
+                    };
+                    userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
+                    return;
+                }
+                userStatusElement.textContent = '⚠️ خطأ في Supabase';
+                return;
+            }
+
+            if (session?.user) {
+                currentUser = session.user;
+                userStatusElement.textContent = `👤 ${currentUser.user_metadata?.full_name || currentUser.email}`;
+                localStorage.setItem('devAcademicUser', JSON.stringify({
+                    email: currentUser.email,
+                    name: currentUser.user_metadata?.full_name || ''
+                }));
+                // تحميل الأكواد المخصصة للمستخدم
+                await loadUserCodesFromSupabase();
+                return;
+            }
+
+            if (fallbackUser) {
+                currentUser = {
+                    id: 'user_' + Date.now(),
+                    email: fallbackUser.email,
+                    user_metadata: { full_name: fallbackUser.name }
+                };
+                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
+                return;
+            }
+
+            userStatusElement.textContent = '👤 غير مسجل';
+        } catch (error) {
+            console.warn('Supabase auth init exception:', error);
+            if (fallbackUser) {
+                currentUser = {
+                    id: 'user_' + Date.now(),
+                    email: fallbackUser.email,
+                    user_metadata: { full_name: fallbackUser.name }
+                };
+                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
+                return;
+            }
+            userStatusElement.textContent = '⚠️ خطأ في Supabase';
+        }
+    }
+
+    async function signOutSupabase() {
+        try {
+            localStorage.removeItem('devAcademicUser');
+            if (!supabaseClient) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                console.warn('Supabase signOut failed:', error.message || error);
+                showToast('error', '❌ فشل تسجيل الخروج');
+                return;
+            }
+            showToast('success', '✅ تم تسجيل الخروج');
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.warn('Supabase signOut exception:', error);
+            showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
+            window.location.href = 'index.html';
+        }
+    }
+
     // =============================================
     // LOAD THEME
     // =============================================
@@ -1651,11 +2186,26 @@
     // =============================================
     // INIT
     // =============================================
-    loadData().then(() => {
+    loadData().then(async () => {
+        await initSupabaseAuth();
+        if (supabaseClient) {
+            await subscribeAcademyDataUpdates();
+        }
         renderDepartments(data.departments);
         updateAdminSelects();
+        const signOutBtn = document.getElementById('signOutBtn');
+        if (signOutBtn) {
+            signOutBtn.addEventListener('click', signOutSupabase);
+        }
         console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('📱 معرف الجهاز:', userDeviceId);
+    }).catch((error) => {
+        console.error('Initialization failed:', error);
+        if (userStatusElement) {
+            userStatusElement.textContent = '⚠️ فشل التحميل';
+        }
+        renderDepartments(data.departments);
+        updateAdminSelects();
     });
 
 })();
