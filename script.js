@@ -186,22 +186,35 @@
         return hasAccess;
     }
 
-    // ===== التحقق من صحة الكود (مستعمل أو لا) =====
-    function isCodeUsed(teacher, code) {
-        if (!teacher || !teacher.codes) return false;
+    // ===== التحقق من صحة الكود (مستعمل أو لا) مع عرض التفاصيل =====
+    function checkCodeStatus(teacher, code) {
+        if (!teacher || !teacher.codes) {
+            return { exists: false, message: 'المدرس أو الأكواد غير موجودة' };
+        }
+        
         const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) return false;
-        return codeData.used === true;
-    }
+        if (!codeData) {
+            return { exists: false, message: '❌ الكود غير موجود لهذا المدرس' };
+        }
 
-    function getCodeUser(teacher, code) {
-        if (!teacher || !teacher.codes) return null;
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData || !codeData.used) return null;
-        return {
-            email: codeData.userEmail || 'غير معروف',
-            usedAt: codeData.usedAt || 'غير معروف'
-        };
+        if (codeData.used) {
+            return {
+                exists: true,
+                used: true,
+                locked: codeData.locked || false,
+                userEmail: codeData.userEmail || 'غير معروف',
+                usedAt: codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف',
+                isCurrentUser: currentUser && codeData.userEmail === currentUser.email,
+                message: `🔍 الكود مستخدم ✅\n📧 بواسطة: ${codeData.userEmail || 'غير معروف'}${currentUser && codeData.userEmail === currentUser.email ? ' (أنت)' : ''}\n⏱️ في: ${codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'غير معروف'}`
+            };
+        } else {
+            return {
+                exists: true,
+                used: false,
+                locked: codeData.locked || false,
+                message: `🟢 الكود متاح ${codeData.locked ? '(لكنه مقفل 🔒)' : ''}`
+            };
+        }
     }
 
     // ===== التحقق من الكود وحفظه بحساب المستخدم (الإيميل) =====
@@ -567,7 +580,7 @@
     }
 
     // ===== دالة التحقق من الكود (مستعمل أو لا) مع عرض تفاصيل المستخدم =====
-    window.checkCodeStatus = function() {
+    window.checkCodeStatusAction = function() {
         const select = document.getElementById('codeTeacherSelect');
         const selectedOption = select.selectedOptions[0];
         const deptIndex = selectedOption ? parseInt(selectedOption.dataset.dept) : -1;
@@ -595,32 +608,29 @@
             return;
         }
 
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) {
-            codeMessage.innerHTML = '❌ الكود غير موجود لهذا المدرس';
+        const result = checkCodeStatus(teacher, code);
+        
+        if (!result.exists) {
+            codeMessage.innerHTML = result.message;
             codeMessage.style.color = '#ef4444';
             return;
         }
 
-        if (codeData.used) {
-            const userEmail = codeData.userEmail || 'غير معروف';
-            const usedAt = codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف';
-            const isCurrentUser = currentUser && codeData.userEmail === currentUser.email;
-            
+        if (result.used) {
+            const isCurrentUser = result.isCurrentUser || false;
             codeMessage.innerHTML = `
                 🔍 <strong>حالة الكود:</strong> مستخدم ✅<br>
-                📧 <strong>مستخدم من قبل:</strong> ${userEmail} ${isCurrentUser ? '(أنت)' : ''}<br>
-                ⏱️ <strong>تاريخ الاستخدام:</strong> ${usedAt}
+                📧 <strong>مستخدم من قبل:</strong> ${result.userEmail} ${isCurrentUser ? '(أنت)' : ''}<br>
+                ⏱️ <strong>تاريخ الاستخدام:</strong> ${result.usedAt}
             `;
             codeMessage.style.color = isCurrentUser ? '#22c55e' : '#f59e0b';
             codeMessage.style.direction = 'rtl';
         } else {
-            const isLocked = codeData.locked || false;
             codeMessage.innerHTML = `
-                🔍 <strong>حالة الكود:</strong> ${isLocked ? '🔒 مقفل' : '🟢 متاح'}<br>
-                📊 <strong>يمكن استخدامه:</strong> ${isLocked ? 'لا' : 'نعم'}
+                🔍 <strong>حالة الكود:</strong> ${result.locked ? '🔒 مقفل' : '🟢 متاح'}<br>
+                📊 <strong>يمكن استخدامه:</strong> ${result.locked ? 'لا' : 'نعم'}
             `;
-            codeMessage.style.color = isLocked ? '#f59e0b' : '#22c55e';
+            codeMessage.style.color = result.locked ? '#f59e0b' : '#22c55e';
             codeMessage.style.direction = 'rtl';
         }
     };
@@ -1097,7 +1107,7 @@
                 <span>🔒 المقفلة: ${status.locked}</span>
             </div>
             <div style="margin:0.5rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;">
-                <button onclick="checkCodeStatus()" class="btn-submit" style="background:var(--info);flex:1;padding:0.4rem;font-size:0.8rem;">
+                <button onclick="checkCodeStatusAction()" class="btn-submit" style="background:var(--info);flex:1;padding:0.4rem;font-size:0.8rem;">
                     🔍 التحقق من كود
                 </button>
             </div>
@@ -1299,6 +1309,7 @@
         } catch (error) {
             console.warn('⚠️ استخدام البيانات الافتراضية:', error.message);
             
+            // ===== البيانات الافتراضية - تم حذف مادة التاريخ وإضافة أقسام جديدة =====
             data = {
                 departments: [
                     {
@@ -1337,16 +1348,53 @@
                             }
                         ]
                     },
-                    { name: 'اللغة العربية', emoji: '📖', description: 'قسم اللغة العربية - دراسة النحو والصرف والأدب', teachers: [] },
-                    { name: 'الفيزياء', emoji: '⚛️', description: 'قسم الفيزياء - دراسة المادة والطاقة والحركة', teachers: [] },
-                    { name: 'الأحياء', emoji: '🧬', description: 'قسم الأحياء - دراسة الكائنات الحية والجينات', teachers: [] },
-                    { name: 'اللغة الإنجليزية', emoji: '🇬🇧', description: 'قسم اللغة الإنجليزية - دراسة القواعد والمفردات', teachers: [] },
-                    { name: 'التربية الإسلامية', emoji: '🕌', description: 'قسم التربية الإسلامية - دراسة القرآن اسلامية', teachers: [] }
+                    {
+                        name: 'اللغة العربية',
+                        emoji: '📖',
+                        description: 'قسم اللغة العربية - دراسة النحو والصرف والأدب',
+                        teachers: []
+                    },
+                    {
+                        name: 'الفيزياء',
+                        emoji: '⚛️',
+                        description: 'قسم الفيزياء - دراسة المادة والطاقة والحركة',
+                        teachers: []
+                    },
+                    {
+                        name: 'الأحياء',
+                        emoji: '🧬',
+                        description: 'قسم الأحياء - دراسة الكائنات الحية والجينات',
+                        teachers: []
+                    },
+                    {
+                        name: 'اللغة الإنجليزية',
+                        emoji: '🇬🇧',
+                        description: 'قسم اللغة الإنجليزية - دراسة القواعد والمفردات',
+                        teachers: []
+                    },
+                    {
+                        name: 'الكيمياء',
+                        emoji: '🧪',
+                        description: 'قسم الكيمياء - دراسة العناصر والمركبات والتفاعلات الكيميائية',
+                        teachers: []
+                    },
+                    {
+                        name: 'علوم الحاسوب',
+                        emoji: '💻',
+                        description: 'قسم علوم الحاسوب - دراسة البرمجة والخوارزميات والذكاء الاصطناعي',
+                        teachers: []
+                    },
+                    {
+                        name: 'التربية الإسلامية',
+                        emoji: '🕌',
+                        description: 'قسم التربية الإسلامية - دراسة القرآن الكريم والسنة النبوية',
+                        teachers: []
+                    }
                 ]
             };
             normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
-            showToast('info', '📝 يتم عرض بيانات افتراضية');
+            showToast('info', '📝 يتم عرض بيانات افتراضية (تم حذف مادة التاريخ)');
         }
     }
 
