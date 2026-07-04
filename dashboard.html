@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>📚 ديف أكاديمي - منصة التعلم</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -25,12 +25,12 @@
             </div>
             <div class="nav-right">
                 <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="🔍 ابحث عن قسم أو مدرس..." />
+                    <input type="text" id="searchInput" placeholder="🔍 بحث..." />
                     <button id="searchBtn"><i class="fas fa-search"></i></button>
                 </div>
                 <div class="user-status" id="userStatus">جارِ التحقق...</div>
                 <button class="btn-logout" id="signOutBtn" title="تسجيل خروج">خروج</button>
-                <button class="theme-toggle" id="themeToggle" title="تبديل الوضع">
+                <button class="theme-toggle" id="themeToggle" title="تبديل الوضع الليلي">
                     <i class="fas fa-moon"></i>
                 </button>
                 <button class="admin-login-btn" id="adminLoginBtn" title="لوحة الإدارة">
@@ -106,7 +106,7 @@
         <div class="modal modal-small">
             <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
             <h2>✏️ تعديل المحاضرة</h2>
-            <p style="text-align:center;color:var(--text-light);margin-bottom:1rem;" id="editLectureInfo"></p>
+            <p style="text-align:center;color:var(--text-light);margin-bottom:0.8rem;font-size:0.9rem;" id="editLectureInfo"></p>
             <form id="editLectureForm" class="admin-form">
                 <div class="form-group">
                     <label>📝 عنوان المحاضرة *</label>
@@ -123,9 +123,9 @@
                         <option value="false">🔒 مقفلة (تتطلب كود)</option>
                     </select>
                 </div>
-                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;"></div>
+                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;font-size:0.85rem;"></div>
                 <div class="form-actions">
-                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ</button>
                     <button type="button" class="btn-cancel" id="cancelEditLecture">إلغاء</button>
                 </div>
             </form>
@@ -176,13 +176,13 @@
             </div>
             
             <div class="admin-tabs">
-                <button class="tab-btn active" data-tab="add-teacher">➕ إضافة مدرس</button>
-                <button class="tab-btn" data-tab="add-semester">📀 إضافة فصل</button>
-                <button class="tab-btn" data-tab="add-lecture">🎥 إضافة محاضرة</button>
-                <button class="tab-btn" data-tab="manage-codes">🔑 إدارة الأكواد</button>
-                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
+                <button class="tab-btn active" data-tab="add-teacher">➕ إضافة</button>
+                <button class="tab-btn" data-tab="add-semester">📀 فصل</button>
+                <button class="tab-btn" data-tab="add-lecture">🎥 محاضرة</button>
+                <button class="tab-btn" data-tab="manage-codes">🔑 أكواد</button>
+                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل</button>
                 <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
-                <button class="tab-btn" data-tab="publish">📤 نشر التحديثات</button>
+                <button class="tab-btn" data-tab="publish">📤 نشر</button>
             </div>
 
             <!-- ===== إضافة مدرس ===== -->
@@ -275,7 +275,7 @@
             <!-- ===== إدارة الأكواد ===== -->
             <div class="tab-content" id="tab-manage-codes">
                 <div class="codes-management">
-                    <h3>🔑 إدارة أكواد التفعيل</h3>
+                    <h3 style="font-size:1rem;margin-bottom:0.8rem;">🔑 إدارة أكواد التفعيل</h3>
                     
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
@@ -285,32 +285,32 @@
                     <div class="manual-code-section">
                         <h4>✏️ إضافة كود يدوي</h4>
                         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود المخصص..." maxlength="20" />
-                            <button onclick="addManualCode()" class="btn-add-code">➕ إضافة الكود</button>
+                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود..." maxlength="20" />
+                            <button onclick="addManualCode()" class="btn-add-code">➕ إضافة</button>
                         </div>
                         <div id="manualCodeMessage"></div>
                     </div>
 
                     <div class="code-actions">
                         <button onclick="generateCodes(5)" class="btn-submit" style="background:var(--success);flex:1;">
-                            <i class="fas fa-plus"></i> إنشاء 5 أكواد
+                            <i class="fas fa-plus"></i> 5
                         </button>
                         <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);flex:1;">
-                            <i class="fas fa-plus"></i> إنشاء 10 أكواد
+                            <i class="fas fa-plus"></i> 10
                         </button>
                     </div>
 
                     <div id="codesListContainer">
-                        <p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>
+                        <p style="color:var(--text-light);text-align:center;padding:1rem 0;font-size:0.85rem;">اختر مدرساً لعرض الأكواد</p>
                     </div>
                 </div>
             </div>
 
-            <!-- ===== تعديل محاضرة (خاص بالإدارة) ===== -->
+            <!-- ===== تعديل محاضرة ===== -->
             <div class="tab-content" id="tab-edit-lecture">
                 <div class="edit-lecture-section">
-                    <h3>✏️ تعديل محاضرة</h3>
-                    <p class="edit-info">اختر المدرس ثم الفصل ثم المحاضرة لتعديلها</p>
+                    <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل محاضرة</h3>
+                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر المدرس ثم الفصل ثم المحاضرة</p>
                     
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
@@ -332,7 +332,7 @@
                     </div>
                     
                     <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
-                        <i class="fas fa-edit"></i> فتح نافذة التعديل
+                        <i class="fas fa-edit"></i> فتح التعديل
                     </button>
                     <div id="editLectureAdminMessage"></div>
                 </div>
@@ -341,21 +341,21 @@
             <!-- ===== حذف ===== -->
             <div class="tab-content" id="tab-delete">
                 <div class="delete-section">
-                    <h3 style="color:var(--danger);">🗑️ حذف مدرس</h3>
+                    <h3>🗑️ حذف مدرس</h3>
                     <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس المراد حذفه</label>
+                        <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteTeacherSelect" required>
                             <option value="">اختر المدرس...</option>
                         </select>
                     </div>
                     <button onclick="deleteSelectedTeacherFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف المدرس
+                        <i class="fas fa-trash"></i> حذف
                     </button>
                     <div id="deleteTeacherMessage"></div>
                 </div>
 
-                <div class="delete-section" style="margin-top:2rem;">
-                    <h3 style="color:var(--danger);">🗑️ حذف فصل</h3>
+                <div class="delete-section">
+                    <h3>🗑️ حذف فصل</h3>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteSemesterTeacher" required>
@@ -363,19 +363,19 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>📀 اختر الفصل المراد حذفه</label>
+                        <label>📀 اختر الفصل</label>
                         <select id="deleteSemesterSelect" required>
                             <option value="">اختر المدرس أولاً</option>
                         </select>
                     </div>
                     <button onclick="deleteSelectedSemesterFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف الفصل
+                        <i class="fas fa-trash"></i> حذف
                     </button>
                     <div id="deleteSemesterMessage"></div>
                 </div>
 
-                <div class="delete-section" style="margin-top:2rem;">
-                    <h3 style="color:var(--danger);">🗑️ حذف محاضرة</h3>
+                <div class="delete-section">
+                    <h3>🗑️ حذف محاضرة</h3>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteLectureTeacher" required>
@@ -389,13 +389,13 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>🎥 اختر المحاضرة المراد حذفها</label>
+                        <label>🎥 اختر المحاضرة</label>
                         <select id="deleteLectureSelect" required>
                             <option value="">اختر الفصل أولاً</option>
                         </select>
                     </div>
                     <button onclick="deleteSelectedLectureFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف المحاضرة
+                        <i class="fas fa-trash"></i> حذف
                     </button>
                     <div id="deleteLectureMessage"></div>
                 </div>
@@ -405,13 +405,15 @@
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
-                    <p class="publish-info">انشر جميع التغييرات التي قمت بها (إضافة مدرسين، فصول، محاضرات، أكواد)</p>
+                    <p class="publish-info">انشر جميع التغييرات التي قمت بها</p>
                     <div class="publish-stats">
                         <span>📊 التغييرات المعلقة: <span id="pendingChanges">0</span></span>
                     </div>
-                    <button id="publishBtn" class="btn-publish"><i class="fas fa-upload"></i> نشر التحديثات</button>
-                    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
-                        <button id="createTableBtn" class="btn-publish" style="background:#f59e0b"><i class="fas fa-database"></i> إنشاء جدول السحابة</button>
+                    <button id="publishBtn" class="btn-publish"><i class="fas fa-upload"></i> نشر</button>
+                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <button id="createTableBtn" class="btn-publish" style="background:#f59e0b;padding:0.5rem;font-size:0.8rem;flex:1;">
+                            <i class="fas fa-database"></i> إنشاء جدول
+                        </button>
                         <div id="publishMessage"></div>
                     </div>
                 </div>
