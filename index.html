@@ -287,11 +287,6 @@
                 font-size: 15px;
             }
         }
-
-        /* ========== DASHBOARD PREVIEW (اختياري) ========== */
-        .dashboard-preview {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -406,22 +401,18 @@
                🔄  تبديل التبويبات
                =================================================================== */
         function switchTab(tabId) {
-            // تحديث الأزرار
             tabs.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
 
-            // تحديث المحتوى
             loginContainer.classList.toggle('active', tabId === 'login');
             signupContainer.classList.toggle('active', tabId === 'signup');
 
-            // مسح الرسائل السابقة
             loginMsg.className = 'message';
             loginMsg.textContent = '';
             signupMsg.className = 'message';
             signupMsg.textContent = '';
 
-            // تحديث النص السفلي
             if (tabId === 'login') {
                 footerText.innerHTML =
                     'ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>';
@@ -445,7 +436,6 @@
             });
         });
 
-        // ربط الروابط السفلية الأولية
         switchToLoginLink?.addEventListener('click', (e) => {
             e.preventDefault();
             switchTab('login');
@@ -494,7 +484,6 @@
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
-            // التحقق الأساسي
             if (!email || !password) {
                 showMessage(loginMsg, 'يرجى ملء جميع الحقول.', 'error');
                 return;
@@ -512,7 +501,9 @@
 
             try {
                 if (!supabaseClient) {
-            showMessage(loginMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت أو افتح المشروع من خادم محلي.', 'error');
+                    showMessage(loginMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
+                    setLoading(loginBtn, false);
+                    return;
                 }
 
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -527,11 +518,10 @@
                         email,
                         name: data.user.user_metadata?.full_name || null
                     }));
-                    showMessage(loginMsg, '✅ تم تسجيل الدخول بنجاح، جارِ التوجيه...', 'success');
-                    // توجيه إلى لوحة التحكم
+                    showMessage(loginMsg, '✅ تم تسجيل الدخول بنجاح، جارِ استعادة اشتراكاتك...', 'success');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
-                    }, 800);
+                    }, 1000);
                 } else {
                     showMessage(loginMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
                 }
@@ -560,7 +550,6 @@
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
 
-            // التحقق الأساسي
             if (!name || !email || !password) {
                 showMessage(signupMsg, 'يرجى ملء جميع الحقول.', 'error');
                 return;
@@ -582,7 +571,9 @@
 
             try {
                 if (!supabaseClient) {
-            showMessage(signupMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت أو افتح المشروع من خادم محلي.', 'error');
+                    showMessage(signupMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
+                    setLoading(signupBtn, false);
+                    return;
                 }
 
                 const { data, error } = await supabaseClient.auth.signUp({
@@ -598,7 +589,6 @@
                 if (error) throw error;
 
                 if (data?.user) {
-                    // إذا كان الحساب بحاجة تأكيد عبر البريد
                     if (data.user.confirmed_at === null) {
                         localStorage.setItem('devAcademicUser', JSON.stringify({
                             email,
@@ -621,7 +611,7 @@
                         );
                         setTimeout(() => {
                             window.location.href = 'dashboard.html';
-                        }, 800);
+                        }, 1000);
                     }
                 } else {
                     showMessage(signupMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
@@ -640,13 +630,21 @@
 
         /* ===================================================================
                ⚡  التحقق من جلسة المستخدم عند تحميل الصفحة
-                   (لو كان مسجلاً بالفعل، نوجهه إلى dashboard.html)
                =================================================================== */
         (async function checkSession() {
             try {
                 const storedUser = localStorage.getItem('devAcademicUser');
+
                 if (!supabaseClient && storedUser) {
-                    window.location.href = 'dashboard.html';
+                    try {
+                        const user = JSON.parse(storedUser);
+                        if (user && user.email) {
+                            window.location.href = 'dashboard.html';
+                            return;
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('devAcademicUser');
+                    }
                     return;
                 }
 
@@ -654,19 +652,18 @@
 
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session?.user) {
-                    // المستخدم مسجل دخوله مسبقاً → نوجهه فوراً
                     window.location.href = 'dashboard.html';
+                } else {
+                    localStorage.removeItem('devAcademicUser');
                 }
-            } catch (_) { /* تجاهل */ }
+            } catch (_) {
+                localStorage.removeItem('devAcademicUser');
+            }
         })();
 
-        /* ===================================================================
-               ✨  إظهار التبويب الافتراضي (تسجيل الدخول)
-               =================================================================== */
         switchTab('login');
 
         console.log('✅ Auth page ready – Supabase initialized once.');
-        console.log('ℹ️  استبدل SUPABASE_URL و SUPABASE_ANON_KEY بقيم مشروعك.');
     </script>
 
 </body>
