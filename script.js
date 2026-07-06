@@ -1754,9 +1754,10 @@
 
     async function signOutSupabase() {
         try {
+            // حذف بيانات الجلسة فقط
             localStorage.removeItem('devAcademicUser');
-            // لا نحذف الأكواد عند تسجيل الخروج
             // الأكواد تبقى محفوظة في localStorage و Supabase
+            // لا نحذف userCodes_*
             currentUser = null;
             activeTeacher = null;
             activeTeacherIndex = null;
@@ -1772,12 +1773,17 @@
                 if (error) { console.warn('Supabase signOut failed:', error.message || error); }
             }
             showToast('success', '✅ تم تسجيل الخروج بنجاح');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+            // ✅ التوجيه إلى صفحة تسجيل الدخول
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
         } catch (error) {
             console.warn('SignOut exception:', error);
             showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
             currentUser = null;
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
         }
     }
 
