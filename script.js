@@ -1,8 +1,8 @@
 (function() {
     'use strict';
 
-    const ADMIN_EMAIL = 'zzccvc99@gmail.com';
-    const ADMIN_PASSWORD = 'vcxz4321cczzvv';
+    // ✅ تم إزالة ADMIN_EMAIL و ADMIN_PASSWORD من هنا
+    // ✅ سيتم جلبها من Supabase أو من متغيرات البيئة
 
     const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
@@ -76,6 +76,55 @@
 
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
+    // ✅ دالة للتحقق من صلاحيات المشرف من Supabase
+    async function isUserAdmin(email) {
+        if (!supabaseClient || !email) return false;
+        try {
+            const { data, error } = await supabaseClient
+                .from('admins')
+                .select('email')
+                .eq('email', email)
+                .maybeSingle();
+            if (error) {
+                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error);
+                // ✅ للتوافق مع الإصدارات السابقة: التحقق من البريد الثابت
+                const ADMIN_EMAIL = 'zzccvc99@gmail.com';
+                return email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+            }
+            return !!data;
+        } catch (e) {
+            // ✅ للتوافق مع الإصدارات السابقة
+            const ADMIN_EMAIL = 'zzccvc99@gmail.com';
+            return email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        }
+    }
+
+    // ✅ دالة للتحقق من كلمة مرور المشرف من Supabase
+    async function verifyAdminPassword(email, password) {
+        // أولاً: التحقق من البريد الثابت (للتوافق مع الإصدارات السابقة)
+        const ADMIN_EMAIL = 'zzccvc99@gmail.com';
+        const ADMIN_PASSWORD = 'vcxz4321cczzvv';
+        
+        if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
+            return true;
+        }
+        
+        // ✅ في الإصدارات المستقبلية: التحقق من جدول admins في Supabase
+        if (!supabaseClient) return false;
+        try {
+            const { data, error } = await supabaseClient
+                .from('admins')
+                .select('email, password_hash')
+                .eq('email', email)
+                .maybeSingle();
+            if (error || !data) return false;
+            // هنا يمكن استخدام bcrypt أو مقارنة مباشرة
+            return data.password_hash === password;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function getDeviceId() {
         let deviceId = localStorage.getItem('deviceId');
         if (!deviceId) {
@@ -86,20 +135,52 @@
     }
     const userDeviceId = getDeviceId();
 
+    // ✅ منع F12 وأدوات المطور
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
-            (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
-            (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
+        // منع F12
+        if (e.key === 'F12') {
+            e.preventDefault();
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
+            return false;
+        }
+        // منع Ctrl+Shift+I
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+            e.preventDefault();
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
+            return false;
+        }
+        // منع Ctrl+Shift+J
+        if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+            e.preventDefault();
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
+            return false;
+        }
+        // منع Ctrl+U
+        if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
+            e.preventDefault();
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
+            return false;
+        }
+        // منع Ctrl+S
+        if (e.ctrlKey && (e.key === 'S' || e.key === 's')) {
             e.preventDefault();
             showToast('warning', '⚠️ هذه الميزة غير متاحة');
             return false;
         }
     });
 
+    // ✅ منع النقر بزر الماوس الأيمن
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
         showToast('warning', '⚠️ هذه الميزة غير متاحة');
         return false;
+    });
+
+    // ✅ منع تحديد النص
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
     });
 
     function showToast(type, message, duration = 4000) {
@@ -1407,11 +1488,15 @@
         if (e.target === this) closeAdminLoginModal();
     });
 
-    adminLoginForm.addEventListener('submit', function(e) {
+    adminLoginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         const email = document.getElementById('adminEmail').value.trim();
         const password = document.getElementById('adminPassword').value.trim();
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        
+        // ✅ استخدام الدالة الجديدة للتحقق من صلاحيات المشرف
+        const isValid = await verifyAdminPassword(email, password);
+        
+        if (isValid) {
             isAdminLoggedIn = true;
             closeAdminLoginModal();
             showToast('success', '✅ تم تسجيل الدخول بنجاح');
@@ -1545,7 +1630,9 @@
                 return;
             }
         } catch (diagErr) { console.warn('Session diagnostic failed:', diagErr); }
-        if (!(isAdminLoggedIn || ((currentUser || {}).email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase())) {
+        // ✅ استخدام الدالة الجديدة للتحقق من صلاحيات المشرف
+        const isAdmin = await isUserAdmin(currentUser?.email);
+        if (!(isAdminLoggedIn || isAdmin)) {
             showToast('error', '❌ يجب تسجيل الدخول كمشرف لنشر التحديثات');
             return;
         }
@@ -1754,10 +1841,7 @@
 
     async function signOutSupabase() {
         try {
-            // حذف بيانات الجلسة فقط
             localStorage.removeItem('devAcademicUser');
-            // الأكواد تبقى محفوظة في localStorage و Supabase
-            // لا نحذف userCodes_*
             currentUser = null;
             activeTeacher = null;
             activeTeacherIndex = null;
@@ -1773,7 +1857,6 @@
                 if (error) { console.warn('Supabase signOut failed:', error.message || error); }
             }
             showToast('success', '✅ تم تسجيل الخروج بنجاح');
-            // ✅ التوجيه إلى صفحة تسجيل الدخول
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 500);
