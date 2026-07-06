@@ -18,7 +18,6 @@
                 </div>
                 <ul class="nav-links">
                     <li class="active"><a href="#"><i class="fas fa-home"></i> الرئيسية</a></li>
-                    <li><a href="#"><i class="fas fa-book"></i> الأقسام</a></li>
                     <li><a href="#"><i class="fas fa-chalkboard-teacher"></i> المدرسون</a></li>
                     <li><a href="#"><i class="fas fa-graduation-cap"></i> جديدة</a></li>
                 </ul>
@@ -53,9 +52,9 @@
         </div>
     </section>
 
-    <!-- ===== DEPARTMENTS ROWS ===== -->
-    <div class="departments-rows" id="departmentsRows">
-        <!-- سيتم إدراج الأقسام بواسطة JavaScript -->
+    <!-- ===== TEACHERS CONTAINER ===== -->
+    <div class="teachers-container" id="teachersContainer">
+        <!-- سيتم إدراج المدرسين بواسطة JavaScript -->
     </div>
 
     <!-- ===== FOOTER ===== -->
@@ -78,7 +77,7 @@
     <div class="modal-overlay" id="teachersModal">
         <div class="modal modal-large">
             <button class="close-btn" id="closeTeachersModal"><i class="fas fa-times"></i></button>
-            <h2 id="modalDepartmentTitle">📚 اسم القسم</h2>
+            <h2 id="modalDepartmentTitle">📚 المدرسون</h2>
             <div class="teachers-list" id="teachersList"></div>
         </div>
     </div>
@@ -181,7 +180,6 @@
                 <button class="tab-btn" data-tab="add-lecture">🎥 محاضرة</button>
                 <button class="tab-btn" data-tab="manage-codes">🔑 أكواد</button>
                 <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل</button>
-                <button class="tab-btn" data-tab="manage-departments">📂 أقسام</button>
                 <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر</button>
             </div>
@@ -199,8 +197,8 @@
                         <input type="text" id="teacherEmoji" placeholder="🧑‍🏫" value="🧑‍🏫" maxlength="2" />
                     </div>
                     <div class="form-group">
-                        <label>📚 المادة</label>
-                        <input type="text" id="teacherSubject" placeholder="مثال: الرياضيات" />
+                        <label>📚 المادة (التخصص)</label>
+                        <input type="text" id="teacherSubject" placeholder="مثال: مدرس رياضيات" />
                     </div>
                     <div class="form-group">
                         <label>📄 وصف المدرس</label>
@@ -209,10 +207,6 @@
                     <div class="form-group">
                         <label>🖼️ رابط الصورة</label>
                         <input type="url" id="teacherImage" placeholder="https://..." />
-                    </div>
-                    <div class="form-group">
-                        <label>📂 اختر القسم *</label>
-                        <select id="teacherDepartment" required></select>
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة المدرس</button>
                 </form>
@@ -336,52 +330,6 @@
                         <i class="fas fa-edit"></i> فتح التعديل
                     </button>
                     <div id="editLectureAdminMessage"></div>
-                </div>
-            </div>
-
-            <!-- ===== إدارة الأقسام ===== -->
-            <div class="tab-content" id="tab-manage-departments">
-                <div class="admin-form">
-                    <h3>📂 إدارة الأقسام (المواد)</h3>
-                    
-                    <!-- ===== إضافة قسم ===== -->
-                    <div style="background:var(--bg);padding:1rem;border-radius:10px;margin-bottom:1.5rem;border:2px solid var(--success);">
-                        <h4 style="color:var(--success);margin-bottom:0.5rem;">➕ إضافة قسم جديد</h4>
-                        <div class="form-group">
-                            <label>📝 اسم القسم *</label>
-                            <input type="text" id="newDepartmentName" placeholder="مثال: علم النفس" />
-                        </div>
-                        <div class="form-group">
-                            <label>😊 رمز تعبيري</label>
-                            <input type="text" id="newDepartmentEmoji" placeholder="🧠" value="📚" maxlength="2" />
-                        </div>
-                        <div class="form-group">
-                            <label>📄 وصف القسم</label>
-                            <input type="text" id="newDepartmentDesc" placeholder="وصف مختصر للقسم" />
-                        </div>
-                        <button onclick="addNewDepartment()" class="btn-submit" style="background:var(--success);">
-                            <i class="fas fa-plus"></i> إضافة القسم
-                        </button>
-                        <div id="addDepartmentMessage" style="margin-top:0.5rem;text-align:center;font-weight:600;"></div>
-                    </div>
-                    
-                    <!-- ===== حذف قسم ===== -->
-                    <div style="background:var(--bg);padding:1rem;border-radius:10px;border:2px solid var(--danger);">
-                        <h4 style="color:var(--danger);margin-bottom:0.5rem;">🗑️ حذف قسم</h4>
-                        <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:0.8rem;">
-                            ⚠️ تحذير: سيتم حذف القسم بالكامل مع جميع المدرسين والفصول والمحاضرات المرتبطة به.
-                        </p>
-                        <div class="form-group">
-                            <label>📂 اختر القسم المراد حذفه</label>
-                            <select id="deleteDepartmentSelect" required>
-                                <option value="">اختر القسم...</option>
-                            </select>
-                        </div>
-                        <button onclick="deleteSelectedDepartment()" class="btn-delete" style="background:#dc2626;">
-                            <i class="fas fa-trash"></i> حذف القسم بالكامل
-                        </button>
-                        <div id="deleteDepartmentMessage" style="margin-top:0.8rem;text-align:center;font-weight:600;"></div>
-                    </div>
                 </div>
             </div>
 
