@@ -183,22 +183,34 @@
         }
     }
 
-    // ===== CODE VERIFICATION =====
+    // ============================================================
+    // ===== CODE VERIFICATION - التحقق من الكود (محدث) =====
+    // ============================================================
     async function verifyCode(teacher, code) {
+        // التحقق من وجود الكود
         if (!teacher.codes || teacher.codes.length === 0) {
             return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
         }
+
+        // التحقق من تسجيل الدخول
         if (!currentUser) {
-            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً' };
+            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود' };
         }
+
+        // البحث عن الكود
         const codeData = teacher.codes.find(c => c.code === code);
         if (!codeData) {
             return { valid: false, message: '❌ الكود غير صحيح' };
         }
+
+        // التحقق إذا كان الكود مقفلاً
         if (codeData.locked === true) {
             return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
         }
+
+        // التحقق إذا كان الكود مستخدماً
         if (codeData.used) {
+            // التحقق إذا كان المستخدم الحالي هو من استخدم الكود
             if (codeData.userEmail === currentUser.email) {
                 return { valid: true, message: '✅ الكود مفعل على حسابك' };
             } else {
@@ -209,55 +221,55 @@
                 };
             }
         }
+
+        // ==== الكود غير مستخدم، نقوم بتفعيله ====
+
+        // حفظ الكود للمستخدم الحالي
         codeData.used = true;
         codeData.deviceId = userDeviceId;
         codeData.userId = currentUser.id;
         codeData.userEmail = currentUser.email;
         codeData.usedAt = new Date().toISOString();
+
+        // حفظ في localStorage
         saveData();
 
-        await syncCodeWithSupabase(teacher, codeData);
+        // مزامنة مع Supabase
+        const syncResult = await syncCodeWithSupabase(teacher, codeData);
+        if (!syncResult.success) {
+            // إذا فشلت المزامنة، نتراجع عن التغيير
+            codeData.used = false;
+            codeData.userId = null;
+            codeData.userEmail = null;
+            codeData.usedAt = null;
+            saveData();
+            return { valid: false, message: '❌ فشل حفظ الكود في قاعدة البيانات' };
+        }
+
+        // حفظ في user_codes
         await addCodeToUserCodes(currentUser.id, codeData.code);
+
+        // تحديث التخزين المحلي
         updateUserCodesStorage();
 
+        // تحديث الواجهة
         renderAllTeachers();
         renderMyCourses();
         renderAccount();
         updateBadge();
 
-        return { valid: true, message: '✅ تم التفعيل بنجاح' };
+        return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
     }
 
-    async function addCodeToUserCodes(userId, code) {
-        if (!supabaseClient) return;
-        try {
-            const { data: codeRecord, error: codeError } = await supabaseClient
-                .from('codes').select('id').eq('code', code).single();
-            if (codeError) {
-                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
-                return;
-            }
-            const { data: existing, error: checkError } = await supabaseClient
-                .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
-            if (existing) return;
-            const { error } = await supabaseClient.from('user_codes').insert({
-                user_id: userId,
-                code_id: codeRecord.id,
-                used_at: new Date().toISOString()
-            });
-            if (error) {
-                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
-            }
-        } catch (error) {
-            console.warn('⚠️ خطأ في حفظ الكود:', error);
-        }
-    }
-
+    // ============================================================
+    // ===== SYNC CODE WITH SUPABASE - مزامنة الكود =====
+    // ============================================================
     async function syncCodeWithSupabase(teacher, codeData) {
         if (!currentUser || !supabaseClient) {
-            return { success: false };
+            return { success: false, error: 'No authenticated user or Supabase unavailable' };
         }
         try {
+            // تحديث في جدول teacher_codes
             const record = {
                 code: codeData.code,
                 teacher_name: teacher.name,
@@ -268,11 +280,14 @@
                 locked: codeData.locked || false,
                 used_at: codeData.usedAt || new Date().toISOString(),
             };
+
             const { error } = await supabaseClient.from('teacher_codes').upsert(record, { onConflict: 'code' });
             if (error) {
                 console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
-                return { success: false };
+                return { success: false, error };
             }
+
+            // تحديث في جدول codes
             const { error: updateError } = await supabaseClient.from('codes').update({
                 is_used: true,
                 user_id: currentUser.id,
@@ -280,13 +295,54 @@
                 device_id: userDeviceId,
                 used_at: new Date().toISOString()
             }).eq('code', codeData.code);
+
             if (updateError) {
                 console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
             }
+
+            console.log('✅ تم مزامنة الكود مع Supabase:', codeData.code);
             return { success: true };
         } catch (error) {
             console.warn('⚠️ خطأ في مزامنة الكود:', error);
-            return { success: false };
+            return { success: false, error };
+        }
+    }
+
+    // ============================================================
+    // ===== ADD CODE TO USER CODES - إضافة الكود للمستخدم =====
+    // ============================================================
+    async function addCodeToUserCodes(userId, code) {
+        if (!supabaseClient) return;
+        try {
+            // جلب code_id من جدول codes
+            const { data: codeRecord, error: codeError } = await supabaseClient
+                .from('codes').select('id').eq('code', code).single();
+            if (codeError) {
+                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
+                return;
+            }
+
+            // التحقق إذا كان الكود موجود مسبقاً للمستخدم
+            const { data: existing, error: checkError } = await supabaseClient
+                .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
+            if (existing) {
+                console.log('✅ الكود موجود مسبقاً للمستخدم');
+                return;
+            }
+
+            // إضافة الكود للمستخدم
+            const { error } = await supabaseClient.from('user_codes').insert({
+                user_id: userId,
+                code_id: codeRecord.id,
+                used_at: new Date().toISOString()
+            });
+            if (error) {
+                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
+            } else {
+                console.log('✅ تم حفظ الكود في حساب المستخدم:', code);
+            }
+        } catch (error) {
+            console.warn('⚠️ خطأ في حفظ الكود:', error);
         }
     }
 
