@@ -1,8 +1,30 @@
 (function() {
     'use strict';
 
-    // ✅ تم إزالة ADMIN_EMAIL و ADMIN_PASSWORD من هنا
-    // ✅ سيتم جلبها من Supabase أو من متغيرات البيئة
+    // ===== حماية F12 وأدوات المطور =====
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+            (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
+            (e.ctrlKey && (e.key === 'U' || e.key === 'u')) ||
+            (e.ctrlKey && (e.key === 'S' || e.key === 's'))) {
+            e.preventDefault();
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
+            return false;
+        }
+    });
+
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showToast('warning', '⚠️ هذه الميزة غير متاحة');
+        return false;
+    });
+
+    document.addEventListener('selectstart', function(e) {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
+    });
 
     const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
@@ -14,7 +36,6 @@
         supabaseClient = window._supabaseClient;
     }
     let currentUser = null;
-
     let data = { teachers: [] };
     let isDarkMode = false;
     let isAdminLoggedIn = false;
@@ -22,7 +43,13 @@
     let activeTeacher = null;
     let activeTeacherIndex = null;
 
+    // ===== DOM Elements =====
+    const loadingScreen = document.getElementById('loadingScreen');
+    const navbar = document.getElementById('navbar');
+    const bottomNav = document.getElementById('bottomNav');
+    const footer = document.getElementById('footer');
     const teachersContainer = document.getElementById('teachersContainer');
+    const teachersContainer2 = document.getElementById('teachersContainer2');
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const videoPlayer = document.getElementById('videoPlayer');
@@ -31,15 +58,10 @@
     const playerTitle = document.getElementById('playerTitle');
     const themeToggle = document.getElementById('themeToggle');
     const toastContainer = document.getElementById('toastContainer');
-    const userStatusElement = document.getElementById('userStatus');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const userAvatar = document.getElementById('userAvatar');
 
-    const adminLoginBtn = document.getElementById('adminLoginBtn');
-    const adminLoginModal = document.getElementById('adminLoginModal');
-    const closeAdminLogin = document.getElementById('closeAdminLogin');
-    const cancelAdminLogin = document.getElementById('cancelAdminLogin');
-    const adminLoginForm = document.getElementById('adminLoginForm');
-    const adminLoginMessage = document.getElementById('adminLoginMessage');
-
+    // ===== Admin Elements =====
     const adminPanel = document.getElementById('adminPanel');
     const adminClose = document.getElementById('adminClose');
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -47,24 +69,39 @@
     const pendingChangesSpan = document.getElementById('pendingChanges');
     const createTableBtn = document.getElementById('createTableBtn');
 
+    // ===== Forms =====
     const addTeacherForm = document.getElementById('addTeacherForm');
     const addSemesterForm = document.getElementById('addSemesterForm');
     const addLectureForm = document.getElementById('addLectureForm');
 
+    // ===== Modals =====
     const teachersModal = document.getElementById('teachersModal');
     const closeTeachersModal = document.getElementById('closeTeachersModal');
     const teachersList = document.getElementById('teachersList');
-
     const semestersModal = document.getElementById('semestersModal');
     const closeSemestersModal = document.getElementById('closeSemestersModal');
     const semestersList = document.getElementById('semestersList');
     const modalTeacherTitle = document.getElementById('modalTeacherTitle');
-
     const lecturesModal = document.getElementById('lecturesModal');
     const closeLecturesModal = document.getElementById('closeLecturesModal');
     const lecturesList = document.getElementById('lecturesList');
     const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
+    // ===== Bottom Navigation =====
+    const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
+
+    // ===== Account Page =====
+    const accountName = document.getElementById('accountName');
+    const accountEmail = document.getElementById('accountEmail');
+    const accountAvatar = document.getElementById('accountAvatar');
+    const accountRegistered = document.getElementById('accountRegistered');
+    const accountCourses = document.getElementById('accountCourses');
+    const accountCodes = document.getElementById('accountCodes');
+    const logoutAccountBtn = document.getElementById('logoutAccountBtn');
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const coursesBadge = document.getElementById('coursesBadge');
+
+    // ===== Edit Lecture =====
     const editLectureModal = document.getElementById('editLectureModal');
     const closeEditLecture = document.getElementById('closeEditLecture');
     const cancelEditLecture = document.getElementById('cancelEditLecture');
@@ -76,113 +113,7 @@
 
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
-    // ✅ دالة للتحقق من صلاحيات المشرف من Supabase
-    async function isUserAdmin(email) {
-        if (!supabaseClient || !email) return false;
-        try {
-            const { data, error } = await supabaseClient
-                .from('admins')
-                .select('email')
-                .eq('email', email)
-                .maybeSingle();
-            if (error) {
-                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error);
-                // ✅ للتوافق مع الإصدارات السابقة: التحقق من البريد الثابت
-                const ADMIN_EMAIL = 'zzccvc99@gmail.com';
-                return email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-            }
-            return !!data;
-        } catch (e) {
-            // ✅ للتوافق مع الإصدارات السابقة
-            const ADMIN_EMAIL = 'zzccvc99@gmail.com';
-            return email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-        }
-    }
-
-    // ✅ دالة للتحقق من كلمة مرور المشرف من Supabase
-    async function verifyAdminPassword(email, password) {
-        // أولاً: التحقق من البريد الثابت (للتوافق مع الإصدارات السابقة)
-        const ADMIN_EMAIL = 'zzccvc99@gmail.com';
-        const ADMIN_PASSWORD = 'vcxz4321cczzvv';
-        
-        if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
-            return true;
-        }
-        
-        // ✅ في الإصدارات المستقبلية: التحقق من جدول admins في Supabase
-        if (!supabaseClient) return false;
-        try {
-            const { data, error } = await supabaseClient
-                .from('admins')
-                .select('email, password_hash')
-                .eq('email', email)
-                .maybeSingle();
-            if (error || !data) return false;
-            // هنا يمكن استخدام bcrypt أو مقارنة مباشرة
-            return data.password_hash === password;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    function getDeviceId() {
-        let deviceId = localStorage.getItem('deviceId');
-        if (!deviceId) {
-            deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('deviceId', deviceId);
-        }
-        return deviceId;
-    }
-    const userDeviceId = getDeviceId();
-
-    // ✅ منع F12 وأدوات المطور
-    document.addEventListener('keydown', function(e) {
-        // منع F12
-        if (e.key === 'F12') {
-            e.preventDefault();
-            showToast('warning', '⚠️ هذه الميزة غير متاحة');
-            return false;
-        }
-        // منع Ctrl+Shift+I
-        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-            e.preventDefault();
-            showToast('warning', '⚠️ هذه الميزة غير متاحة');
-            return false;
-        }
-        // منع Ctrl+Shift+J
-        if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
-            e.preventDefault();
-            showToast('warning', '⚠️ هذه الميزة غير متاحة');
-            return false;
-        }
-        // منع Ctrl+U
-        if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
-            e.preventDefault();
-            showToast('warning', '⚠️ هذه الميزة غير متاحة');
-            return false;
-        }
-        // منع Ctrl+S
-        if (e.ctrlKey && (e.key === 'S' || e.key === 's')) {
-            e.preventDefault();
-            showToast('warning', '⚠️ هذه الميزة غير متاحة');
-            return false;
-        }
-    });
-
-    // ✅ منع النقر بزر الماوس الأيمن
-    document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        showToast('warning', '⚠️ هذه الميزة غير متاحة');
-        return false;
-    });
-
-    // ✅ منع تحديد النص
-    document.addEventListener('selectstart', function(e) {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-            e.preventDefault();
-        }
-    });
-
+    // ===== TOAST =====
     function showToast(type, message, duration = 4000) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -195,6 +126,18 @@
         }, duration);
     }
 
+    // ===== DEVICE ID =====
+    function getDeviceId() {
+        let deviceId = localStorage.getItem('deviceId');
+        if (!deviceId) {
+            deviceId = 'DEV_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+        }
+        return deviceId;
+    }
+    const userDeviceId = getDeviceId();
+
+    // ===== YOUTUBE =====
     function extractYouTubeId(url) {
         const patterns = [
             /(?:youtube\.com\/watch\?v=)([^&]+)/,
@@ -212,6 +155,7 @@
         return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
     }
 
+    // ===== ACCESS =====
     function hasAccessToTeacher(teacher) {
         if (!teacher || !teacher.codes) return false;
         if (!currentUser) return false;
@@ -219,55 +163,33 @@
         return hasAccess;
     }
 
-    function checkCodeStatus(teacher, code) {
-        if (!teacher || !teacher.codes) {
-            return { exists: false, message: 'المدرس أو الأكواد غير موجودة' };
-        }
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) {
-            return { exists: false, message: '❌ الكود غير موجود لهذا المدرس' };
-        }
-        if (codeData.locked === true) {
-            return {
-                exists: true,
-                used: codeData.used || false,
-                locked: true,
-                isCurrentUser: currentUser && codeData.userEmail === currentUser.email,
-                usedAt: codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف',
-                message: '🔒 هذا الكود مقفل من قبل الإدارة'
-            };
-        }
-        if (codeData.used) {
-            const isCurrentUser = currentUser && codeData.userEmail === currentUser.email;
-            if (isCurrentUser) {
-                return {
-                    exists: true, used: true, locked: codeData.locked || false,
-                    isCurrentUser: true,
-                    usedAt: codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف',
-                    message: `✅ الكود مفعل على حسابك\n⏱️ تم الاستخدام في: ${codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'غير معروف'}`
-                };
-            } else {
-                return {
-                    exists: true, used: true, locked: codeData.locked || false,
-                    isCurrentUser: false,
-                    usedAt: codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف',
-                    message: `❌ هذا الكود مستخدم من قبل شخص آخر\n⏱️ تم الاستخدام في: ${codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'غير معروف'}`
-                };
+    // ===== ADMIN VERIFICATION =====
+    async function isUserAdmin(email) {
+        if (!supabaseClient || !email) return false;
+        try {
+            const { data, error } = await supabaseClient
+                .from('admins')
+                .select('email')
+                .eq('email', email)
+                .maybeSingle();
+            if (error) {
+                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error);
+                return false;
             }
-        } else {
-            return {
-                exists: true, used: false, locked: codeData.locked || false,
-                message: `🟢 الكود متاح ${codeData.locked ? '(لكنه مقفل 🔒)' : ''}`
-            };
+            return !!data;
+        } catch (e) {
+            console.warn('⚠️ خطأ في التحقق من المشرف:', e);
+            return false;
         }
     }
 
+    // ===== CODE VERIFICATION =====
     async function verifyCode(teacher, code) {
         if (!teacher.codes || teacher.codes.length === 0) {
             return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
         }
         if (!currentUser) {
-            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود' };
+            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً' };
         }
         const codeData = teacher.codes.find(c => c.code === code);
         if (!codeData) {
@@ -287,25 +209,87 @@
                 };
             }
         }
-        // تفعيل الكود للمستخدم الحالي
         codeData.used = true;
         codeData.deviceId = userDeviceId;
         codeData.userId = currentUser.id;
         codeData.userEmail = currentUser.email;
         codeData.usedAt = new Date().toISOString();
         saveData();
-        
-        // حفظ الكود في Supabase
+
         await syncCodeWithSupabase(teacher, codeData);
         await addCodeToUserCodes(currentUser.id, codeData.code);
-        
-        // تحديث localStorage لتخزين الأكواد
         updateUserCodesStorage();
-        
-        return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
+
+        renderAllTeachers();
+        renderMyCourses();
+        renderAccount();
+        updateBadge();
+
+        return { valid: true, message: '✅ تم التفعيل بنجاح' };
     }
-    
-    // دالة لتحديث تخزين الأكواد في localStorage
+
+    async function addCodeToUserCodes(userId, code) {
+        if (!supabaseClient) return;
+        try {
+            const { data: codeRecord, error: codeError } = await supabaseClient
+                .from('codes').select('id').eq('code', code).single();
+            if (codeError) {
+                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
+                return;
+            }
+            const { data: existing, error: checkError } = await supabaseClient
+                .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
+            if (existing) return;
+            const { error } = await supabaseClient.from('user_codes').insert({
+                user_id: userId,
+                code_id: codeRecord.id,
+                used_at: new Date().toISOString()
+            });
+            if (error) {
+                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
+            }
+        } catch (error) {
+            console.warn('⚠️ خطأ في حفظ الكود:', error);
+        }
+    }
+
+    async function syncCodeWithSupabase(teacher, codeData) {
+        if (!currentUser || !supabaseClient) {
+            return { success: false };
+        }
+        try {
+            const record = {
+                code: codeData.code,
+                teacher_name: teacher.name,
+                user_id: currentUser.id,
+                user_email: currentUser.email,
+                device_id: userDeviceId,
+                used: true,
+                locked: codeData.locked || false,
+                used_at: codeData.usedAt || new Date().toISOString(),
+            };
+            const { error } = await supabaseClient.from('teacher_codes').upsert(record, { onConflict: 'code' });
+            if (error) {
+                console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
+                return { success: false };
+            }
+            const { error: updateError } = await supabaseClient.from('codes').update({
+                is_used: true,
+                user_id: currentUser.id,
+                user_email: currentUser.email,
+                device_id: userDeviceId,
+                used_at: new Date().toISOString()
+            }).eq('code', codeData.code);
+            if (updateError) {
+                console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
+            }
+            return { success: true };
+        } catch (error) {
+            console.warn('⚠️ خطأ في مزامنة الكود:', error);
+            return { success: false };
+        }
+    }
+
     function updateUserCodesStorage() {
         if (!currentUser) return;
         const userCodes = [];
@@ -324,8 +308,7 @@
         });
         localStorage.setItem('userCodes_' + currentUser.email, JSON.stringify(userCodes));
     }
-    
-    // دالة لاستعادة الأكواد من localStorage
+
     function restoreUserCodesFromStorage() {
         if (!currentUser) return;
         const stored = localStorage.getItem('userCodes_' + currentUser.email);
@@ -352,80 +335,9 @@
         }
     }
 
-    async function addCodeToUserCodes(userId, code) {
-        if (!supabaseClient) return;
-        try {
-            const { data: codeRecord, error: codeError } = await supabaseClient
-                .from('codes').select('id').eq('code', code).single();
-            if (codeError) {
-                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
-                return;
-            }
-            const { data: existing, error: checkError } = await supabaseClient
-                .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
-            if (existing) {
-                console.log('✅ الكود موجود مسبقاً للمستخدم');
-                return;
-            }
-            const { error } = await supabaseClient.from('user_codes').insert({
-                user_id: userId,
-                code_id: codeRecord.id,
-                used_at: new Date().toISOString()
-            });
-            if (error) {
-                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
-            } else {
-                console.log('✅ تم حفظ الكود في حساب المستخدم:', code);
-            }
-        } catch (error) {
-            console.warn('⚠️ خطأ في حفظ الكود:', error);
-        }
-    }
-
-    async function syncCodeWithSupabase(teacher, codeData) {
-        if (!currentUser || !supabaseClient) {
-            return { success: false, error: 'No authenticated user or Supabase unavailable' };
-        }
-        try {
-            const record = {
-                code: codeData.code,
-                teacher_name: teacher.name,
-                user_id: currentUser.id,
-                user_email: currentUser.email,
-                device_id: userDeviceId,
-                used: true,
-                locked: codeData.locked || false,
-                used_at: codeData.usedAt || new Date().toISOString(),
-            };
-            const { error } = await supabaseClient.from('teacher_codes').upsert(record, { onConflict: 'code' });
-            if (error) {
-                console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
-                return { success: false, error };
-            }
-            const { error: updateError } = await supabaseClient.from('codes').update({
-                is_used: true,
-                user_id: currentUser.id,
-                user_email: currentUser.email,
-                device_id: userDeviceId,
-                used_at: new Date().toISOString()
-            }).eq('code', codeData.code);
-            if (updateError) {
-                console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
-            }
-            console.log('✅ تم مزامنة الكود مع Supabase:', codeData.code);
-            return { success: true };
-        } catch (error) {
-            console.warn('⚠️ خطأ في مزامنة الكود:', error);
-            return { success: false, error };
-        }
-    }
-
     async function loadUserCodesFromSupabase() {
         if (!currentUser || !supabaseClient) return;
-        
-        // أولاً: استعادة من localStorage إن وجدت
         restoreUserCodesFromStorage();
-        
         try {
             const { data: userCodes, error: codesError } = await supabaseClient
                 .from('user_codes').select('code_id').eq('user_id', currentUser.id);
@@ -433,10 +345,7 @@
                 console.warn('⚠️ فشل جلب الأكواد:', codesError);
                 return;
             }
-            if (!userCodes || userCodes.length === 0) {
-                console.log('ℹ️ لا توجد أكواد محفوظة لهذا المستخدم');
-                return;
-            }
+            if (!userCodes || userCodes.length === 0) return;
             const codeIds = userCodes.map(uc => uc.code_id);
             const { data: codesData, error: codesDataError } = await supabaseClient
                 .from('codes').select('*').in('id', codeIds);
@@ -444,7 +353,7 @@
                 console.warn('⚠️ فشل جلب تفاصيل الأكواد:', codesDataError);
                 return;
             }
-            
+
             let restoredCount = 0;
             codesData.forEach(codeRecord => {
                 data.teachers.forEach(teacher => {
@@ -463,11 +372,14 @@
                     }
                 });
             });
-            
+
             if (restoredCount > 0) {
                 saveData();
                 updateUserCodesStorage();
-                renderTeachers(data.teachers);
+                renderAllTeachers();
+                renderMyCourses();
+                renderAccount();
+                updateBadge();
                 console.log('✅ تم استعادة', restoredCount, 'كود من Supabase');
                 showToast('success', `✅ تم استعادة ${restoredCount} اشتراك محفوظ`);
             }
@@ -476,111 +388,7 @@
         }
     }
 
-    function toggleCodeLock(teacher, code) {
-        if (!teacher.codes) return false;
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) return false;
-        codeData.locked = !codeData.locked;
-        saveData();
-        return true;
-    }
-
-    function generateCode(teacherName, length = 8) {
-        const prefix = teacherName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let random = '';
-        for (let i = 0; i < length; i++) {
-            random += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return `${prefix}-${random}`;
-    }
-
-    function addNewCodes(teacher, count = 5) {
-        if (!teacher.codes) teacher.codes = [];
-        const newCodes = [];
-        for (let i = 0; i < count; i++) {
-            const newCode = generateCode(teacher.name);
-            teacher.codes.push({
-                code: newCode, used: false, locked: false,
-                deviceId: null, userId: null, userEmail: null, usedAt: null
-            });
-            newCodes.push(newCode);
-        }
-        saveData();
-        pendingChanges++;
-        updatePendingChanges();
-        return newCodes;
-    }
-
-    window.addManualCode = function() {
-        const select = document.getElementById('codeTeacherSelect');
-        const teacherIndex = parseInt(select.value);
-        const codeInput = document.getElementById('manualCodeInput');
-        const codeMessage = document.getElementById('manualCodeMessage');
-        const code = codeInput.value.trim().toUpperCase();
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        if (!code) {
-            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        if (code.length < 4) {
-            codeMessage.innerHTML = '⚠️ الكود قصير جداً (يجب أن يكون 4 أحرف على الأقل)';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        if (code.includes(' ')) {
-            codeMessage.innerHTML = '⚠️ الكود لا يجب أن يحتوي على مسافات';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) {
-            codeMessage.innerHTML = '❌ المدرس غير موجود';
-            codeMessage.style.color = '#ef4444';
-            return;
-        }
-        if (!teacher.codes) teacher.codes = [];
-        const exists = teacher.codes.some(c => c.code === code);
-        if (exists) {
-            codeMessage.innerHTML = '⚠️ هذا الكود موجود بالفعل';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        teacher.codes.push({
-            code: code, used: false, locked: false,
-            deviceId: null, userId: null, userEmail: null, usedAt: null
-        });
-        saveData();
-        pendingChanges++;
-        updatePendingChanges();
-        updateCodesManagement();
-        codeInput.value = '';
-        codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
-        codeMessage.style.color = '#22c55e';
-        showToast('success', `✅ تم إضافة الكود: ${code}`);
-        updateAdminSelects();
-    };
-
-    function deleteCode(teacher, codeToDelete) {
-        if (!teacher.codes) return false;
-        const index = teacher.codes.findIndex(c => c.code === codeToDelete);
-        if (index === -1) return false;
-        if (teacher.codes[index].used) {
-            showToast('warning', '⚠️ لا يمكن حذف كود مستخدم');
-            return false;
-        }
-        teacher.codes.splice(index, 1);
-        saveData();
-        pendingChanges++;
-        updatePendingChanges();
-        return true;
-    }
-
+    // ===== CODE MANAGEMENT =====
     function getCodesStatus(teacher) {
         if (!teacher.codes) return { total: 0, used: 0, available: 0, locked: 0 };
         const total = teacher.codes.length;
@@ -589,476 +397,7 @@
         return { total, used, available: total - used, locked };
     }
 
-    window.checkCodeStatusAction = function() {
-        const select = document.getElementById('codeTeacherSelect');
-        const teacherIndex = parseInt(select.value);
-        const codeInput = document.getElementById('manualCodeInput');
-        const codeMessage = document.getElementById('manualCodeMessage');
-        const code = codeInput.value.trim().toUpperCase();
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        if (!code) {
-            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود للتحقق';
-            codeMessage.style.color = '#f59e0b';
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) {
-            codeMessage.innerHTML = '❌ المدرس غير موجود';
-            codeMessage.style.color = '#ef4444';
-            return;
-        }
-        const result = checkCodeStatus(teacher, code);
-        if (!result.exists) {
-            codeMessage.innerHTML = result.message;
-            codeMessage.style.color = '#ef4444';
-            return;
-        }
-        if (result.locked && !result.used) {
-            codeMessage.innerHTML = `
-                🔒 <strong>الكود مقفل</strong><br>
-                📊 لا يمكن استخدامه حالياً
-            `;
-            codeMessage.style.color = '#f59e0b';
-            codeMessage.style.direction = 'rtl';
-            return;
-        }
-        if (result.used) {
-            if (result.isCurrentUser) {
-                codeMessage.innerHTML = `
-                    ✅ <strong>الكود مفعل على حسابك</strong><br>
-                    ⏱️ <strong>تاريخ الاستخدام:</strong> ${result.usedAt}
-                `;
-                codeMessage.style.color = '#22c55e';
-            } else {
-                codeMessage.innerHTML = `
-                    ❌ <strong>هذا الكود مستخدم من قبل شخص آخر</strong><br>
-                    ⏱️ <strong>تاريخ الاستخدام:</strong> ${result.usedAt}
-                `;
-                codeMessage.style.color = '#ef4444';
-            }
-            codeMessage.style.direction = 'rtl';
-        } else {
-            codeMessage.innerHTML = `
-                🔍 <strong>حالة الكود:</strong> ${result.locked ? '🔒 مقفل' : '🟢 متاح'}<br>
-                📊 <strong>يمكن استخدامه:</strong> ${result.locked ? 'لا' : 'نعم'}
-            `;
-            codeMessage.style.color = result.locked ? '#f59e0b' : '#22c55e';
-            codeMessage.style.direction = 'rtl';
-        }
-    };
-
-    window.toggleCodeLockAction = function(teacherIndex, code) {
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) { showToast('error', '❌ الكود غير موجود'); return; }
-        const newLockState = !codeData.locked;
-        const action = newLockState ? 'قفل' : 'فتح';
-        if (toggleCodeLock(teacher, code)) {
-            showToast('success', `✅ تم ${action} الكود ${code} بنجاح`);
-            updateCodesManagement();
-            updateAdminSelects();
-        }
-    };
-
-    window.deleteSelectedTeacherFromTab = function() {
-        const select = document.getElementById('deleteTeacherSelect');
-        const teacherIndex = parseInt(select.value);
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        if (!confirm(`⚠️ هل أنت متأكد من حذف المدرس "${teacher.name}"؟`)) { return; }
-        data.teachers.splice(teacherIndex, 1);
-        saveData();
-        renderTeachers(data.teachers);
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
-        document.getElementById('deleteTeacherMessage').innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
-        document.getElementById('deleteTeacherMessage').style.color = '#22c55e';
-        showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
-    };
-
-    window.deleteSelectedSemesterFromTab = function() {
-        const teacherSelect = document.getElementById('deleteSemesterTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterIndex = parseInt(document.getElementById('deleteSemesterSelect').value);
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار المدرس');
-            return;
-        }
-        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار الفصل');
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        const semester = teacher.semesters[semesterIndex];
-        if (!semester) { showToast('error', '❌ الفصل غير موجود'); return; }
-        if (!confirm(`⚠️ هل أنت متأكد من حذف الفصل ${semester.number}؟`)) { return; }
-        teacher.semesters.splice(semesterIndex, 1);
-        saveData();
-        renderTeachers(data.teachers);
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
-        document.getElementById('deleteSemesterMessage').innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
-        document.getElementById('deleteSemesterMessage').style.color = '#22c55e';
-        showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
-        updateDeleteSemesterSelects();
-    };
-
-    window.deleteSelectedLectureFromTab = function() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterIndex = parseInt(document.getElementById('deleteLectureSemester').value);
-        const lectureIndex = parseInt(document.getElementById('deleteLectureSelect').value);
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار المدرس');
-            return;
-        }
-        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار الفصل');
-            return;
-        }
-        if (isNaN(lectureIndex) || lectureIndex === '' || lectureIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار المحاضرة');
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        const semester = teacher.semesters[semesterIndex];
-        if (!semester) { showToast('error', '❌ الفصل غير موجود'); return; }
-        const lecture = semester.lectures[lectureIndex];
-        if (!lecture) { showToast('error', '❌ المحاضرة غير موجودة'); return; }
-        if (!confirm(`⚠️ هل أنت متأكد من حذف المحاضرة "${lecture.title}"؟`)) { return; }
-        semester.lectures.splice(lectureIndex, 1);
-        saveData();
-        renderTeachers(data.teachers);
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
-        document.getElementById('deleteLectureMessage').innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
-        document.getElementById('deleteLectureMessage').style.color = '#22c55e';
-        showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
-        updateDeleteLectureSemesters();
-        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    };
-
-    function updateDeleteSemesterSelects() {
-        const teacherSelect = document.getElementById('deleteSemesterTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('deleteSemesterSelect');
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-    }
-
-    function updateDeleteLectureSemesters() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
-    function updateDeleteLectureLectures() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-        const semesterIndex = parseInt(semesterSelect.value);
-        const lectureSelect = document.getElementById('deleteLectureSelect');
-        let options = '<option value="">اختر المحاضرة...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters && !isNaN(semesterIndex) && semesterIndex !== '' && semesterIndex >= 0) {
-                const semester = teacher.semesters[semesterIndex];
-                if (semester && semester.lectures) {
-                    semester.lectures.forEach((l, i) => {
-                        options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
-                    });
-                }
-            }
-        }
-        lectureSelect.innerHTML = options;
-    }
-
-    function updateAdminSelects() {
-        updateTeacherSelects();
-        updateCodeTeacherSelect();
-        updateDeleteSelects();
-        updateEditLectureSelects();
-    }
-
-    function updateEditLectureSelects() {
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        let options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        teacherSelect.innerHTML = options;
-        document.getElementById('editLectureSemester').innerHTML = '<option value="">اختر المدرس أولاً</option>';
-        document.getElementById('editLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
-    function updateEditLectureSemesters() {
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('editLectureSemester');
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-        document.getElementById('editLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
-    function updateEditLectureLectures() {
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterSelect = document.getElementById('editLectureSemester');
-        const semesterIndex = parseInt(semesterSelect.value);
-        const lectureSelect = document.getElementById('editLectureSelect');
-        let options = '<option value="">اختر المحاضرة...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters && !isNaN(semesterIndex) && semesterIndex !== '' && semesterIndex >= 0) {
-                const semester = teacher.semesters[semesterIndex];
-                if (semester && semester.lectures) {
-                    semester.lectures.forEach((l, i) => {
-                        options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
-                    });
-                }
-            }
-        }
-        lectureSelect.innerHTML = options;
-    }
-
-    window.openEditLectureFromAdmin = function() {
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterIndex = parseInt(document.getElementById('editLectureSemester').value);
-        const lectureIndex = parseInt(document.getElementById('editLectureSelect').value);
-        const messageEl = document.getElementById('editLectureAdminMessage');
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
-            messageEl.innerHTML = '⚠️ يرجى اختيار الفصل';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-        if (isNaN(lectureIndex) || lectureIndex === '' || lectureIndex < 0) {
-            messageEl.innerHTML = '⚠️ يرجى اختيار المحاضرة';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { messageEl.innerHTML = '❌ المدرس غير موجود'; messageEl.style.color = '#ef4444'; return; }
-        const semester = teacher.semesters[semesterIndex];
-        if (!semester) { messageEl.innerHTML = '❌ الفصل غير موجود'; messageEl.style.color = '#ef4444'; return; }
-        const lecture = semester.lectures[lectureIndex];
-        if (!lecture) { messageEl.innerHTML = '❌ المحاضرة غير موجودة'; messageEl.style.color = '#ef4444'; return; }
-        messageEl.innerHTML = '';
-        openEditLecture(teacherIndex, semesterIndex, lectureIndex);
-    };
-
-    function updateDeleteSelects() {
-        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
-        let options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        deleteTeacherSelect.innerHTML = options;
-
-        const deleteSemesterTeacher = document.getElementById('deleteSemesterTeacher');
-        options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        deleteSemesterTeacher.innerHTML = options;
-        updateDeleteSemesterSelects();
-
-        const deleteLectureTeacher = document.getElementById('deleteLectureTeacher');
-        options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        deleteLectureTeacher.innerHTML = options;
-        updateDeleteLectureSemesters();
-    }
-
-    function updateTeacherSelects() {
-        const semesterTeacher = document.getElementById('semesterTeacher');
-        const lectureTeacher = document.getElementById('lectureTeacher');
-        let options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        semesterTeacher.innerHTML = options;
-        lectureTeacher.innerHTML = options;
-        updateSemesterSelects();
-    }
-
-    function updateSemesterSelects() {
-        const lectureSemester = document.getElementById('lectureSemester');
-        const teacherSelect = document.getElementById('lectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
-            const teacher = data.teachers[teacherIndex];
-            if (teacher && teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        lectureSemester.innerHTML = options;
-    }
-
-    function updateCodeTeacherSelect() {
-        const select = document.getElementById('codeTeacherSelect');
-        let options = '<option value="">اختر المدرس...</option>';
-        data.teachers.forEach((t, ti) => {
-            options += `<option value="${ti}">${t.name}</option>`;
-        });
-        select.innerHTML = options;
-    }
-
-    document.getElementById('lectureTeacher').addEventListener('change', updateSemesterSelects);
-    document.getElementById('codeTeacherSelect').addEventListener('change', updateCodesManagement);
-    document.getElementById('deleteSemesterTeacher').addEventListener('change', updateDeleteSemesterSelects);
-    document.getElementById('deleteLectureTeacher').addEventListener('change', updateDeleteLectureSemesters);
-    document.getElementById('deleteLectureSemester').addEventListener('change', updateDeleteLectureLectures);
-    document.getElementById('editLectureTeacher').addEventListener('change', updateEditLectureSemesters);
-    document.getElementById('editLectureSemester').addEventListener('change', updateEditLectureLectures);
-
-    function updateCodesManagement() {
-        const select = document.getElementById('codeTeacherSelect');
-        const container = document.getElementById('codesListContainer');
-        const teacherIndex = parseInt(select.value);
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>';
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
-            return;
-        }
-        const status = getCodesStatus(teacher);
-        let html = `
-            <div class="codes-stats">
-                <span>📊 المجموع: ${status.total}</span>
-                <span>✅ المستخدمة: ${status.used}</span>
-                <span>🟢 المتاحة: ${status.available}</span>
-                <span>🔒 المقفلة: ${status.locked}</span>
-            </div>
-            <div style="margin:0.5rem 0;display:flex;gap:0.5rem;flex-wrap:wrap;">
-                <button onclick="checkCodeStatusAction()" class="btn-submit" style="background:var(--info);flex:1;padding:0.4rem;font-size:0.8rem;">
-                    🔍 التحقق من كود
-                </button>
-            </div>
-            <div class="codes-table-wrapper">
-                <table class="codes-table">
-                    <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>تاريخ الاستخدام</th><th>الإجراءات</th></tr></thead>
-                    <tbody>
-        `;
-        if (teacher.codes && teacher.codes.length > 0) {
-            teacher.codes.forEach((c, index) => {
-                const isUsed = c.used;
-                const isLocked = c.locked || false;
-                const isMyCode = c.userEmail === currentUser?.email;
-                let statusText = '', statusColor = '', usedAtDisplay = '—';
-                if (isLocked) { statusText = '🔒 مقفل'; statusColor = '#f59e0b'; }
-                else if (isUsed) {
-                    statusText = isMyCode ? '✅ حسابك' : '❌ مستخدم';
-                    statusColor = isMyCode ? '#22c55e' : '#ef4444';
-                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : 'غير معروف';
-                } else { statusText = '🟢 متاح'; statusColor = '#22c55e'; }
-                const lockIcon = isLocked ? '🔓 فتح' : '🔒 قفل';
-                const lockStyle = isLocked ? 'background:#22c55e;' : 'background:#f59e0b;';
-                html += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
-                        <td><span class="code-status ${isUsed ? 'used' : 'available'} ${isLocked ? 'locked' : ''}">${statusText}</span></td>
-                        <td style="font-size:0.7rem;color:var(--text-light);">${usedAtDisplay}</td>
-                        <td>
-                            <div class="code-actions" style="gap:0.3rem;">
-                                <button onclick="toggleCodeLockAction(${teacherIndex}, '${c.code}')" 
-                                        class="btn-toggle-lock" style="${lockStyle}color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">
-                                    ${lockIcon}
-                                </button>
-                                ${!isUsed && !isLocked ? `<button onclick="deleteThisCode(${teacherIndex}, '${c.code}')" class="btn-delete-code" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">🗑️</button>` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
-        }
-        html += `</tbody></table></div>`;
-        container.innerHTML = html;
-    }
-
-    window.generateCodes = function(count = 5) {
-        const select = document.getElementById('codeTeacherSelect');
-        const teacherIndex = parseInt(select.value);
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
-            return;
-        }
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        const newCodes = addNewCodes(teacher, count);
-        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
-        updateCodesManagement();
-        updateAdminSelects();
-    };
-
-    window.deleteThisCode = function(teacherIndex, code) {
-        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
-        const teacher = data.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
-        if (deleteCode(teacher, code)) {
-            showToast('success', `✅ تم حذف الكود: ${code}`);
-            updateCodesManagement();
-            updateAdminSelects();
-        }
-    };
-
+    // ===== DATA FUNCTIONS =====
     function normalizeDataStructure(courseData) {
         if (!courseData || !Array.isArray(courseData.teachers)) {
             courseData.teachers = [];
@@ -1110,50 +449,36 @@
                     }
                 } catch (e) { console.warn('⚠️ بيانات localStorage تالفة'); }
             }
-            const response = await fetch('data.json?t=' + Date.now());
-            if (!response.ok) throw new Error('data.json not found');
-            const jsonData = await response.json();
-            if (jsonData && jsonData.teachers && Array.isArray(jsonData.teachers)) {
-                data = jsonData;
-                normalizeDataStructure(data);
-                localStorage.setItem('academyData', JSON.stringify(data));
-                console.log('✅ تم تحميل البيانات من data.json');
-                return;
-            }
-            throw new Error('Invalid data format');
-        } catch (error) {
-            console.warn('⚠️ استخدام البيانات الافتراضية:', error.message);
+            // بيانات افتراضية
             data = {
-                teachers: [
-                    {
-                        name: 'أ.حيدر طابور',
-                        emoji: '🧑‍🏫',
-                        subject: 'مدرس رياضيات',
-                        description: '',
-                        image: 'https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg',
-                        codes: [
-                            { code: 'XXX-TTT', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
-                            { code: 'XXX-KA0NNAC2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
-                            { code: 'XXX-UN9H0YY0', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
-                            { code: 'XXX-TMXU12F2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
-                            { code: 'XXX-8AV8PRPY', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null }
-                        ],
-                        semesters: [
-                            {
-                                number: 1, description: 'الفصل 1',
-                                lectures: [
-                                    { number: 1, title: 'اساسيات', youtubeUrl: 'https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ', isFree: true },
-                                    { number: 2, title: 'اساسيات 2', youtubeUrl: 'https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm', isFree: false }
-                                ]
-                            },
-                            { number: 2, description: 'الفصل 2', lectures: [] }
+                teachers: [{
+                    name: 'أ.حيدر طابور',
+                    emoji: '🧑‍🏫',
+                    subject: 'مدرس رياضيات',
+                    description: '',
+                    image: 'https://i.ibb.co/rG85h2d9/Screenshot-20260630-221127.jpg',
+                    codes: [
+                        { code: 'XXX-TTT', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                        { code: 'XXX-KA0NNAC2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                        { code: 'XXX-UN9H0YY0', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                        { code: 'XXX-TMXU12F2', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null },
+                        { code: 'XXX-8AV8PRPY', used: false, locked: false, deviceId: null, userId: null, userEmail: null, usedAt: null }
+                    ],
+                    semesters: [{
+                        number: 1,
+                        description: 'الفصل 1',
+                        lectures: [
+                            { number: 1, title: 'اساسيات', youtubeUrl: 'https://youtu.be/sNMZ74fI-_0?si=ZJkoSZxl4ByqvKzJ', isFree: true },
+                            { number: 2, title: 'اساسيات 2', youtubeUrl: 'https://youtu.be/c_S46HtY7j8?si=Z8fBSYU1Op0p9rRm', isFree: false }
                         ]
-                    }
-                ]
+                    }, { number: 2, description: 'الفصل 2', lectures: [] }]
+                }]
             };
             normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
             showToast('info', '📝 يتم عرض بيانات افتراضية');
+        } catch (error) {
+            console.warn('⚠️ استخدام البيانات الافتراضية:', error.message);
         }
     }
 
@@ -1182,39 +507,19 @@
         try {
             const record = { id: 'main', content: data, updated_at: new Date().toISOString() };
             const { error } = await supabaseClient.from('academy_data').upsert(record, { onConflict: 'id' });
-            if (error) { console.warn('Supabase academy data save failed:', error.message || error); return { success: false, error }; }
+            if (error) { console.warn('Supabase academy data save failed:', error.message || error); return { success: false,
+                    error }; }
             localStorage.setItem('academyData', JSON.stringify(data));
             return { success: true };
-        } catch (error) { console.warn('Supabase academy data save exception:', error); return { success: false, error }; }
+        } catch (error) { console.warn('Supabase academy data save exception:', error); return { success: false,
+                error }; }
     }
 
-    async function subscribeAcademyDataUpdates() {
-        if (!supabaseClient) return;
-        try {
-            const channel = supabaseClient
-                .channel('public:academy_data')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data', filter: 'id=eq.main' }, (payload) => {
-                    if (!payload?.new?.content) return;
-                    try {
-                        const remoteData = payload.new.content;
-                        if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
-                            data = remoteData;
-                            normalizeDataStructure(data);
-                            saveData();
-                            renderTeachers(data.teachers);
-                            updateAdminSelects();
-                            showToast('info', '🔄 تم تحديث البيانات تلقائياً من السحابة');
-                        }
-                    } catch (err) { console.warn('Realtime parse error:', err); }
-                })
-                .subscribe();
-            console.log('✅ subscribed to Supabase academy data updates', channel);
-        } catch (error) { console.warn('Supabase realtime subscription failed:', error); }
-    }
-
-    function renderTeachers(teachers) {
+    // ===== RENDER TEACHERS =====
+    function renderTeachers(teachers, container) {
+        if (!container) return;
         if (!teachers || teachers.length === 0) {
-            teachersContainer.innerHTML = `
+            container.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">👨‍🏫</div>
                     <h2>لا يوجد مدرسون</h2>
@@ -1232,14 +537,13 @@
                 <div class="teachers-grid">
         `;
         teachers.forEach((teacher, index) => {
-            const totalLectures = Array.isArray(teacher.semesters) ? teacher.semesters.reduce((acc, s) => acc + (Array.isArray(s.lectures) ? s.lectures.length : 0), 0) : 0;
             const hasAccess = hasAccessToTeacher(teacher);
             const imageUrl = teacher.image || '';
             const emoji = teacher.emoji || '👨‍🏫';
             const name = teacher.name || 'مدرس';
             const subject = teacher.subject || '';
             const semestersCount = Array.isArray(teacher.semesters) ? teacher.semesters.length : 0;
-            
+
             html += `
                 <div class="teacher-card" onclick="openTeacher(${index})">
                     <div class="teacher-card-image">
@@ -1260,9 +564,15 @@
             `;
         });
         html += `</div></div>`;
-        teachersContainer.innerHTML = html;
+        container.innerHTML = html;
     }
 
+    function renderAllTeachers() {
+        renderTeachers(data.teachers, teachersContainer);
+        renderTeachers(data.teachers, teachersContainer2);
+    }
+
+    // ===== OPEN TEACHER =====
     window.openTeacher = function(teacherIndex) {
         const teacher = data.teachers[teacherIndex];
         if (!teacher) return;
@@ -1328,17 +638,20 @@
             return;
         }
         if (!currentUser) {
-            codeMessage.innerHTML = '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود';
+            codeMessage.innerHTML = '⚠️ يجب تسجيل الدخول أولاً';
             codeMessage.style.color = '#ef4444';
-            showToast('error', '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود');
+            showToast('error', '⚠️ يجب تسجيل الدخول أولاً');
             return;
         }
         const result = await verifyCode(activeTeacher, code);
         codeMessage.innerHTML = result.message;
         codeMessage.style.color = result.valid ? '#22c55e' : '#ef4444';
         if (result.valid) {
-            showToast('success', '✅ تم التفعيل بنجاح! تم حفظ الكود في حسابك');
-            renderTeachers(data.teachers);
+            showToast('success', '✅ تم التفعيل بنجاح!');
+            renderAllTeachers();
+            renderMyCourses();
+            renderAccount();
+            updateBadge();
             updateUserCodesStorage();
             setTimeout(() => {
                 const teacherIndex = activeTeacherIndex;
@@ -1393,6 +706,319 @@
         }
     };
 
+    // ===== MY COURSES =====
+    function getMyCourses() {
+        if (!currentUser) return [];
+        const courses = [];
+        data.teachers.forEach(teacher => {
+            if (teacher.codes) {
+                const hasAccess = teacher.codes.some(c => c.used && c.userEmail === currentUser.email && !c.locked);
+                if (hasAccess) {
+                    courses.push({
+                        teacherName: teacher.name,
+                        teacherEmoji: teacher.emoji || '👨‍🏫',
+                        teacherImage: teacher.image || '',
+                        teacherIndex: data.teachers.indexOf(teacher),
+                        codes: teacher.codes.filter(c => c.used && c.userEmail === currentUser.email)
+                    });
+                }
+            }
+        });
+        return courses;
+    }
+
+    function renderMyCourses() {
+        const container = document.getElementById('myCoursesContainer');
+        const countSpan = document.getElementById('myCoursesCount');
+        if (!container) return;
+        const courses = getMyCourses();
+        if (countSpan) countSpan.textContent = courses.length + ' دورة';
+
+        if (courses.length === 0) {
+            container.innerHTML = `
+                <div class="empty-courses">
+                    <span class="empty-icon">📚</span>
+                    <h3>لم تشترك في أي دورة بعد</h3>
+                    <p>استخدم كود التفعيل للاشتراك في دورات المدرسين</p>
+                    <button class="btn-primary" onclick="navigateTo('teachers')">
+                        <i class="fas fa-search"></i> استعراض المدرسين
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="my-courses-grid">';
+        courses.forEach(course => {
+            html += `
+                <div class="course-card-mini" onclick="openTeacher(${course.teacherIndex})">
+                    <div class="course-avatar">
+                        ${course.teacherImage ? `<img src="${course.teacherImage}" />` : course.teacherEmoji}
+                    </div>
+                    <div class="course-name">${course.teacherName}</div>
+                    <div class="course-meta">${course.codes.length} كود مفعل</div>
+                    <div class="course-badge">✅ مشترك</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ===== ACCOUNT =====
+    function renderAccount() {
+        if (!currentUser) {
+            accountName.textContent = 'غير مسجل';
+            accountEmail.textContent = 'يرجى تسجيل الدخول';
+            accountAvatar.textContent = '👤';
+            accountRegistered.textContent = '--';
+            accountCourses.textContent = '0';
+            accountCodes.textContent = '0';
+            adminPanelBtn.style.display = 'none';
+            return;
+        }
+
+        const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
+        accountName.textContent = name;
+        accountEmail.textContent = currentUser.email;
+        accountAvatar.textContent = name.charAt(0).toUpperCase();
+        const registered = currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString('ar') :
+        'غير معروف';
+        accountRegistered.textContent = 'مسجل منذ: ' + registered;
+
+        const courses = getMyCourses();
+        accountCourses.textContent = courses.length;
+
+        let codesCount = 0;
+        data.teachers.forEach(teacher => {
+            if (teacher.codes) {
+                codesCount += teacher.codes.filter(c => c.used && c.userEmail === currentUser.email).length;
+            }
+        });
+        accountCodes.textContent = codesCount;
+
+        // ===== التحقق من المشرف وإظهار زر الإدارة =====
+        isUserAdmin(currentUser.email).then(isAdmin => {
+            if (isAdmin) {
+                adminPanelBtn.style.display = 'flex';
+                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر');
+            } else {
+                adminPanelBtn.style.display = 'none';
+                console.log('👤 مستخدم عادي، زر الإدارة مخفي');
+            }
+        });
+    }
+
+    function updateBadge() {
+        const courses = getMyCourses();
+        if (courses.length > 0) {
+            coursesBadge.style.display = 'inline';
+            coursesBadge.textContent = courses.length;
+        } else {
+            coursesBadge.style.display = 'none';
+        }
+    }
+
+    // ===== AUTH =====
+    async function signOut() {
+        try {
+            localStorage.removeItem('devAcademicUser');
+            if (supabaseClient) {
+                await supabaseClient.auth.signOut();
+            }
+            currentUser = null;
+            activeTeacher = null;
+            activeTeacherIndex = null;
+            updateUI();
+            if (adminPanel) adminPanel.classList.remove('active');
+            if (semestersModal) semestersModal.classList.remove('active');
+            if (lecturesModal) lecturesModal.classList.remove('active');
+            if (teachersModal) teachersModal.classList.remove('active');
+            if (editLectureModal) editLectureModal.classList.remove('active');
+            renderMyCourses();
+            renderAccount();
+            updateBadge();
+            renderAllTeachers();
+            showToast('success', '✅ تم تسجيل الخروج بنجاح');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
+        } catch (error) {
+            console.warn('SignOut exception:', error);
+            showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
+        }
+    }
+
+    // ===== UPDATE UI =====
+    function updateUI() {
+        if (currentUser) {
+            const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
+            userNameDisplay.textContent = name;
+            userAvatar.textContent = name.charAt(0).toUpperCase();
+        } else {
+            userNameDisplay.textContent = 'غير مسجل';
+            userAvatar.textContent = '👤';
+        }
+    }
+
+    // ===== NAVIGATION =====
+    window.navigateTo = function(page) {
+        if (!currentUser) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
+        const targetPage = document.getElementById('page-' + page);
+        if (targetPage) targetPage.style.display = 'block';
+
+        document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
+        document.querySelector(`.nav-links li a[data-page="${page}"]`)?.closest('li')?.classList.add('active');
+
+        bottomNavItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.page === page);
+        });
+
+        const hero = document.getElementById('hero');
+        if (hero) {
+            hero.style.display = page === 'home' ? 'flex' : 'none';
+        }
+
+        if (page === 'my-courses') {
+            renderMyCourses();
+            updateBadge();
+        }
+        if (page === 'account') {
+            renderAccount();
+        }
+        if (page === 'teachers' || page === 'home') {
+            renderAllTeachers();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ===== NAVIGATION EVENTS =====
+    document.querySelectorAll('[data-page]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            navigateTo(this.dataset.page);
+        });
+    });
+
+    bottomNavItems.forEach(item => {
+        item.addEventListener('click', function() {
+            navigateTo(this.dataset.page);
+        });
+    });
+
+    // ===== USER PROFILE CLICK =====
+    document.getElementById('userProfileBtn')?.addEventListener('click', function() {
+        if (!currentUser) {
+            window.location.href = 'index.html';
+            return;
+        }
+        navigateTo('account');
+    });
+
+    // ===== LOGOUT =====
+    logoutAccountBtn?.addEventListener('click', signOut);
+
+    // ===== ADMIN PANEL BUTTON =====
+    adminPanelBtn?.addEventListener('click', function() {
+        if (!currentUser) {
+            showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
+            return;
+        }
+        isUserAdmin(currentUser.email).then(isAdmin => {
+            if (isAdmin) {
+                adminPanel.classList.add('active');
+                updateAdminSelects();
+                updatePendingChanges();
+                showToast('success', '🔓 مرحباً بك في لوحة التحكم');
+            } else {
+                showToast('error', '❌ غير مصرح لك بالدخول إلى لوحة التحكم');
+            }
+        });
+    });
+
+    adminClose?.addEventListener('click', function() {
+        adminPanel.classList.remove('active');
+    });
+
+    // ===== THEME =====
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        localStorage.setItem('devAcademicTheme', isDarkMode ? 'dark' : 'light');
+        showToast('info', isDarkMode ? '🌙 تم تفعيل الوضع المظلم' : '☀️ تم تفعيل الوضع الفاتح');
+    }
+
+    themeToggle.addEventListener('click', toggleTheme);
+
+    // ===== SEARCH =====
+    function applyFilters() {
+        const term = searchInput.value.trim().toLowerCase();
+        if (term === '') { renderAllTeachers(); return; }
+        const filtered = data.teachers.filter(t =>
+            t.name.toLowerCase().includes(term) ||
+            (t.subject && t.subject.toLowerCase().includes(term)) ||
+            (t.description && t.description.toLowerCase().includes(term))
+        );
+        renderTeachers(filtered, teachersContainer);
+        renderTeachers(filtered, teachersContainer2);
+    }
+
+    searchBtn.addEventListener('click', applyFilters);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') applyFilters();
+    });
+
+    // ===== MODALS =====
+    function closeModal(modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    closeTeachersModal?.addEventListener('click', () => closeModal(teachersModal));
+    closeSemestersModal?.addEventListener('click', () => closeModal(semestersModal));
+    closeLecturesModal?.addEventListener('click', () => closeModal(lecturesModal));
+
+    teachersModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
+    semestersModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
+    lecturesModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
+
+    // ===== VIDEO PLAYER =====
+    function closeVideoPlayer() {
+        playerFrame.src = '';
+        videoPlayer.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    closePlayer.addEventListener('click', closeVideoPlayer);
+    videoPlayer.addEventListener('click', function(e) {
+        if (e.target === this) closeVideoPlayer();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (videoPlayer.classList.contains('active')) closeVideoPlayer();
+            if (teachersModal.classList.contains('active')) closeModal(teachersModal);
+            if (semestersModal.classList.contains('active')) closeModal(semestersModal);
+            if (lecturesModal.classList.contains('active')) closeModal(lecturesModal);
+            if (editLectureModal.classList.contains('active')) closeEditLectureModal();
+            if (adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
+        }
+    });
+
+    // ===== EDIT LECTURE =====
     function openEditLecture(teacherIndex, semesterIndex, lectureIndex) {
         const teacher = data.teachers[teacherIndex];
         if (!teacher) return;
@@ -1412,7 +1038,41 @@
         document.body.style.overflow = 'hidden';
     }
 
-    editLectureForm.addEventListener('submit', function(e) {
+    window.openEditLectureFromAdmin = function() {
+        const teacherSelect = document.getElementById('editLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect.value);
+        const semesterIndex = parseInt(document.getElementById('editLectureSemester').value);
+        const lectureIndex = parseInt(document.getElementById('editLectureSelect').value);
+        const messageEl = document.getElementById('editLectureAdminMessage');
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار الفصل';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+        if (isNaN(lectureIndex) || lectureIndex === '' || lectureIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار المحاضرة';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { messageEl.innerHTML = '❌ المدرس غير موجود';
+            messageEl.style.color = '#ef4444'; return; }
+        const semester = teacher.semesters[semesterIndex];
+        if (!semester) { messageEl.innerHTML = '❌ الفصل غير موجود';
+            messageEl.style.color = '#ef4444'; return; }
+        const lecture = semester.lectures[lectureIndex];
+        if (!lecture) { messageEl.innerHTML = '❌ المحاضرة غير موجودة';
+            messageEl.style.color = '#ef4444'; return; }
+        messageEl.innerHTML = '';
+        openEditLecture(teacherIndex, semesterIndex, lectureIndex);
+    };
+
+    editLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const { teacherIndex, semesterIndex, lectureIndex } = editTarget;
         if (teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
@@ -1448,7 +1108,7 @@
         lecture.youtubeUrl = newUrl;
         lecture.isFree = newIsFree;
         saveData();
-        renderTeachers(data.teachers);
+        renderAllTeachers();
         pendingChanges++;
         updatePendingChanges();
         editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
@@ -1461,64 +1121,429 @@
         editLectureModal.classList.remove('active');
         document.body.style.overflow = 'auto';
         editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
-        editLectureMessage.innerHTML = '';
+        if (editLectureMessage) editLectureMessage.innerHTML = '';
     }
 
-    closeEditLecture.addEventListener('click', closeEditLectureModal);
-    cancelEditLecture.addEventListener('click', closeEditLectureModal);
-    editLectureModal.addEventListener('click', function(e) {
+    closeEditLecture?.addEventListener('click', closeEditLectureModal);
+    cancelEditLecture?.addEventListener('click', closeEditLectureModal);
+    editLectureModal?.addEventListener('click', function(e) {
         if (e.target === this) closeEditLectureModal();
     });
 
-    adminLoginBtn.addEventListener('click', function() {
-        adminLoginModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    });
-
-    function closeAdminLoginModal() {
-        adminLoginModal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        adminLoginForm.reset();
-        adminLoginMessage.textContent = '';
+    // ===== ADMIN FUNCTIONS =====
+    function updateAdminSelects() {
+        const selects = ['semesterTeacher', 'lectureTeacher', 'codeTeacherSelect', 'deleteTeacherSelect',
+            'deleteSemesterTeacher', 'deleteLectureTeacher', 'editLectureTeacher'
+        ];
+        selects.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            const currentValue = select.value;
+            let options = '<option value="">اختر...</option>';
+            data.teachers.forEach((t, ti) => {
+                options += `<option value="${ti}">${t.name}</option>`;
+            });
+            select.innerHTML = options;
+            if (currentValue && data.teachers[parseInt(currentValue)]) {
+                select.value = currentValue;
+            }
+        });
+        updateSemesterSelects();
+        updateDeleteSemesterSelects();
+        updateDeleteLectureSemesters();
+        updateEditLectureSemesters();
     }
 
-    closeAdminLogin.addEventListener('click', closeAdminLoginModal);
-    cancelAdminLogin.addEventListener('click', closeAdminLoginModal);
-    adminLoginModal.addEventListener('click', function(e) {
-        if (e.target === this) closeAdminLoginModal();
+    function updateSemesterSelects() {
+        const lectureSemester = document.getElementById('lectureSemester');
+        const teacherSelect = document.getElementById('lectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        let options = '<option value="">اختر الفصل...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        if (lectureSemester) lectureSemester.innerHTML = options;
+    }
+
+    function updateDeleteSemesterSelects() {
+        const teacherSelect = document.getElementById('deleteSemesterTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterSelect = document.getElementById('deleteSemesterSelect');
+        let options = '<option value="">اختر الفصل...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        if (semesterSelect) semesterSelect.innerHTML = options;
+    }
+
+    function updateDeleteLectureSemesters() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterSelect = document.getElementById('deleteLectureSemester');
+        let options = '<option value="">اختر الفصل...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        if (semesterSelect) semesterSelect.innerHTML = options;
+        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
+    }
+
+    function updateEditLectureSemesters() {
+        const teacherSelect = document.getElementById('editLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterSelect = document.getElementById('editLectureSemester');
+        let options = '<option value="">اختر الفصل...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters) {
+                teacher.semesters.forEach((s, i) => {
+                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                });
+            }
+        }
+        if (semesterSelect) semesterSelect.innerHTML = options;
+        document.getElementById('editLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
+    }
+
+    function updatePendingChanges() {
+        if (pendingChangesSpan) pendingChangesSpan.textContent = pendingChanges;
+    }
+
+    // ===== CODE MANAGEMENT FUNCTIONS =====
+    window.addManualCode = function() {
+        const select = document.getElementById('codeTeacherSelect');
+        const teacherIndex = parseInt(select?.value);
+        const codeInput = document.getElementById('manualCodeInput');
+        const codeMessage = document.getElementById('manualCodeMessage');
+        const code = codeInput?.value.trim().toUpperCase();
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            if (codeMessage) { codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
+                codeMessage.style.color = '#f59e0b'; }
+            return;
+        }
+        if (!code) {
+            if (codeMessage) { codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
+                codeMessage.style.color = '#f59e0b'; }
+            return;
+        }
+        if (code.length < 4) {
+            if (codeMessage) { codeMessage.innerHTML = '⚠️ الكود قصير جداً';
+                codeMessage.style.color = '#f59e0b'; }
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) {
+            if (codeMessage) { codeMessage.innerHTML = '❌ المدرس غير موجود';
+                codeMessage.style.color = '#ef4444'; }
+            return;
+        }
+        if (!teacher.codes) teacher.codes = [];
+        const exists = teacher.codes.some(c => c.code === code);
+        if (exists) {
+            if (codeMessage) { codeMessage.innerHTML = '⚠️ هذا الكود موجود بالفعل';
+                codeMessage.style.color = '#f59e0b'; }
+            return;
+        }
+        teacher.codes.push({
+            code: code,
+            used: false,
+            locked: false,
+            deviceId: null,
+            userId: null,
+            userEmail: null,
+            usedAt: null
+        });
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        updateCodesManagement();
+        if (codeInput) codeInput.value = '';
+        if (codeMessage) { codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
+            codeMessage.style.color = '#22c55e'; }
+        showToast('success', `✅ تم إضافة الكود: ${code}`);
+        updateAdminSelects();
+    };
+
+    window.generateCodes = function(count = 5) {
+        const select = document.getElementById('codeTeacherSelect');
+        const teacherIndex = parseInt(select?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        if (!teacher.codes) teacher.codes = [];
+        const newCodes = [];
+        for (let i = 0; i < count; i++) {
+            const prefix = teacher.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let random = '';
+            for (let j = 0; j < 8; j++) {
+                random += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const newCode = `${prefix}-${random}`;
+            teacher.codes.push({
+                code: newCode,
+                used: false,
+                locked: false,
+                deviceId: null,
+                userId: null,
+                userEmail: null,
+                usedAt: null
+            });
+            newCodes.push(newCode);
+        }
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        updateCodesManagement();
+        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
+        updateAdminSelects();
+    };
+
+    function updateCodesManagement() {
+        const select = document.getElementById('codeTeacherSelect');
+        const container = document.getElementById('codesListContainer');
+        const teacherIndex = parseInt(select?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            if (container) container.innerHTML =
+                '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر مدرساً لعرض الأكواد</p>';
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) {
+            if (container) container.innerHTML =
+                '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
+            return;
+        }
+        const status = getCodesStatus(teacher);
+        let html = `
+            <div class="codes-stats">
+                <span>📊 المجموع: ${status.total}</span>
+                <span>✅ المستخدمة: ${status.used}</span>
+                <span>🟢 المتاحة: ${status.available}</span>
+                <span>🔒 المقفلة: ${status.locked}</span>
+            </div>
+            <div class="codes-table-wrapper">
+                <table class="codes-table">
+                    <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>تاريخ الاستخدام</th><th>الإجراءات</th></tr></thead>
+                    <tbody>
+        `;
+        if (teacher.codes && teacher.codes.length > 0) {
+            teacher.codes.forEach((c, index) => {
+                const isUsed = c.used;
+                const isLocked = c.locked || false;
+                const isMyCode = c.userEmail === currentUser?.email;
+                let statusText = '',
+                    statusColor = '#22c55e',
+                    usedAtDisplay = '—';
+                if (isLocked) { statusText = '🔒 مقفل';
+                    statusColor = '#f59e0b'; } else if (isUsed) {
+                    statusText = isMyCode ? '✅ حسابك' : '❌ مستخدم';
+                    statusColor = isMyCode ? '#22c55e' : '#ef4444';
+                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : 'غير معروف';
+                } else { statusText = '🟢 متاح';
+                    statusColor = '#22c55e'; }
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><code style="font-weight:700;color:${statusColor};">${c.code}</code></td>
+                        <td><span style="color:${statusColor};">${statusText}</span></td>
+                        <td style="font-size:0.7rem;color:var(--text-light);">${usedAtDisplay}</td>
+                        <td>
+                            <button onclick="toggleCodeLock(${teacherIndex}, '${c.code}')" style="background:${isLocked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">
+                                ${isLocked ? '🔓 فتح' : '🔒 قفل'}
+                            </button>
+                            ${!isUsed && !isLocked ? `<button onclick="deleteCodeAction(${teacherIndex}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">🗑️</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
+        }
+        html += `</tbody></table></div>`;
+        if (container) container.innerHTML = html;
+    }
+
+    window.toggleCodeLock = function(teacherIndex, code) {
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        const codeData = teacher.codes.find(c => c.code === code);
+        if (!codeData) { showToast('error', '❌ الكود غير موجود'); return; }
+        codeData.locked = !codeData.locked;
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        updateCodesManagement();
+        showToast('success', `✅ تم ${codeData.locked ? 'قفل' : 'فتح'} الكود ${code}`);
+    };
+
+    window.deleteCodeAction = function(teacherIndex, code) {
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        const index = teacher.codes.findIndex(c => c.code === code);
+        if (index === -1) { showToast('error', '❌ الكود غير موجود'); return; }
+        if (teacher.codes[index].used) {
+            showToast('warning', '⚠️ لا يمكن حذف كود مستخدم');
+            return;
+        }
+        teacher.codes.splice(index, 1);
+        saveData();
+        pendingChanges++;
+        updatePendingChanges();
+        updateCodesManagement();
+        showToast('success', `✅ تم حذف الكود: ${code}`);
+    };
+
+    // ===== DELETE FUNCTIONS =====
+    window.deleteSelectedTeacherFromTab = function() {
+        const select = document.getElementById('deleteTeacherSelect');
+        const teacherIndex = parseInt(select?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار مدرس أولاً');
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المدرس "${teacher.name}"؟`)) { return; }
+        data.teachers.splice(teacherIndex, 1);
+        saveData();
+        renderAllTeachers();
+        updateAdminSelects();
+        pendingChanges++;
+        updatePendingChanges();
+        const msg = document.getElementById('deleteTeacherMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
+            msg.style.color = '#22c55e'; }
+        showToast('success', `✅ تم حذف المدرس "${teacher.name}" بنجاح`);
+    };
+
+    window.deleteSelectedSemesterFromTab = function() {
+        const teacherSelect = document.getElementById('deleteSemesterTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(document.getElementById('deleteSemesterSelect')?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
+            return;
+        }
+        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        const semester = teacher.semesters[semesterIndex];
+        if (!semester) { showToast('error', '❌ الفصل غير موجود'); return; }
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الفصل ${semester.number}؟`)) { return; }
+        teacher.semesters.splice(semesterIndex, 1);
+        saveData();
+        renderAllTeachers();
+        updateAdminSelects();
+        pendingChanges++;
+        updatePendingChanges();
+        const msg = document.getElementById('deleteSemesterMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
+            msg.style.color = '#22c55e'; }
+        showToast('success', `✅ تم حذف الفصل ${semester.number} بنجاح`);
+        updateDeleteSemesterSelects();
+    };
+
+    window.deleteSelectedLectureFromTab = function() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(document.getElementById('deleteLectureSemester')?.value);
+        const lectureIndex = parseInt(document.getElementById('deleteLectureSelect')?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
+            return;
+        }
+        if (isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
+            return;
+        }
+        if (isNaN(lectureIndex) || lectureIndex === '' || lectureIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار المحاضرة');
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+        const semester = teacher.semesters[semesterIndex];
+        if (!semester) { showToast('error', '❌ الفصل غير موجود'); return; }
+        const lecture = semester.lectures[lectureIndex];
+        if (!lecture) { showToast('error', '❌ المحاضرة غير موجودة'); return; }
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المحاضرة "${lecture.title}"؟`)) { return; }
+        semester.lectures.splice(lectureIndex, 1);
+        saveData();
+        renderAllTeachers();
+        updateAdminSelects();
+        pendingChanges++;
+        updatePendingChanges();
+        const msg = document.getElementById('deleteLectureMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
+            msg.style.color = '#22c55e'; }
+        showToast('success', `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`);
+        updateDeleteLectureSemesters();
+    };
+
+    // ===== PUBLISH =====
+    publishBtn?.addEventListener('click', async function() {
+        if (pendingChanges === 0) {
+            showToast('info', '📌 لا توجد تغييرات لنشرها');
+            return;
+        }
+        if (!supabaseClient) {
+            showToast('error', '❌ Supabase غير متاح');
+            return;
+        }
+        const isAdmin = await isUserAdmin(currentUser?.email);
+        if (!(isAdminLoggedIn || isAdmin)) {
+            showToast('error', '❌ يجب تسجيل الدخول كمشرف');
+            return;
+        }
+        const result = await saveSupabaseAcademyData();
+        if (!result.success) {
+            showToast('error', '❌ فشل النشر: ' + (result.error?.message || 'خطأ غير معروف'));
+            return;
+        }
+        pendingChanges = 0;
+        updatePendingChanges();
+        showToast('success', '✅ تم نشر التغييرات بنجاح');
+        const msg = document.getElementById('publishMessage');
+        if (msg) { msg.textContent = '✅ تم نشر التغييرات بنجاح';
+            msg.style.color = '#22c55e'; }
+        setTimeout(() => { if (msg) msg.textContent = ''; }, 5000);
     });
 
-    adminLoginForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const email = document.getElementById('adminEmail').value.trim();
-        const password = document.getElementById('adminPassword').value.trim();
-        
-        // ✅ استخدام الدالة الجديدة للتحقق من صلاحيات المشرف
-        const isValid = await verifyAdminPassword(email, password);
-        
-        if (isValid) {
-            isAdminLoggedIn = true;
-            closeAdminLoginModal();
-            showToast('success', '✅ تم تسجيل الدخول بنجاح');
-            adminPanel.classList.add('active');
-            updateAdminSelects();
-            updatePendingChanges();
-            currentUser = {
-                id: 'admin_' + Date.now(),
-                email: email,
-                user_metadata: { full_name: 'المشرف' }
-            };
-            localStorage.setItem('devAcademicUser', JSON.stringify({ email: email, name: 'المشرف' }));
-        } else {
-            adminLoginMessage.textContent = '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة';
-            adminLoginMessage.style.color = '#ef4444';
+    createTableBtn?.addEventListener('click', async function() {
+        const sql =
+            `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
+        try {
+            await navigator.clipboard.writeText(sql);
+            showToast('info', '✅ تم نسخ SQL إلى الحافظة');
+        } catch (err) {
+            showToast('error', '❌ فشل نسخ SQL');
         }
     });
 
-    adminClose.addEventListener('click', function() {
-        adminPanel.classList.remove('active');
-    });
-
+    // ===== TAB EVENTS =====
     tabBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             tabBtns.forEach(b => b.classList.remove('active'));
@@ -1526,12 +1551,62 @@
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.getElementById('tab-' + this.dataset.tab).classList.add('active');
             if (this.dataset.tab === 'manage-codes') { updateCodesManagement(); }
-            if (this.dataset.tab === 'delete') { updateDeleteSelects(); }
-            if (this.dataset.tab === 'edit-lecture') { updateEditLectureSelects(); }
+            if (this.dataset.tab === 'delete') { updateAdminSelects(); }
+            if (this.dataset.tab === 'edit-lecture') { updateEditLectureSemesters(); }
+            if (this.dataset.tab === 'users') { renderUsersTable(); }
         });
     });
 
-    addTeacherForm.addEventListener('submit', function(e) {
+    // ===== USERS TABLE =====
+    function renderUsersTable() {
+        const tbody = document.getElementById('usersTableBody');
+        if (!tbody) return;
+        const usersMap = new Map();
+        data.teachers.forEach(teacher => {
+            if (teacher.codes) {
+                teacher.codes.forEach(c => {
+                    if (c.used && c.userEmail) {
+                        if (!usersMap.has(c.userEmail)) {
+                            usersMap.set(c.userEmail, {
+                                email: c.userEmail,
+                                userId: c.userId || 'غير معروف',
+                                courses: [],
+                                registeredAt: c.usedAt || new Date().toISOString()
+                            });
+                        }
+                        if (!usersMap.get(c.userEmail).courses.includes(teacher.name)) {
+                            usersMap.get(c.userEmail).courses.push(teacher.name);
+                        }
+                    }
+                });
+            }
+        });
+
+        if (usersMap.size === 0) {
+            tbody.innerHTML =
+                '<tr><td colspan="5" style="text-align:center;color:var(--text-light);">لا يوجد مستخدمين مسجلين</td></tr>';
+            return;
+        }
+
+        let html = '';
+        let index = 1;
+        usersMap.forEach((user, email) => {
+            const isAdmin = email === 'zzccvc99@gmail.com';
+            html += `
+                <tr>
+                    <td>${index++}</td>
+                    <td>${email}</td>
+                    <td>${user.courses.join('، ')}</td>
+                    <td>${new Date(user.registeredAt).toLocaleDateString('ar')}</td>
+                    <td><span class="badge ${isAdmin ? 'admin' : 'user'}">${isAdmin ? 'مدير' : 'مستخدم'}</span></td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // ===== FORM EVENTS =====
+    addTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('teacherName').value.trim();
         const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
@@ -1543,12 +1618,17 @@
             return;
         }
         const newTeacher = {
-            name, emoji, subject: subject || 'مدرس', description: description || '',
-            image: image || '', codes: [], semesters: []
+            name,
+            emoji,
+            subject: subject || 'مدرس',
+            description: description || '',
+            image: image || '',
+            codes: [],
+            semesters: []
         };
         data.teachers.push(newTeacher);
         saveData();
-        renderTeachers(data.teachers);
+        renderAllTeachers();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1556,10 +1636,10 @@
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
     });
 
-    addSemesterForm.addEventListener('submit', function(e) {
+    addSemesterForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const teacherSelect = document.getElementById('semesterTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
         const number = parseInt(document.getElementById('semesterNumber').value);
         const description = document.getElementById('semesterDesc').value.trim();
         if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0 || !number) {
@@ -1573,7 +1653,7 @@
         };
         data.teachers[teacherIndex].semesters.push(newSemester);
         saveData();
-        renderTeachers(data.teachers);
+        renderAllTeachers();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1581,16 +1661,17 @@
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
     });
 
-    addLectureForm.addEventListener('submit', function(e) {
+    addLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const teacherSelect = document.getElementById('lectureTeacher');
-        const teacherIndex = parseInt(teacherSelect.value);
-        const semesterIndex = parseInt(document.getElementById('lectureSemester').value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(document.getElementById('lectureSemester')?.value);
         const number = parseInt(document.getElementById('lectureNumber').value);
         const title = document.getElementById('lectureTitle').value.trim();
         const youtubeUrl = document.getElementById('lectureUrl').value.trim();
         const isFree = document.getElementById('lectureFree').value === 'true';
-        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0 || isNaN(semesterIndex) || semesterIndex === '' || semesterIndex < 0 || !number || !title || !youtubeUrl) {
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0 || isNaN(semesterIndex) || semesterIndex === '' ||
+            semesterIndex < 0 || !number || !title || !youtubeUrl) {
             showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
             return;
         }
@@ -1601,7 +1682,7 @@
         const newLecture = { number, title, youtubeUrl, isFree };
         data.teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
         saveData();
-        renderTeachers(data.teachers);
+        renderAllTeachers();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1609,267 +1690,61 @@
         showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
     });
 
-    function updatePendingChanges() {
-        pendingChangesSpan.textContent = pendingChanges;
-    }
-
-    publishBtn.addEventListener('click', async function() {
-        if (pendingChanges === 0) {
-            showToast('info', '📌 لا توجد تغييرات لنشرها');
-            return;
-        }
-        if (!supabaseClient) {
-            showToast('error', '❌ Supabase غير متاح. لا يمكن نشر التغييرات الآن');
-            return;
-        }
-        try {
-            const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-            if (sessionError) console.warn('Session check error:', sessionError);
-            if (!sessionData?.session?.user) {
-                showToast('error', '❌ لا توجد جلسة مستخدم صالحة. يرجى تسجيل الدخول ثم المحاولة.');
-                return;
-            }
-        } catch (diagErr) { console.warn('Session diagnostic failed:', diagErr); }
-        // ✅ استخدام الدالة الجديدة للتحقق من صلاحيات المشرف
-        const isAdmin = await isUserAdmin(currentUser?.email);
-        if (!(isAdminLoggedIn || isAdmin)) {
-            showToast('error', '❌ يجب تسجيل الدخول كمشرف لنشر التحديثات');
-            return;
-        }
-        const publishResult = await saveSupabaseAcademyData();
-        if (!publishResult.success) {
-            console.error('Publish failed:', publishResult.error);
-            const detail = publishResult.error?.message || (typeof publishResult.error === 'string' ? publishResult.error : JSON.stringify(publishResult.error));
-            showToast('error', `❌ فشل نشر التحديثات على السحابة: ${detail}`);
-            const pubMsgEl = document.getElementById('publishMessage');
-            if (pubMsgEl) {
-                if (/find the table|does not exist|relation .* does not exist|find the table 'public.academy_data'/i.test(detail)) {
-                    pubMsgEl.innerHTML = `❌ جدول <strong>academy_data</strong> غير موجود في مشروع Supabase. افتح لوحة Supabase → SQL Editor ثم شغّل الأمر التالي:<br><pre style="text-align:left;background:#111;color:#fff;padding:8px;border-radius:6px;">create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);</pre>`;
-                } else {
-                    pubMsgEl.textContent = '❌ فشل النشر: ' + detail;
+    // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
+    document.getElementById('lectureTeacher')?.addEventListener('change', updateSemesterSelects);
+    document.getElementById('codeTeacherSelect')?.addEventListener('change', updateCodesManagement);
+    document.getElementById('deleteSemesterTeacher')?.addEventListener('change', updateDeleteSemesterSelects);
+    document.getElementById('deleteLectureTeacher')?.addEventListener('change', updateDeleteLectureSemesters);
+    document.getElementById('deleteLectureSemester')?.addEventListener('change', function() {
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(this.value);
+        const lectureSelect = document.getElementById('deleteLectureSelect');
+        let options = '<option value="">اختر المحاضرة...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters && !isNaN(semesterIndex) && semesterIndex !== '' && semesterIndex >= 0) {
+                const semester = teacher.semesters[semesterIndex];
+                if (semester && semester.lectures) {
+                    semester.lectures.forEach((l, i) => {
+                        options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                    });
                 }
             }
-            return;
         }
-        const jsonData = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'academy-data-backup.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        const message = document.getElementById('publishMessage');
-        message.textContent = `✅ تم نشر ${pendingChanges} تغييراً بنجاح لجميع المستخدمين`;
-        message.style.color = '#22c55e';
-        pendingChanges = 0;
-        updatePendingChanges();
-        showToast('success', '✅ تم نشر التحديث لجميع المستخدمين وتم تنزيل نسخة احتياطية');
-        setTimeout(() => { message.textContent = ''; }, 5000);
+        if (lectureSelect) lectureSelect.innerHTML = options;
     });
-
-    if (createTableBtn) {
-        createTableBtn.addEventListener('click', async function() {
-            const sql = `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
-            try {
-                await navigator.clipboard.writeText(sql);
-                showToast('info', '✅ تم نسخ أمر إنشاء الجدول إلى الحافظة. افتح Supabase SQL Editor والصق وشغّل.');
-                const pubMsgEl = document.getElementById('publishMessage');
-                if (pubMsgEl) pubMsgEl.innerHTML = 'انسخ SQL إلى SQL Editor في Supabase ثم اضغط Run.';
-            } catch (err) {
-                console.warn('Clipboard failed:', err);
-                showToast('error', '❌ فشل نسخ SQL تلقائياً. انسخ النص يدوياً من الوثيقة.');
-                const pubMsgEl = document.getElementById('publishMessage');
-                if (pubMsgEl) pubMsgEl.innerHTML = '<pre style="text-align:left;background:#111;color:#fff;padding:8px;border-radius:6px;">create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);</pre>';
+    document.getElementById('editLectureTeacher')?.addEventListener('change', updateEditLectureSemesters);
+    document.getElementById('editLectureSemester')?.addEventListener('change', function() {
+        const teacherSelect = document.getElementById('editLectureTeacher');
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(this.value);
+        const lectureSelect = document.getElementById('editLectureSelect');
+        let options = '<option value="">اختر المحاضرة...</option>';
+        if (!isNaN(teacherIndex) && teacherIndex !== '' && teacherIndex >= 0 && data.teachers[teacherIndex]) {
+            const teacher = data.teachers[teacherIndex];
+            if (teacher && teacher.semesters && !isNaN(semesterIndex) && semesterIndex !== '' && semesterIndex >= 0) {
+                const semester = teacher.semesters[semesterIndex];
+                if (semester && semester.lectures) {
+                    semester.lectures.forEach((l, i) => {
+                        options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                    });
+                }
             }
-        });
-    }
-
-    function toggleTheme() {
-        isDarkMode = !isDarkMode;
-        document.body.classList.toggle('dark-mode', isDarkMode);
-        themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-        localStorage.setItem('devAcademicTheme', isDarkMode ? 'dark' : 'light');
-        showToast('info', isDarkMode ? '🌙 تم تفعيل الوضع المظلم' : '☀️ تم تفعيل الوضع الفاتح');
-    }
-
-    themeToggle.addEventListener('click', toggleTheme);
-
-    function applyFilters() {
-        const term = searchInput.value.trim().toLowerCase();
-        if (term === '') { renderTeachers(data.teachers); return; }
-        const filtered = data.teachers.filter(t =>
-            t.name.toLowerCase().includes(term) ||
-            (t.subject && t.subject.toLowerCase().includes(term)) ||
-            (t.description && t.description.toLowerCase().includes(term))
-        );
-        renderTeachers(filtered);
-    }
-
-    searchBtn.addEventListener('click', applyFilters);
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') applyFilters();
-    });
-
-    function closeModal(modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-
-    closeTeachersModal.addEventListener('click', () => closeModal(teachersModal));
-    closeSemestersModal.addEventListener('click', () => closeModal(semestersModal));
-    closeLecturesModal.addEventListener('click', () => closeModal(lecturesModal));
-
-    teachersModal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
-    semestersModal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
-    lecturesModal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
-
-    function closeVideoPlayer() {
-        playerFrame.src = '';
-        videoPlayer.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-
-    closePlayer.addEventListener('click', closeVideoPlayer);
-    videoPlayer.addEventListener('click', function(e) {
-        if (e.target === this) closeVideoPlayer();
-    });
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (videoPlayer.classList.contains('active')) closeVideoPlayer();
-            if (teachersModal.classList.contains('active')) closeModal(teachersModal);
-            if (semestersModal.classList.contains('active')) closeModal(semestersModal);
-            if (lecturesModal.classList.contains('active')) closeModal(lecturesModal);
-            if (editLectureModal.classList.contains('active')) closeEditLectureModal();
-            if (adminLoginModal.classList.contains('active')) closeAdminLoginModal();
-            if (adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
         }
+        if (lectureSelect) lectureSelect.innerHTML = options;
     });
 
-    const navbar = document.getElementById('navbar');
+    // ===== NAVBAR SCROLL =====
     window.addEventListener('scroll', function() {
         if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
+            navbar?.classList.add('scrolled');
         } else {
-            navbar.classList.remove('scrolled');
+            navbar?.classList.remove('scrolled');
         }
     });
 
-    async function initSupabaseAuth() {
-        if (!userStatusElement) return;
-        const storedUser = localStorage.getItem('devAcademicUser');
-        let fallbackUser = null;
-        if (storedUser) {
-            try { fallbackUser = JSON.parse(storedUser); } catch (e) { fallbackUser = null; }
-        }
-        if (!supabaseClient) {
-            if (fallbackUser) {
-                currentUser = {
-                    id: 'user_' + Date.now(),
-                    email: fallbackUser.email,
-                    user_metadata: { full_name: fallbackUser.name }
-                };
-                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
-                await loadUserCodesFromSupabase();
-                return;
-            }
-            userStatusElement.textContent = '⚠️ Supabase غير متاح';
-            return;
-        }
-        try {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            if (error) {
-                console.warn('Supabase session check failed:', error.message || error);
-                if (fallbackUser) {
-                    currentUser = {
-                        id: 'user_' + Date.now(),
-                        email: fallbackUser.email,
-                        user_metadata: { full_name: fallbackUser.name }
-                    };
-                    userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
-                    await loadUserCodesFromSupabase();
-                    return;
-                }
-                userStatusElement.textContent = '⚠️ خطأ في Supabase';
-                return;
-            }
-            if (session?.user) {
-                currentUser = session.user;
-                userStatusElement.textContent = `👤 ${currentUser.user_metadata?.full_name || currentUser.email}`;
-                localStorage.setItem('devAcademicUser', JSON.stringify({
-                    email: currentUser.email,
-                    name: currentUser.user_metadata?.full_name || ''
-                }));
-                await loadUserCodesFromSupabase();
-                return;
-            }
-            if (fallbackUser) {
-                currentUser = {
-                    id: 'user_' + Date.now(),
-                    email: fallbackUser.email,
-                    user_metadata: { full_name: fallbackUser.name }
-                };
-                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
-                await loadUserCodesFromSupabase();
-                return;
-            }
-            userStatusElement.textContent = '👤 غير مسجل';
-        } catch (error) {
-            console.warn('Supabase auth init exception:', error);
-            if (fallbackUser) {
-                currentUser = {
-                    id: 'user_' + Date.now(),
-                    email: fallbackUser.email,
-                    user_metadata: { full_name: fallbackUser.name }
-                };
-                userStatusElement.textContent = `👤 ${fallbackUser.name || fallbackUser.email}`;
-                await loadUserCodesFromSupabase();
-                return;
-            }
-            userStatusElement.textContent = '⚠️ خطأ في Supabase';
-        }
-    }
-
-    async function signOutSupabase() {
-        try {
-            localStorage.removeItem('devAcademicUser');
-            currentUser = null;
-            activeTeacher = null;
-            activeTeacherIndex = null;
-            if (userStatusElement) { userStatusElement.textContent = '👤 غير مسجل'; }
-            if (adminPanel) adminPanel.classList.remove('active');
-            if (semestersModal) semestersModal.classList.remove('active');
-            if (lecturesModal) lecturesModal.classList.remove('active');
-            if (teachersModal) teachersModal.classList.remove('active');
-            if (editLectureModal) editLectureModal.classList.remove('active');
-            showToast('info', '🔄 جارِ تسجيل الخروج...');
-            if (supabaseClient) {
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) { console.warn('Supabase signOut failed:', error.message || error); }
-            }
-            showToast('success', '✅ تم تسجيل الخروج بنجاح');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 500);
-        } catch (error) {
-            console.warn('SignOut exception:', error);
-            showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
-            currentUser = null;
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 500);
-        }
-    }
-
+    // ===== INIT =====
     const savedTheme = localStorage.getItem('devAcademicTheme');
     if (savedTheme === 'dark') {
         isDarkMode = true;
@@ -1877,26 +1752,79 @@
         themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
 
-    loadData().then(async () => {
-        await initSupabaseAuth();
+    async function init() {
         if (supabaseClient) {
-            await subscribeAcademyDataUpdates();
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.user) {
+                    currentUser = session.user;
+                    localStorage.setItem('devAcademicUser', JSON.stringify({
+                        email: currentUser.email,
+                        name: currentUser.user_metadata?.full_name || ''
+                    }));
+                    updateUI();
+                    await loadUserCodesFromSupabase();
+                    renderAllTeachers();
+                    renderMyCourses();
+                    renderAccount();
+                    updateBadge();
+
+                    loadingScreen.style.display = 'none';
+                    navbar.style.display = 'flex';
+                    bottomNav.style.display = 'flex';
+                    footer.style.display = 'block';
+
+                    navigateTo('home');
+                    showToast('success', '✅ مرحباً بعودتك');
+                    console.log('👤 المستخدم:', currentUser.email);
+                } else {
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.warn('Session check error:', error);
+                window.location.href = 'index.html';
+            }
+        } else {
+            window.location.href = 'index.html';
         }
-        renderTeachers(data.teachers);
+
+        if (supabaseClient && currentUser) {
+            try {
+                const channel = supabaseClient
+                    .channel('public:academy_data')
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data',
+                        filter: 'id=eq.main' }, (payload) => {
+                        if (!payload?.new?.content) return;
+                        try {
+                            const remoteData = payload.new.content;
+                            if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
+                                data = remoteData;
+                                normalizeDataStructure(data);
+                                saveData();
+                                renderAllTeachers();
+                                renderMyCourses();
+                                renderAccount();
+                                updateBadge();
+                                showToast('info', '🔄 تم تحديث البيانات تلقائياً');
+                            }
+                        } catch (err) { console.warn('Realtime parse error:', err); }
+                    })
+                    .subscribe();
+                console.log('✅ مشترك في تحديثات Supabase');
+            } catch (error) {
+                console.warn('Supabase realtime subscription failed:', error);
+            }
+        }
+
+        renderUsersTable();
         updateAdminSelects();
-        const signOutBtn = document.getElementById('signOutBtn');
-        if (signOutBtn) {
-            signOutBtn.addEventListener('click', signOutSupabase);
-        }
         console.log('📚 ديف أكاديمي - النظام جاهز');
-        console.log('📱 معرف الجهاز:', userDeviceId);
-    }).catch((error) => {
+        console.log('🔒 جميع الميزات محمية وآمنة');
+    }
+
+    loadData().then(init).catch((error) => {
         console.error('Initialization failed:', error);
-        if (userStatusElement) {
-            userStatusElement.textContent = '⚠️ فشل التحميل';
-        }
-        renderTeachers(data.teachers);
-        updateAdminSelects();
+        window.location.href = 'index.html';
     });
 
 })();

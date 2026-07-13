@@ -7,19 +7,522 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 2px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0.5rem 0;
+            z-index: 999;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode .bottom-nav {
+            background: var(--bg-card);
+            border-top-color: var(--border);
+        }
+
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.1rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.65rem;
+            min-width: 60px;
+            border: none;
+            background: none;
+            position: relative;
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 1.4rem;
+        }
+
+        .bottom-nav .nav-item.active {
+            color: var(--primary);
+        }
+
+        .bottom-nav .nav-item:hover {
+            color: var(--primary);
+            background: var(--bg-hover);
+        }
+
+        .bottom-nav .nav-item .badge {
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            padding: 0.1rem 0.4rem;
+            font-size: 0.55rem;
+            position: absolute;
+            top: -2px;
+            right: -6px;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .admin-login-btn {
+            display: none !important;
+        }
+
+        .btn-logout {
+            display: none !important;
+        }
+
+        .hero {
+            min-height: 30vh;
+            padding: 1rem 1.5rem;
+        }
+
+        .hero-title {
+            font-size: 2rem;
+        }
+
+        .hero-desc {
+            font-size: 0.95rem;
+        }
+
+        .teachers-container {
+            padding-bottom: 80px;
+        }
+
+        .account-section {
+            padding: 1.5rem 1rem 100px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .account-section .profile-header {
+            text-align: center;
+            padding: 1.5rem 0;
+        }
+
+        .account-section .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            margin: 0 auto 1rem;
+            border: 4px solid var(--primary);
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .account-section .profile-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .account-section .profile-email {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .account-section .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .account-section .stat-box {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .account-section .stat-box .number {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .account-section .stat-box .label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .account-section .account-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-top: 1.5rem;
+        }
+
+        .account-section .account-actions button {
+            padding: 0.8rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .account-section .account-actions .btn-logout-account {
+            background: var(--danger);
+            color: white;
+        }
+
+        .account-section .account-actions .btn-logout-account:hover {
+            background: #dc2626;
+            transform: scale(1.02);
+        }
+
+        .account-section .account-actions .btn-admin {
+            background: var(--primary);
+            color: white;
+        }
+
+        .account-section .account-actions .btn-admin:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .account-section .account-actions .btn-admin i {
+            margin-left: 0.5rem;
+        }
+
+        .my-courses-section {
+            padding: 1.5rem 1rem 100px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .my-courses-section .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .my-courses-section .section-header h2 {
+            font-size: 1.3rem;
+            color: var(--text);
+        }
+
+        .my-courses-section .section-header h2 i {
+            color: var(--primary);
+            margin-left: 0.5rem;
+        }
+
+        .my-courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .course-card-mini {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .course-card-mini:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+            border-color: var(--primary);
+        }
+
+        .course-card-mini .course-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 0.5rem;
+            overflow: hidden;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .course-card-mini .course-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .course-card-mini .course-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .course-card-mini .course-meta {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .course-card-mini .course-badge {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 0.3rem;
+        }
+
+        .empty-courses {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-light);
+        }
+
+        .empty-courses .empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+
+        .empty-courses h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .empty-courses p {
+            font-size: 0.95rem;
+            max-width: 400px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .empty-courses .btn-primary {
+            padding: 0.7rem 2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .empty-courses .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .teachers-page-header {
+            text-align: center;
+            padding: 1rem 0;
+        }
+
+        .teachers-page-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .teachers-page-header p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .user-profile-btn {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .user-profile-btn .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .user-profile-btn .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            max-width: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+        }
+
+        .loading-screen .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                min-height: 25vh;
+                padding: 0.5rem 1rem;
+            }
+            .hero-title {
+                font-size: 1.6rem;
+            }
+            .hero-desc {
+                font-size: 0.85rem;
+            }
+            .bottom-nav .nav-item {
+                font-size: 0.55rem;
+                padding: 0.2rem 0.4rem;
+                min-width: 45px;
+            }
+            .bottom-nav .nav-item i {
+                font-size: 1.2rem;
+            }
+            .account-section .profile-avatar {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+            }
+            .account-section .profile-stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+            .account-section .stat-box .number {
+                font-size: 1.4rem;
+            }
+            .my-courses-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+            .course-card-mini {
+                padding: 0.8rem;
+            }
+            .course-card-mini .course-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 1.5rem;
+            }
+            .course-card-mini .course-name {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .bottom-nav .nav-item {
+                font-size: 0.5rem;
+                padding: 0.1rem 0.2rem;
+                min-width: 35px;
+            }
+            .bottom-nav .nav-item i {
+                font-size: 1rem;
+            }
+            .my-courses-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.4rem;
+            }
+        }
+
+        .btn-admin {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-admin:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .btn-admin i {
+            font-size: 1.2rem;
+        }
+
+        .btn-logout-account {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout-account:hover {
+            background: #dc2626;
+            transform: scale(1.02);
+        }
+
+        .btn-logout-account i {
+            font-size: 1.2rem;
+        }
+    </style>
 </head>
 <body>
-    <!-- ===== NAVBAR ===== -->
-    <nav class="navbar" id="navbar">
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <nav class="navbar" id="navbar" style="display:none;">
         <div class="nav-container">
             <div class="nav-left">
                 <div class="logo">
                     <span class="logo-text">ديف <span>أكاديمي</span></span>
                 </div>
                 <ul class="nav-links">
-                    <li class="active"><a href="#"><i class="fas fa-home"></i> الرئيسية</a></li>
-                    <li><a href="#"><i class="fas fa-chalkboard-teacher"></i> المدرسون</a></li>
-                    <li><a href="#"><i class="fas fa-graduation-cap"></i> جديدة</a></li>
+                    <li class="active"><a href="#" data-page="home"><i class="fas fa-home"></i> الرئيسية</a></li>
                 </ul>
             </div>
             <div class="nav-right">
@@ -27,38 +530,110 @@
                     <input type="text" id="searchInput" placeholder="🔍 بحث..." />
                     <button id="searchBtn"><i class="fas fa-search"></i></button>
                 </div>
-                <div class="user-status" id="userStatus">جارِ التحقق...</div>
-                <button class="btn-logout" id="signOutBtn" title="تسجيل خروج">خروج</button>
-                <button class="theme-toggle" id="themeToggle" title="تبديل الوضع الليلي">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button class="admin-login-btn" id="adminLoginBtn" title="لوحة الإدارة">
-                    <i class="fas fa-user-shield"></i>
-                    <span class="admin-label">إدارة</span>
-                </button>
+                <div class="nav-user-section">
+                    <div class="user-profile-btn" id="userProfileBtn" title="الملف الشخصي">
+                        <span class="avatar" id="userAvatar">👤</span>
+                        <span class="user-name" id="userNameDisplay">غير مسجل</span>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" title="تبديل الوضع الليلي">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- ===== HERO SECTION ===== -->
-    <section class="hero" id="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">📚 ديف <span>أكاديمي</span></h1>
-            <p class="hero-desc">منصة تعليمية متكاملة. تعلم من أفضل المدرسين في أي وقت.</p>
-            <div class="hero-buttons">
-                <button class="btn-play"><i class="fas fa-play"></i> ابدأ التعلم</button>
-                <button class="btn-info"><i class="fas fa-info-circle"></i> المزيد</button>
+    <div id="page-home" style="display:none;">
+        <section class="hero" id="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">📚 ديف <span>أكاديمي</span></h1>
+                <p class="hero-desc">منصة تعليمية متكاملة. تعلم من أفضل المدرسين في أي وقت.</p>
+                <div class="hero-buttons">
+                    <button class="btn-play" onclick="navigateTo('teachers')">
+                        <i class="fas fa-play"></i> ابدأ التعلم
+                    </button>
+                    <button class="btn-info" onclick="navigateTo('my-courses')">
+                        <i class="fas fa-book-open"></i> دوراتي
+                    </button>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ===== TEACHERS CONTAINER ===== -->
-    <div class="teachers-container" id="teachersContainer">
-        <!-- سيتم إدراج المدرسين بواسطة JavaScript -->
+        <div class="teachers-container" id="teachersContainer"></div>
     </div>
 
-    <!-- ===== FOOTER ===== -->
-    <footer class="footer">
+    <div id="page-my-courses" style="display:none;">
+        <div class="my-courses-section">
+            <div class="section-header">
+                <h2><i class="fas fa-book-open"></i> دوراتي</h2>
+                <span id="myCoursesCount" style="color:var(--text-light);font-size:1rem;font-weight:600;">0 دورة</span>
+            </div>
+            <div id="myCoursesContainer"></div>
+        </div>
+    </div>
+
+    <div id="page-teachers" style="display:none;">
+        <div class="teachers-container" style="padding-top:1rem;">
+            <div class="teachers-page-header">
+                <h2>👨‍🏫 جميع المدرسين</h2>
+                <p>اختر المدرس وابدأ رحلة التعلم</p>
+            </div>
+            <div id="teachersContainer2"></div>
+        </div>
+    </div>
+
+    <div id="page-account" style="display:none;">
+        <div class="account-section">
+            <div class="profile-header">
+                <div class="profile-avatar" id="accountAvatar">👤</div>
+                <div class="profile-name" id="accountName">غير مسجل</div>
+                <div class="profile-email" id="accountEmail">البريد الإلكتروني</div>
+                <div style="font-size:0.8rem;color:var(--text-light);margin-top:0.3rem;" id="accountRegistered">مسجل منذ: --</div>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-box">
+                    <div class="number" id="accountCourses">0</div>
+                    <div class="label">📚 دوراتي</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="accountCodes">0</div>
+                    <div class="label">🔑 أكواد مفعلة</div>
+                </div>
+            </div>
+
+            <div class="account-actions">
+                <button class="btn-admin" id="adminPanelBtn" style="display:none;">
+                    <i class="fas fa-cog"></i> لوحة الإدارة
+                </button>
+                <button class="btn-logout-account" id="logoutAccountBtn">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav" id="bottomNav" style="display:none;">
+        <button class="nav-item active" data-page="home">
+            <i class="fas fa-home"></i>
+            <span>الرئيسية</span>
+        </button>
+        <button class="nav-item" data-page="my-courses">
+            <i class="fas fa-book-open"></i>
+            <span>دوراتي</span>
+            <span class="badge" id="coursesBadge" style="display:none;">0</span>
+        </button>
+        <button class="nav-item" data-page="teachers">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>المدرسون</span>
+        </button>
+        <button class="nav-item" data-page="account">
+            <i class="fas fa-user"></i>
+            <span>حسابي</span>
+        </button>
+    </nav>
+
+    <footer class="footer" style="padding-bottom:80px;display:none;" id="footer">
         <div class="footer-content">
             <div class="footer-logo">
                 <span class="logo-text">ديف <span>أكاديمي</span></span>
@@ -73,7 +648,7 @@
         </div>
     </footer>
 
-    <!-- ===== MODAL: المدرسين ===== -->
+    <!-- ===== MODALS ===== -->
     <div class="modal-overlay" id="teachersModal">
         <div class="modal modal-large">
             <button class="close-btn" id="closeTeachersModal"><i class="fas fa-times"></i></button>
@@ -82,7 +657,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: الفصول ===== -->
     <div class="modal-overlay" id="semestersModal">
         <div class="modal modal-large">
             <button class="close-btn" id="closeSemestersModal"><i class="fas fa-times"></i></button>
@@ -91,7 +665,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: المحاضرات ===== -->
     <div class="modal-overlay" id="lecturesModal">
         <div class="modal modal-large">
             <button class="close-btn" id="closeLecturesModal"><i class="fas fa-times"></i></button>
@@ -100,71 +673,19 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: تعديل المحاضرات (خاص بالإدارة) ===== -->
-    <div class="modal-overlay" id="editLectureModal">
-        <div class="modal modal-small">
-            <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
-            <h2>✏️ تعديل المحاضرة</h2>
-            <p style="text-align:center;color:var(--text-light);margin-bottom:0.8rem;font-size:0.9rem;" id="editLectureInfo"></p>
-            <form id="editLectureForm" class="admin-form">
-                <div class="form-group">
-                    <label>📝 عنوان المحاضرة *</label>
-                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
-                </div>
-                <div class="form-group">
-                    <label>📹 رابط YouTube *</label>
-                    <input type="url" id="editLectureUrl" placeholder="https://youtu.be/..." required />
-                </div>
-                <div class="form-group">
-                    <label>🔒 حالة المحاضرة</label>
-                    <select id="editLectureIsFree">
-                        <option value="true">🆓 مجانية</option>
-                        <option value="false">🔒 مقفلة (تتطلب كود)</option>
-                    </select>
-                </div>
-                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;font-size:0.85rem;"></div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ</button>
-                    <button type="button" class="btn-cancel" id="cancelEditLecture">إلغاء</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ===== VIDEO PLAYER ===== -->
     <div class="video-player-container" id="videoPlayer">
         <div class="video-player-wrapper">
             <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
             <div class="player-container">
                 <iframe id="playerFrame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
-            <div class="player-info" id="playerInfo">
+            <div class="player-info">
                 <span id="playerTitle">🎬 تشغيل المحاضرة</span>
             </div>
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
     <div class="toast-container" id="toastContainer"></div>
-
-    <!-- ===== ADMIN LOGIN MODAL ===== -->
-    <div class="modal-overlay" id="adminLoginModal">
-        <div class="modal modal-small">
-            <button class="close-btn" id="closeAdminLogin"><i class="fas fa-times"></i></button>
-            <h2>🔐 تسجيل الدخول</h2>
-            <form id="adminLoginForm">
-                <label for="adminEmail">📧 البريد الإلكتروني</label>
-                <input type="email" id="adminEmail" placeholder="أدخل البريد الإلكتروني" required />
-                <label for="adminPassword">🔑 كلمة المرور</label>
-                <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" required />
-                <div class="form-actions">
-                    <button type="submit" class="btn-save">تسجيل الدخول</button>
-                    <button type="button" class="btn-cancel" id="cancelAdminLogin">إلغاء</button>
-                </div>
-                <div id="adminLoginMessage"></div>
-            </form>
-        </div>
-    </div>
 
     <!-- ===== ADMIN PANEL ===== -->
     <div class="admin-panel" id="adminPanel">
@@ -173,7 +694,7 @@
                 <h2><i class="fas fa-cog"></i> لوحة التحكم</h2>
                 <button class="admin-close" id="adminClose"><i class="fas fa-times"></i></button>
             </div>
-            
+
             <div class="admin-tabs">
                 <button class="tab-btn active" data-tab="add-teacher">➕ إضافة</button>
                 <button class="tab-btn" data-tab="add-semester">📀 فصل</button>
@@ -181,10 +702,11 @@
                 <button class="tab-btn" data-tab="manage-codes">🔑 أكواد</button>
                 <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل</button>
                 <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
+                <button class="tab-btn" data-tab="users">👥 مستخدمين</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر</button>
             </div>
 
-            <!-- ===== إضافة مدرس ===== -->
+            <!-- Add Teacher -->
             <div class="tab-content active" id="tab-add-teacher">
                 <form id="addTeacherForm" class="admin-form">
                     <h3>👨‍🏫 إضافة مدرس جديد</h3>
@@ -212,7 +734,7 @@
                 </form>
             </div>
 
-            <!-- ===== إضافة فصل ===== -->
+            <!-- Add Semester -->
             <div class="tab-content" id="tab-add-semester">
                 <form id="addSemesterForm" class="admin-form">
                     <h3>📀 إضافة فصل جديد</h3>
@@ -232,7 +754,7 @@
                 </form>
             </div>
 
-            <!-- ===== إضافة محاضرة ===== -->
+            <!-- Add Lecture -->
             <div class="tab-content" id="tab-add-lecture">
                 <form id="addLectureForm" class="admin-form">
                     <h3>🎥 إضافة محاضرة جديدة</h3>
@@ -267,11 +789,11 @@
                 </form>
             </div>
 
-            <!-- ===== إدارة الأكواد ===== -->
+            <!-- Manage Codes -->
             <div class="tab-content" id="tab-manage-codes">
                 <div class="codes-management">
                     <h3 style="font-size:1rem;margin-bottom:0.8rem;">🔑 إدارة أكواد التفعيل</h3>
-                    
+
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="codeTeacherSelect" required></select>
@@ -301,12 +823,12 @@
                 </div>
             </div>
 
-            <!-- ===== تعديل محاضرة ===== -->
+            <!-- Edit Lecture -->
             <div class="tab-content" id="tab-edit-lecture">
                 <div class="edit-lecture-section">
                     <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل محاضرة</h3>
                     <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر المدرس ثم الفصل ثم المحاضرة</p>
-                    
+
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="editLectureTeacher" required>
@@ -325,7 +847,7 @@
                             <option value="">اختر الفصل أولاً</option>
                         </select>
                     </div>
-                    
+
                     <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
                         <i class="fas fa-edit"></i> فتح التعديل
                     </button>
@@ -333,7 +855,7 @@
                 </div>
             </div>
 
-            <!-- ===== حذف ===== -->
+            <!-- Delete -->
             <div class="tab-content" id="tab-delete">
                 <div class="delete-section">
                     <h3>🗑️ حذف مدرس</h3>
@@ -396,7 +918,33 @@
                 </div>
             </div>
 
-            <!-- ===== نشر التحديثات ===== -->
+            <!-- Users Management -->
+            <div class="tab-content" id="tab-users">
+                <div class="users-management">
+                    <h3 style="font-size:1rem;margin-bottom:0.5rem;">👥 المستخدمين المسجلين</h3>
+                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">عرض جميع المستخدمين الذين اشتركوا في دورات</p>
+                    <div class="users-table-wrapper">
+                        <table class="users-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>الدورات</th>
+                                    <th>تاريخ التسجيل</th>
+                                    <th>الصلاحية</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align:center;color:var(--text-light);">لا يوجد مستخدمين بعد</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publish -->
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
@@ -416,7 +964,36 @@
         </div>
     </div>
 
-    <!-- ===== JAVASCRIPT ===== -->
+    <div class="modal-overlay" id="editLectureModal">
+        <div class="modal modal-small">
+            <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
+            <h2>✏️ تعديل المحاضرة</h2>
+            <p style="text-align:center;color:var(--text-light);margin-bottom:0.8rem;font-size:0.9rem;" id="editLectureInfo"></p>
+            <form id="editLectureForm" class="admin-form">
+                <div class="form-group">
+                    <label>📝 عنوان المحاضرة *</label>
+                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
+                </div>
+                <div class="form-group">
+                    <label>📹 رابط YouTube *</label>
+                    <input type="url" id="editLectureUrl" placeholder="https://youtu.be/..." required />
+                </div>
+                <div class="form-group">
+                    <label>🔒 حالة المحاضرة</label>
+                    <select id="editLectureIsFree">
+                        <option value="true">🆓 مجانية</option>
+                        <option value="false">🔒 مقفلة (تتطلب كود)</option>
+                    </select>
+                </div>
+                <div id="editLectureMessage" style="text-align:center;font-weight:600;margin-bottom:0.5rem;font-size:0.85rem;"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> حفظ</button>
+                    <button type="button" class="btn-cancel" id="cancelEditLecture">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
