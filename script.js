@@ -114,7 +114,7 @@
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - مع تحكم كامل (صوت، سرعة، تكبير)
+    // 🔥 دوال تشغيل الفيديو - مع تحكم كامل
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -141,23 +141,36 @@
         }
 
         let videoUrl = extractVideoUrl(url);
-
+        
         // ===== إذا كان الرابط من mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
-            // إضافة معلمات التحكم الكامل مع الصوت
+            // ✅ التأكد من وجود controls=true و muted=false
+            // إزالة أي معلمات سابقة قد تمنع التحكم
+            videoUrl = videoUrl.replace(/&?controls=false/g, '');
+            videoUrl = videoUrl.replace(/&?muted=true/g, '');
+            videoUrl = videoUrl.replace(/&?autoplay=false/g, '');
+            
+            // إضافة المعلمات الصحيحة للتحكم الكامل
+            if (!videoUrl.includes('controls')) {
+                const separator = videoUrl.includes('?') ? '&' : '?';
+                videoUrl = videoUrl + separator + 'controls=true';
+            }
             if (!videoUrl.includes('autoplay')) {
                 const separator = videoUrl.includes('?') ? '&' : '?';
-                videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
-            } else {
-                if (!videoUrl.includes('controls')) {
-                    videoUrl = videoUrl + '&controls=true';
-                }
+                videoUrl = videoUrl + separator + 'autoplay=true';
             }
-
-            // إزالة muted=true (للسماح بالصوت)
+            if (!videoUrl.includes('muted')) {
+                const separator = videoUrl.includes('?') ? '&' : '?';
+                videoUrl = videoUrl + separator + 'muted=false';
+            }
+            
+            // ✅ إزالة أي علامات =false غير مرغوب فيها
+            videoUrl = videoUrl.replace(/&?controls=false/g, '');
             videoUrl = videoUrl.replace(/&?muted=true/g, '');
-            videoUrl = videoUrl.replace(/&?muted=false/g, '');
-
+            
+            console.log('🎥 تشغيل فيديو mediadelivery:', videoUrl);
+            
+            // إنشاء iframe مع جميع السماحيات
             videoWrapper.innerHTML = `
                 <iframe src="${videoUrl}" 
                         loading="lazy" 
@@ -168,7 +181,7 @@
                         mozallowfullscreen="true">
                 </iframe>
             `;
-
+            
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -187,7 +200,7 @@
                         allowfullscreen>
                 </iframe>
             `;
-
+            
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1860,7 +1873,7 @@
         let html = '';
         let index = 1;
         usersMap.forEach((user, email) => {
-            const isAdmin = email === '.';
+            const isAdmin = email === 'zzccvc99@gmail.com';
             html += `
                 <tr>
                     <td>${index++}</td>
