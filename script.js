@@ -114,33 +114,24 @@
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - مع تحكم كامل (صوت، سرعة، تكبير)
+    // 🔥 دوال تشغيل الفيديو - متوافقة مع mediadelivery
     // ============================================================
 
     function extractVideoUrl(url) {
         if (!url) return '';
-        
-        // إذا كان الرابط يحتوي على iframe code
+        if (url.includes('player.mediadelivery.net/embed/')) {
+            return url;
+        }
+        if (url.includes('mediadelivery.net')) {
+            return url;
+        }
         if (url.includes('<iframe')) {
             const match = url.match(/src=["']([^"']+)["']/);
             if (match) {
                 return match[1];
             }
         }
-        
-        let cleanUrl = url.trim();
-        
-        // تحويل /play/ إلى /embed/
-        if (cleanUrl.includes('player.mediadelivery.net/play/')) {
-            cleanUrl = cleanUrl.replace('/play/', '/embed/');
-        }
-        
-        // التأكد من وجود controls=true
-        if (cleanUrl.includes('mediadelivery') && !cleanUrl.includes('controls')) {
-            cleanUrl = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'controls=true';
-        }
-        
-        return cleanUrl;
+        return url;
     }
 
     window.playVideo = function(url, title) {
@@ -150,34 +141,23 @@
         }
 
         let videoUrl = extractVideoUrl(url);
-        
+
         // ===== إذا كان الرابط من mediadelivery =====
-        if (videoUrl.includes('mediadelivery') || videoUrl.includes('bunny')) {
-            // التأكد من وجود controls=true
-            if (!videoUrl.includes('controls')) {
-                videoUrl = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 'controls=true';
+        if (videoUrl.includes('mediadelivery')) {
+            if (!videoUrl.includes('autoplay')) {
+                const separator = videoUrl.includes('?') ? '&' : '?';
+                videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true';
             }
-            // إزالة muted=true إن وجدت
-            videoUrl = videoUrl.replace(/&?muted=true/g, '');
-            // إضافة muted=false
-            if (!videoUrl.includes('muted')) {
-                videoUrl = videoUrl + '&muted=false';
-            }
-            
-            console.log('🎥 تشغيل فيديو mediadelivery:', videoUrl);
-            
-            // إنشاء iframe مع جميع السماحيات
+
             videoWrapper.innerHTML = `
                 <iframe src="${videoUrl}" 
                         loading="lazy" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
-                        allowfullscreen="true"
-                        webkitallowfullscreen="true"
-                        mozallowfullscreen="true">
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" 
+                        allowfullscreen="true">
                 </iframe>
             `;
-            
+
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -185,18 +165,18 @@
             return;
         }
 
-        // ===== دعم YouTube =====
+        // ===== دعم YouTube للتوافق مع الإصدارات القديمة =====
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
             videoWrapper.innerHTML = `
                 <iframe src="${embedUrl}" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" 
                         allowfullscreen>
                 </iframe>
             `;
-            
+
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -204,25 +184,14 @@
             return;
         }
 
-        // ===== دعم الروابط المباشرة =====
+        // ===== دعم الروابط المباشرة (MP4, M3U8, etc) =====
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
             videoWrapper.innerHTML = `
-                <video controls autoplay 
-                       style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
-                       controlsList="nodownload"
-                       playsinline>
+                <video controls autoplay style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;">
                     <source src="${videoUrl}" type="video/mp4">
                     متصفحك لا يدعم تشغيل الفيديو
                 </video>
             `;
-
-            setTimeout(() => {
-                const video = videoWrapper.querySelector('video');
-                if (video) {
-                    video.volume = 1.0;
-                    video.muted = false;
-                }
-            }, 500);
 
             playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
@@ -842,7 +811,7 @@
             const isFree = lecture.isFree === true;
             const canWatch = isFree || hasAccess;
             const videoUrl = lecture.youtubeUrl || '';
-            const isMediaDelivery = videoUrl.includes('mediadelivery') || videoUrl.includes('bunny');
+            const isMediaDelivery = videoUrl.includes('mediadelivery');
             const videoIcon = isMediaDelivery ? 'fa-video' : 'fa-play-circle';
 
             html += `
@@ -1249,7 +1218,6 @@
         }
 
         const isValidUrl = newUrl.includes('mediadelivery') ||
-            newUrl.includes('bunny') ||
             newUrl.includes('youtube') ||
             newUrl.includes('youtu.be') ||
             newUrl.includes('player.') ||
@@ -1314,7 +1282,6 @@
         }
 
         const isValidUrl = youtubeUrl.includes('mediadelivery') ||
-            youtubeUrl.includes('bunny') ||
             youtubeUrl.includes('youtube') ||
             youtubeUrl.includes('youtu.be') ||
             youtubeUrl.includes('player.') ||
@@ -1337,7 +1304,7 @@
     });
 
     // ============================================================
-    // 🔧 دوال تحديث القوائم المنسدلة
+    // 🔧 إصلاح مشكلة ظهور الفصول - دوال التحديث
     // ============================================================
 
     function updateSemesterSelects() {
@@ -1361,6 +1328,7 @@
 
         if (lectureSemester) {
             lectureSemester.innerHTML = options;
+            console.log('✅ تم تحديث قائمة الفصول:', options);
         }
     }
 
@@ -1490,6 +1458,7 @@
             }
         });
 
+        // تحديث الفصول
         setTimeout(() => {
             updateSemesterSelects();
             updateDeleteSemesterSelects();
@@ -1871,7 +1840,7 @@
         let html = '';
         let index = 1;
         usersMap.forEach((user, email) => {
-            const isAdmin = email === 'zzccvc99@gmail.com';
+            const isAdmin = email === 'لايوجد';
             html += `
                 <tr>
                     <td>${index++}</td>
@@ -1886,14 +1855,17 @@
     }
 
     // ============================================================
-    // 🔥 مستمعي الأحداث للقوائم المنسدلة
+    // 🔥 إضافة مستمعي الأحداث للقوائم المنسدلة
     // ============================================================
 
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔄 تهيئة مستمعي الأحداث للقوائم المنسدلة');
+
         // إضافة المحاضرة
         const lectureTeacher = document.getElementById('lectureTeacher');
         if (lectureTeacher) {
             lectureTeacher.addEventListener('change', function() {
+                console.log('🔄 تغيير المدرس في إضافة المحاضرة');
                 updateSemesterSelects();
             });
         }
@@ -1902,6 +1874,7 @@
         const deleteSemesterTeacher = document.getElementById('deleteSemesterTeacher');
         if (deleteSemesterTeacher) {
             deleteSemesterTeacher.addEventListener('change', function() {
+                console.log('🔄 تغيير المدرس في حذف الفصل');
                 updateDeleteSemesterSelects();
             });
         }
@@ -1910,6 +1883,7 @@
         const deleteLectureTeacher = document.getElementById('deleteLectureTeacher');
         if (deleteLectureTeacher) {
             deleteLectureTeacher.addEventListener('change', function() {
+                console.log('🔄 تغيير المدرس في حذف المحاضرة');
                 updateDeleteLectureSemesters();
                 const deleteLectureSelect = document.getElementById('deleteLectureSelect');
                 if (deleteLectureSelect) {
@@ -1921,6 +1895,7 @@
         const deleteLectureSemester = document.getElementById('deleteLectureSemester');
         if (deleteLectureSemester) {
             deleteLectureSemester.addEventListener('change', function() {
+                console.log('🔄 تغيير الفصل في حذف المحاضرة');
                 updateDeleteLectureLectures();
             });
         }
@@ -1929,6 +1904,7 @@
         const editLectureTeacher = document.getElementById('editLectureTeacher');
         if (editLectureTeacher) {
             editLectureTeacher.addEventListener('change', function() {
+                console.log('🔄 تغيير المدرس في تعديل المحاضرة');
                 updateEditLectureSemesters();
                 const editLectureSelect = document.getElementById('editLectureSelect');
                 if (editLectureSelect) {
@@ -1940,9 +1916,12 @@
         const editLectureSemester = document.getElementById('editLectureSemester');
         if (editLectureSemester) {
             editLectureSemester.addEventListener('change', function() {
+                console.log('🔄 تغيير الفصل في تعديل المحاضرة');
                 updateEditLectureLectures();
             });
         }
+
+        console.log('✅ تم تهيئة جميع مستمعي الأحداث');
     });
 
     // ===== NAVBAR SCROLL =====
@@ -2030,7 +2009,8 @@
         updateAdminSelects();
         console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('🔒 جميع الميزات محمية وآمنة');
-        console.log('🎥 دعم منصة mediadelivery مع تحكم كامل');
+        console.log('🎥 دعم منصة mediadelivery للتشغيل');
+        console.log('📌 تم إصلاح مشكلة ظهور الفصول في القوائم المنسدلة');
     }
 
     loadData().then(init).catch((error) => {
