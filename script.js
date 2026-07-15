@@ -114,7 +114,7 @@
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - مع تحكم كامل
+    // 🔥 دوال تشغيل الفيديو - مع تحكم كامل (صوت، سرعة، تكبير)
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -144,35 +144,25 @@
         
         // ===== إذا كان الرابط من mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
-            // ✅ التأكد من وجود controls=true و muted=false
-            // إزالة أي معلمات سابقة قد تمنع التحكم
-            videoUrl = videoUrl.replace(/&?controls=false/g, '');
-            videoUrl = videoUrl.replace(/&?muted=true/g, '');
-            videoUrl = videoUrl.replace(/&?autoplay=false/g, '');
+            // استخراج الرابط الأساسي
+            let baseUrl = videoUrl.split('?')[0];
             
-            // إضافة المعلمات الصحيحة للتحكم الكامل
-            if (!videoUrl.includes('controls')) {
-                const separator = videoUrl.includes('?') ? '&' : '?';
-                videoUrl = videoUrl + separator + 'controls=true';
-            }
-            if (!videoUrl.includes('autoplay')) {
-                const separator = videoUrl.includes('?') ? '&' : '?';
-                videoUrl = videoUrl + separator + 'autoplay=true';
-            }
-            if (!videoUrl.includes('muted')) {
-                const separator = videoUrl.includes('?') ? '&' : '?';
-                videoUrl = videoUrl + separator + 'muted=false';
-            }
+            // بناء الرابط مع المعلمات الصحيحة للتحكم الكامل
+            let params = new URLSearchParams();
+            params.set('autoplay', 'true');
+            params.set('controls', 'true');
+            params.set('loop', 'false');
+            params.set('muted', 'false');
+            params.set('preload', 'true');
+            params.set('responsive', 'true');
             
-            // ✅ إزالة أي علامات =false غير مرغوب فيها
-            videoUrl = videoUrl.replace(/&?controls=false/g, '');
-            videoUrl = videoUrl.replace(/&?muted=true/g, '');
+            let finalUrl = baseUrl + '?' + params.toString();
             
-            console.log('🎥 تشغيل فيديو mediadelivery:', videoUrl);
+            console.log('🎥 تشغيل فيديو mediadelivery:', finalUrl);
             
             // إنشاء iframe مع جميع السماحيات
             videoWrapper.innerHTML = `
-                <iframe src="${videoUrl}" 
+                <iframe src="${finalUrl}" 
                         loading="lazy" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
