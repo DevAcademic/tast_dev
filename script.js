@@ -119,19 +119,28 @@
 
     function extractVideoUrl(url) {
         if (!url) return '';
-        if (url.includes('player.mediadelivery.net/embed/')) {
-            return url;
-        }
-        if (url.includes('mediadelivery.net')) {
-            return url;
-        }
+        
+        // إذا كان الرابط يحتوي على iframe code
         if (url.includes('<iframe')) {
             const match = url.match(/src=["']([^"']+)["']/);
             if (match) {
                 return match[1];
             }
         }
-        return url;
+        
+        let cleanUrl = url.trim();
+        
+        // تحويل /play/ إلى /embed/
+        if (cleanUrl.includes('player.mediadelivery.net/play/')) {
+            cleanUrl = cleanUrl.replace('/play/', '/embed/');
+        }
+        
+        // التأكد من وجود controls=true
+        if (cleanUrl.includes('mediadelivery') && !cleanUrl.includes('controls')) {
+            cleanUrl = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'controls=true';
+        }
+        
+        return cleanUrl;
     }
 
     window.playVideo = function(url, title) {
@@ -143,26 +152,23 @@
         let videoUrl = extractVideoUrl(url);
         
         // ===== إذا كان الرابط من mediadelivery =====
-        if (videoUrl.includes('mediadelivery')) {
-            // استخراج الرابط الأساسي
-            let baseUrl = videoUrl.split('?')[0];
+        if (videoUrl.includes('mediadelivery') || videoUrl.includes('bunny')) {
+            // التأكد من وجود controls=true
+            if (!videoUrl.includes('controls')) {
+                videoUrl = videoUrl + (videoUrl.includes('?') ? '&' : '?') + 'controls=true';
+            }
+            // إزالة muted=true إن وجدت
+            videoUrl = videoUrl.replace(/&?muted=true/g, '');
+            // إضافة muted=false
+            if (!videoUrl.includes('muted')) {
+                videoUrl = videoUrl + '&muted=false';
+            }
             
-            // بناء الرابط مع المعلمات الصحيحة للتحكم الكامل
-            let params = new URLSearchParams();
-            params.set('autoplay', 'true');
-            params.set('controls', 'true');
-            params.set('loop', 'false');
-            params.set('muted', 'false');
-            params.set('preload', 'true');
-            params.set('responsive', 'true');
-            
-            let finalUrl = baseUrl + '?' + params.toString();
-            
-            console.log('🎥 تشغيل فيديو mediadelivery:', finalUrl);
+            console.log('🎥 تشغيل فيديو mediadelivery:', videoUrl);
             
             // إنشاء iframe مع جميع السماحيات
             videoWrapper.innerHTML = `
-                <iframe src="${finalUrl}" 
+                <iframe src="${videoUrl}" 
                         loading="lazy" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
@@ -836,7 +842,7 @@
             const isFree = lecture.isFree === true;
             const canWatch = isFree || hasAccess;
             const videoUrl = lecture.youtubeUrl || '';
-            const isMediaDelivery = videoUrl.includes('mediadelivery');
+            const isMediaDelivery = videoUrl.includes('mediadelivery') || videoUrl.includes('bunny');
             const videoIcon = isMediaDelivery ? 'fa-video' : 'fa-play-circle';
 
             html += `
@@ -1243,6 +1249,7 @@
         }
 
         const isValidUrl = newUrl.includes('mediadelivery') ||
+            newUrl.includes('bunny') ||
             newUrl.includes('youtube') ||
             newUrl.includes('youtu.be') ||
             newUrl.includes('player.') ||
@@ -1307,6 +1314,7 @@
         }
 
         const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+            youtubeUrl.includes('bunny') ||
             youtubeUrl.includes('youtube') ||
             youtubeUrl.includes('youtu.be') ||
             youtubeUrl.includes('player.') ||
