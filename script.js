@@ -1675,7 +1675,6 @@
         }
 
         try {
-            // البحث عن المستخدم في جدول users أولاً
             const { data: userData, error: userError } = await supabaseClient
                 .from('users')
                 .select('id, email')
@@ -1694,7 +1693,6 @@
                 return;
             }
 
-            // التحقق إذا كان المستخدم مشرفاً بالفعل
             const { data: existingAdmin, error: checkError } = await supabaseClient
                 .from('admins')
                 .select('email')
@@ -1707,7 +1705,6 @@
                 return;
             }
 
-            // إضافة المشرف
             const { error: insertError } = await supabaseClient
                 .from('admins')
                 .insert({ uid: userData.id, email: email, role: 'admin' });
