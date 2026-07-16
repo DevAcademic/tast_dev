@@ -1684,7 +1684,7 @@
                 messageEl.innerHTML = `
                     ⚠️ المستخدم <strong>${email}</strong> غير موجود في جدول المستخدمين العام.
                     <br><br>
-                    <strong>السبب المحتمل:</strong> تم تسجيل المستخدم ولكن لم يتم إنشاء سجله في قاعدة البيانات العامة.
+                    <strong>السبب:</strong> لم يتم إنشاء سجل المستخدم في قاعدة البيانات العامة.
                     <br><br>
                     <button onclick="fixUserAndAddAdmin('${email}')" style="background:var(--primary);color:white;border:none;padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;">
                         <i class="fas fa-sync"></i> إصلاح المشكلة وإضافة المشرف
@@ -1735,7 +1735,7 @@
         }
     };
 
-    // ===== دالة إصلاح المستخدم وإضافته كمشرف =====
+    // ===== دالة إصلاح المستخدم وإضافته كمشرف - باستخدام RPC =====
     window.fixUserAndAddAdmin = async function(email) {
         const messageEl = document.getElementById('addAdminMessage');
         
@@ -1746,85 +1746,161 @@
         }
 
         try {
-            // ===== 1) إنشاء سجل للمستخدم في public.users =====
-            const newUserId = crypto.randomUUID ? crypto.randomUUID() : 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            // ===== المحاولة الأولى: استخدام RPC لتجاوز RLS =====
+            // نقوم بإنشاء دالة RPC في Supabase تسمح للمشرفين بإضافة مستخدمين
             
-            const { data: newUser, error: insertError } = await supabaseClient
-                .from('users')
-                .insert({
-                    id: newUserId,
-                    email: email,
-                    full_name: email.split('@')[0],
-                    registered_at: new Date().toISOString()
-                })
-                .select()
-                .single();
-
-            if (insertError) {
-                // إذا فشل الإدراج بسبب تكرار البريد، فهذا يعني أن المستخدم موجود بالفعل
-                if (insertError.code === '23505') {
-                    messageEl.innerHTML = '⚠️ المستخدم موجود بالفعل في قاعدة البيانات. جاري المحاولة مرة أخرى...';
-                    messageEl.style.color = '#f59e0b';
-                    
-                    // محاولة جلب المستخدم مرة أخرى
-                    const { data: existingUser, error: fetchError } = await supabaseClient
-                        .from('users')
-                        .select('id, email')
-                        .eq('email', email)
-                        .maybeSingle();
-                        
-                    if (existingUser) {
-                        // إضافة المستخدم كمشرف
-                        const { error: adminError } = await supabaseClient
-                            .from('admins')
-                            .insert({ uid: existingUser.id, email: email, role: 'admin' });
-                            
-                        if (adminError) {
-                            messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + adminError.message;
-                            messageEl.style.color = '#ef4444';
-                            return;
-                        }
-                        
-                        messageEl.innerHTML = `✅ تم إصلاح المشكلة وإضافة المشرف: ${email} بنجاح!`;
-                        messageEl.style.color = '#22c55e';
-                        showToast('success', `✅ تم إضافة المشرف: ${email}`);
-                        loadAdminsList();
-                        return;
-                    }
-                }
+            // ===== المحاولة الثانية: استخدام جدول users مع تعطيل RLS مؤقتاً =====
+            // ولكن هذا غير ممكن من العميل، لذلك نستخدم طريقة بديلة
+            
+            // ===== الحل: نطلب من المستخدم تسجيل الدخول أولاً =====
+            // أو نستخدم API المفتاح السري (Service Role Key) ولكن هذا غير آمن في العميل
+            
+            // ===== الحل الأمثل: استخدام دالة RPC =====
+            // يجب عليك إنشاء هذه الدالة في Supabase SQL Editor:
+            /*
+            create or replace function add_user_and_admin(p_email text)
+            returns jsonb language plpgsql security definer as $$
+            declare
+                v_user_id uuid;
+                v_result jsonb;
+            begin
+                -- التحقق إذا كان المستخدم موجوداً
+                select id into v_user_id from public.users where email = p_email;
                 
-                messageEl.innerHTML = '❌ فشل إضافة المستخدم: ' + insertError.message;
+                if v_user_id is null then
+                    -- إنشاء مستخدم جديد
+                    v_user_id := gen_random_uuid();
+                    insert into public.users (id, email, full_name, registered_at)
+                    values (v_user_id, p_email, split_part(p_email, '@', 1), now());
+                end if;
+                
+                -- إضافة المستخدم كمشرف
+                insert into public.admins (uid, email, role)
+                values (v_user_id, p_email, 'admin')
+                on conflict (uid) do nothing;
+                
+                v_result := jsonb_build_object(
+                    'success', true,
+                    'message', 'تم إضافة المستخدم والمشرف بنجاح',
+                    'user_id', v_user_id::text,
+                    'email', p_email
+                );
+                
+                return v_result;
+            exception when others then
+                return jsonb_build_object(
+                    'success', false,
+                    'message', 'حدث خطأ: ' || sqlerrm
+                );
+            end;
+            $$;
+            */
+            
+            // ===== محاولة استدعاء الدالة RPC =====
+            const { data: result, error: rpcError } = await supabaseClient
+                .rpc('add_user_and_admin', { p_email: email });
+
+            if (rpcError) {
+                console.error('RPC Error:', rpcError);
+                
+                // إذا فشلت الدالة RPC، نعرض رسالة توضيحية
+                messageEl.innerHTML = `
+                    ❌ فشل إضافة المستخدم: ${rpcError.message}
+                    <br><br>
+                    <strong>الحل:</strong> تحتاج إلى إنشاء دالة RPC في Supabase.
+                    <br><br>
+                    <button onclick="copyRpcFunction()" style="background:var(--primary);color:white;border:none;padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;">
+                        <i class="fas fa-copy"></i> نسخ كود الدالة
+                    </button>
+                    <br><br>
+                    <span style="font-size:0.7rem;color:var(--text-light);">
+                        🔧 الصق الكود في SQL Editor في Supabase ثم نفذه.
+                    </span>
+                `;
                 messageEl.style.color = '#ef4444';
                 return;
             }
 
-            // ===== 2) إضافة المستخدم كمشرف =====
-            const { error: adminError } = await supabaseClient
-                .from('admins')
-                .insert({ uid: newUser.id, email: email, role: 'admin' });
-
-            if (adminError) {
-                messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + adminError.message;
+            if (result && result.success) {
+                messageEl.innerHTML = `
+                    ✅ تم إصلاح المشكلة وإضافة المستخدم <strong>${email}</strong> كمشرف بنجاح!
+                    <br>
+                    <span style="font-size:0.8rem;color:var(--text-light);">
+                        📌 يمكن للمستخدم الآن الدخول إلى لوحة التحكم.
+                    </span>
+                `;
+                messageEl.style.color = '#22c55e';
+                showToast('success', `✅ تم إصلاح المشكلة وإضافة المشرف: ${email}`);
+                loadAdminsList();
+            } else {
+                messageEl.innerHTML = '❌ ' + (result?.message || 'حدث خطأ غير معروف');
                 messageEl.style.color = '#ef4444';
-                return;
             }
-
-            messageEl.innerHTML = `
-                ✅ تم إصلاح المشكلة وإضافة المستخدم <strong>${email}</strong> كمشرف بنجاح!
-                <br>
-                <span style="font-size:0.8rem;color:var(--text-light);">
-                    📌 يمكن للمستخدم الآن الدخول إلى لوحة التحكم.
-                </span>
-            `;
-            messageEl.style.color = '#22c55e';
-            showToast('success', `✅ تم إصلاح المشكلة وإضافة المشرف: ${email}`);
-            loadAdminsList();
 
         } catch (error) {
             messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
             messageEl.style.color = '#ef4444';
             console.error('Error fixing user:', error);
         }
+    };
+
+    // ===== دالة نسخ كود RPC =====
+    window.copyRpcFunction = function() {
+        const sql = `
+-- ===== دالة RPC لإضافة مستخدم ومشرف =====
+create or replace function add_user_and_admin(p_email text)
+returns jsonb language plpgsql security definer as $$
+declare
+    v_user_id uuid;
+    v_result jsonb;
+begin
+    -- التحقق إذا كان المستخدم موجوداً
+    select id into v_user_id from public.users where email = p_email;
+    
+    if v_user_id is null then
+        -- إنشاء مستخدم جديد
+        v_user_id := gen_random_uuid();
+        insert into public.users (id, email, full_name, registered_at)
+        values (v_user_id, p_email, split_part(p_email, '@', 1), now());
+    end if;
+    
+    -- إضافة المستخدم كمشرف
+    insert into public.admins (uid, email, role)
+    values (v_user_id, p_email, 'admin')
+    on conflict (uid) do nothing;
+    
+    v_result := jsonb_build_object(
+        'success', true,
+        'message', 'تم إضافة المستخدم والمشرف بنجاح',
+        'user_id', v_user_id::text,
+        'email', p_email
+    );
+    
+    return v_result;
+exception when others then
+    return jsonb_build_object(
+        'success', false,
+        'message', 'حدث خطأ: ' || sqlerrm
+    );
+end;
+$$;
+
+-- ===== منح الصلاحيات =====
+grant execute on function add_user_and_admin(text) to authenticated;
+        `;
+        
+        navigator.clipboard.writeText(sql).then(() => {
+            showToast('success', '✅ تم نسخ كود الدالة RPC');
+        }).catch(() => {
+            // طريقة بديلة للنسخ
+            const textarea = document.createElement('textarea');
+            textarea.value = sql;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('success', '✅ تم نسخ كود الدالة RPC');
+        });
     };
 
     async function loadAdminsList() {
@@ -2264,7 +2340,7 @@
         console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('🔒 جميع الميزات محمية وآمنة');
         console.log('🎥 دعم منصة mediadelivery للتشغيل');
-        console.log('👑 قسم إدارة المشرفين مفعل مع خاصية إصلاح المستخدمين');
+        console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
     }
 
     loadData().then(init).catch((error) => {
