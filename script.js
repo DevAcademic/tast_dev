@@ -54,6 +54,7 @@
     const searchBtn = document.getElementById('searchBtn');
     const videoPlayer = document.getElementById('videoPlayer');
     const closePlayer = document.getElementById('closePlayer');
+    const playerTitle = document.getElementById('playerTitle');
     const videoWrapper = document.getElementById('videoWrapper');
     const themeToggle = document.getElementById('themeToggle');
     const toastContainer = document.getElementById('toastContainer');
@@ -113,7 +114,7 @@
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - بدون أي نصوص إضافية
+    // 🔥 دوال تشغيل الفيديو - متوافقة مع mediadelivery
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -140,79 +141,59 @@
         }
 
         let videoUrl = extractVideoUrl(url);
-        
+
         // ===== إذا كان الرابط من mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
-            // إضافة معلمات التحكم الكامل مع الصوت
             if (!videoUrl.includes('autoplay')) {
                 const separator = videoUrl.includes('?') ? '&' : '?';
-                videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
-            } else {
-                if (!videoUrl.includes('controls')) {
-                    videoUrl = videoUrl + '&controls=true';
-                }
+                videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true';
             }
-            
-            // إزالة muted=true للسماح بالصوت
-            videoUrl = videoUrl.replace(/&?muted=true/g, '');
-            videoUrl = videoUrl.replace(/&?muted=false/g, '');
-            
-            // إنشاء iframe للتشغيل - بدون أي نصوص إضافية
+
             videoWrapper.innerHTML = `
                 <iframe src="${videoUrl}" 
                         loading="lazy" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
-                        allowfullscreen="true"
-                        webkitallowfullscreen="true"
-                        mozallowfullscreen="true">
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" 
+                        allowfullscreen="true">
                 </iframe>
             `;
-            
+
+            playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
-        // ===== دعم YouTube =====
+        // ===== دعم YouTube للتوافق مع الإصدارات القديمة =====
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
             videoWrapper.innerHTML = `
                 <iframe src="${embedUrl}" 
                         style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" 
                         allowfullscreen>
                 </iframe>
             `;
-            
+
+            playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
-        // ===== دعم الروابط المباشرة =====
+        // ===== دعم الروابط المباشرة (MP4, M3U8, etc) =====
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
             videoWrapper.innerHTML = `
-                <video controls autoplay 
-                       style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
-                       controlsList="nodownload"
-                       playsinline>
+                <video controls autoplay style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;">
                     <source src="${videoUrl}" type="video/mp4">
                     متصفحك لا يدعم تشغيل الفيديو
                 </video>
             `;
-            
-            setTimeout(() => {
-                const video = videoWrapper.querySelector('video');
-                if (video) {
-                    video.volume = 1.0;
-                    video.muted = false;
-                }
-            }, 500);
-            
+
+            playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
             videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
@@ -1859,7 +1840,7 @@
         let html = '';
         let index = 1;
         usersMap.forEach((user, email) => {
-            const isAdmin = email === 'zzccvc99@gmail.com';
+            const isAdmin = email === 'لايوجد';
             html += `
                 <tr>
                     <td>${index++}</td>
@@ -2030,7 +2011,6 @@
         console.log('🔒 جميع الميزات محمية وآمنة');
         console.log('🎥 دعم منصة mediadelivery للتشغيل');
         console.log('📌 تم إصلاح مشكلة ظهور الفصول في القوائم المنسدلة');
-        console.log('📌 تم إزالة النص العلوي من مشغل الفيديو');
     }
 
     loadData().then(init).catch((error) => {
