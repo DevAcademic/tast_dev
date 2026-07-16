@@ -1851,7 +1851,7 @@ body.dark-mode .hero .star {
 }
 
 /* ============================================================
-   26) VIDEO PLAYER
+   26) VIDEO PLAYER - معدل لإزالة النصوص العلوية
    ============================================================ */
 .video-player-container {
     display: none;
@@ -1896,18 +1896,16 @@ body.dark-mode .hero .star {
     width: 100%;
     height: 100%;
     border: none;
+    pointer-events: auto !important;
 }
 
-.player-info {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 1.2rem;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
-    color: white;
-    font-size: 0.95rem;
-    font-weight: 700;
+.player-container video {
+    pointer-events: auto !important;
+}
+
+/* ===== إخفاء أي نصوص علوية في مشغل الفيديو ===== */
+.video-player-wrapper .player-info {
+    display: none !important;
 }
 
 .video-player-wrapper .close-player {
