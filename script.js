@@ -53,9 +53,8 @@
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const videoPlayer = document.getElementById('videoPlayer');
-    const playerFrame = document.getElementById('playerFrame');
     const closePlayer = document.getElementById('closePlayer');
-    const playerTitle = document.getElementById('playerTitle');
+    const videoWrapper = document.getElementById('videoWrapper');
     const themeToggle = document.getElementById('themeToggle');
     const toastContainer = document.getElementById('toastContainer');
     const userNameDisplay = document.getElementById('userNameDisplay');
@@ -113,7 +112,146 @@
 
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
-    // ===== TOAST =====
+    // ============================================================
+    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
+    // ============================================================
+
+    function extractVideoUrl(url) {
+        if (!url) return '';
+        if (url.includes('player.mediadelivery.net/play/')) {
+            return url;
+        }
+        if (url.includes('player.mediadelivery.net/embed/')) {
+            return url;
+        }
+        if (url.includes('mediadelivery.net')) {
+            return url;
+        }
+        if (url.includes('<iframe')) {
+            const match = url.match(/src=["']([^"']+)["']/);
+            if (match) {
+                return match[1];
+            }
+        }
+        return url;
+    }
+
+    window.playVideo = function(url, title) {
+        if (!url) {
+            showToast('error', '❌ رابط الفيديو غير موجود');
+            return;
+        }
+
+        let videoUrl = extractVideoUrl(url);
+
+        // ===== إذا كان الرابط من mediadelivery =====
+        if (videoUrl.includes('mediadelivery')) {
+            // إضافة معلمات التحكم الكامل مع الصوت
+            if (!videoUrl.includes('autoplay')) {
+                const separator = videoUrl.includes('?') ? '&' : '?';
+                videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
+            } else {
+                if (!videoUrl.includes('controls')) {
+                    videoUrl = videoUrl + '&controls=true';
+                }
+            }
+
+            // إزالة muted=true للسماح بالصوت
+            videoUrl = videoUrl.replace(/&?muted=true/g, '');
+            videoUrl = videoUrl.replace(/&?muted=false/g, '');
+
+            // إنشاء iframe للتشغيل - بدون أي نصوص إضافية
+            videoWrapper.innerHTML = `
+                <iframe src="${videoUrl}" 
+                        loading="lazy" 
+                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+                        allowfullscreen="true"
+                        webkitallowfullscreen="true"
+                        mozallowfullscreen="true">
+                </iframe>
+            `;
+
+            videoPlayer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+            return;
+        }
+
+        // ===== دعم YouTube =====
+        const videoId = extractYouTubeId(videoUrl);
+        if (videoId) {
+            const embedUrl = getYouTubeEmbedUrl(videoId);
+            videoWrapper.innerHTML = `
+                <iframe src="${embedUrl}" 
+                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                        allowfullscreen>
+                </iframe>
+            `;
+
+            videoPlayer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+            return;
+        }
+
+        // ===== دعم الروابط المباشرة =====
+        if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
+            videoWrapper.innerHTML = `
+                <video controls autoplay 
+                       style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
+                       controlsList="nodownload"
+                       playsinline>
+                    <source src="${videoUrl}" type="video/mp4">
+                    متصفحك لا يدعم تشغيل الفيديو
+                </video>
+            `;
+
+            setTimeout(() => {
+                const video = videoWrapper.querySelector('video');
+                if (video) {
+                    video.volume = 1.0;
+                    video.muted = false;
+                }
+            }, 500);
+
+            videoPlayer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+            return;
+        }
+
+        showToast('error', '❌ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
+    };
+
+    function closeVideoPlayer() {
+        if (videoWrapper) videoWrapper.innerHTML = '';
+        if (videoPlayer) videoPlayer.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=)([^&]+)/,
+            /(?:youtu\.be\/)([^?]+)/,
+            /(?:youtube\.com\/embed\/)([^?]+)/
+        ];
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        return null;
+    }
+
+    function getYouTubeEmbedUrl(videoId) {
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
     function showToast(type, message, duration = 4000) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -136,24 +274,6 @@
         return deviceId;
     }
     const userDeviceId = getDeviceId();
-
-    // ===== YOUTUBE =====
-    function extractYouTubeId(url) {
-        const patterns = [
-            /(?:youtube\.com\/watch\?v=)([^&]+)/,
-            /(?:youtu\.be\/)([^?]+)/,
-            /(?:youtube\.com\/embed\/)([^?]+)/
-        ];
-        for (const pattern of patterns) {
-            const match = url.match(pattern);
-            if (match) return match[1];
-        }
-        return null;
-    }
-
-    function getYouTubeEmbedUrl(videoId) {
-        return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-    }
 
     // ===== ACCESS =====
     function hasAccessToTeacher(teacher) {
@@ -183,34 +303,26 @@
         }
     }
 
-    // ============================================================
-    // ===== CODE VERIFICATION - التحقق من الكود (محدث) =====
-    // ============================================================
+    // ===== CODE VERIFICATION =====
     async function verifyCode(teacher, code) {
-        // التحقق من وجود الكود
         if (!teacher.codes || teacher.codes.length === 0) {
             return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
         }
 
-        // التحقق من تسجيل الدخول
         if (!currentUser) {
             return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود' };
         }
 
-        // البحث عن الكود
         const codeData = teacher.codes.find(c => c.code === code);
         if (!codeData) {
             return { valid: false, message: '❌ الكود غير صحيح' };
         }
 
-        // التحقق إذا كان الكود مقفلاً
         if (codeData.locked === true) {
             return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
         }
 
-        // التحقق إذا كان الكود مستخدماً
         if (codeData.used) {
-            // التحقق إذا كان المستخدم الحالي هو من استخدم الكود
             if (codeData.userEmail === currentUser.email) {
                 return { valid: true, message: '✅ الكود مفعل على حسابك' };
             } else {
@@ -222,22 +334,15 @@
             }
         }
 
-        // ==== الكود غير مستخدم، نقوم بتفعيله ====
-
-        // حفظ الكود للمستخدم الحالي
         codeData.used = true;
         codeData.deviceId = userDeviceId;
         codeData.userId = currentUser.id;
         codeData.userEmail = currentUser.email;
         codeData.usedAt = new Date().toISOString();
-
-        // حفظ في localStorage
         saveData();
 
-        // مزامنة مع Supabase
         const syncResult = await syncCodeWithSupabase(teacher, codeData);
         if (!syncResult.success) {
-            // إذا فشلت المزامنة، نتراجع عن التغيير
             codeData.used = false;
             codeData.userId = null;
             codeData.userEmail = null;
@@ -246,13 +351,8 @@
             return { valid: false, message: '❌ فشل حفظ الكود في قاعدة البيانات' };
         }
 
-        // حفظ في user_codes
         await addCodeToUserCodes(currentUser.id, codeData.code);
-
-        // تحديث التخزين المحلي
         updateUserCodesStorage();
-
-        // تحديث الواجهة
         renderAllTeachers();
         renderMyCourses();
         renderAccount();
@@ -261,15 +361,12 @@
         return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
     }
 
-    // ============================================================
-    // ===== SYNC CODE WITH SUPABASE - مزامنة الكود =====
-    // ============================================================
+    // ===== SYNC CODE WITH SUPABASE =====
     async function syncCodeWithSupabase(teacher, codeData) {
         if (!currentUser || !supabaseClient) {
             return { success: false, error: 'No authenticated user or Supabase unavailable' };
         }
         try {
-            // تحديث في جدول teacher_codes
             const record = {
                 code: codeData.code,
                 teacher_name: teacher.name,
@@ -287,7 +384,6 @@
                 return { success: false, error };
             }
 
-            // تحديث في جدول codes
             const { error: updateError } = await supabaseClient.from('codes').update({
                 is_used: true,
                 user_id: currentUser.id,
@@ -308,13 +404,10 @@
         }
     }
 
-    // ============================================================
-    // ===== ADD CODE TO USER CODES - إضافة الكود للمستخدم =====
-    // ============================================================
+    // ===== ADD CODE TO USER CODES =====
     async function addCodeToUserCodes(userId, code) {
         if (!supabaseClient) return;
         try {
-            // جلب code_id من جدول codes
             const { data: codeRecord, error: codeError } = await supabaseClient
                 .from('codes').select('id').eq('code', code).single();
             if (codeError) {
@@ -322,7 +415,6 @@
                 return;
             }
 
-            // التحقق إذا كان الكود موجود مسبقاً للمستخدم
             const { data: existing, error: checkError } = await supabaseClient
                 .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
             if (existing) {
@@ -330,7 +422,6 @@
                 return;
             }
 
-            // إضافة الكود للمستخدم
             const { error } = await supabaseClient.from('user_codes').insert({
                 user_id: userId,
                 code_id: codeRecord.id,
@@ -732,14 +823,19 @@
         lectures.forEach((lecture) => {
             const isFree = lecture.isFree === true;
             const canWatch = isFree || hasAccess;
+            const videoUrl = lecture.youtubeUrl || '';
+            const isMediaDelivery = videoUrl.includes('mediadelivery');
+            const videoIcon = isMediaDelivery ? 'fa-video' : 'fa-play-circle';
+
             html += `
                 <div class="lecture-item ${canWatch ? '' : 'locked'}" 
-                     onclick="${canWatch ? `playVideo('${lecture.youtubeUrl}', '${lecture.title}')` : ''}">
+                     onclick="${canWatch ? `playVideo('${videoUrl}', '${lecture.title}')` : ''}">
                     <div class="lecture-number">#${lecture.number}</div>
                     <div class="lecture-title">${lecture.title}</div>
                     <div class="lecture-status">
                         ${isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
-                        ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
+                        ${isMediaDelivery ? '<span style="font-size:0.6rem;color:var(--primary);margin-left:0.3rem;">📹</span>' : ''}
+                        ${canWatch ? `<i class="fas ${videoIcon}" style="color:var(--primary);"></i>` : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
                     </div>
                 </div>
             `;
@@ -747,19 +843,6 @@
         lecturesList.innerHTML = html;
         lecturesModal.classList.add('active');
         document.body.style.overflow = 'hidden';
-    };
-
-    window.playVideo = function(url, title) {
-        const videoId = extractYouTubeId(url);
-        if (videoId) {
-            playerFrame.src = getYouTubeEmbedUrl(videoId);
-            playerTitle.textContent = `🎬 ${title || 'تشغيل المحاضرة'}`;
-            videoPlayer.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
-        } else {
-            showToast('error', '❌ رابط YouTube غير صحيح');
-        }
     };
 
     // ===== MY COURSES =====
@@ -853,7 +936,6 @@
         });
         accountCodes.textContent = codesCount;
 
-        // ===== التحقق من المشرف وإظهار زر الإدارة =====
         isUserAdmin(currentUser.email).then(isAdmin => {
             if (isAdmin) {
                 adminPanelBtn.style.display = 'flex';
@@ -991,6 +1073,7 @@
                 adminPanel.classList.add('active');
                 updateAdminSelects();
                 updatePendingChanges();
+                loadAdminsList();
                 showToast('success', '🔓 مرحباً بك في لوحة التحكم');
             } else {
                 showToast('error', '❌ غير مصرح لك بالدخول إلى لوحة التحكم');
@@ -1051,13 +1134,7 @@
         if (e.target === this) closeModal(this);
     });
 
-    // ===== VIDEO PLAYER =====
-    function closeVideoPlayer() {
-        playerFrame.src = '';
-        videoPlayer.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-
+    // ===== VIDEO PLAYER EVENTS =====
     closePlayer.addEventListener('click', closeVideoPlayer);
     videoPlayer.addEventListener('click', function(e) {
         if (e.target === this) closeVideoPlayer();
@@ -1139,21 +1216,30 @@
         const newTitle = editLectureTitle.value.trim();
         const newUrl = editLectureUrl.value.trim();
         const newIsFree = editLectureIsFree.value === 'true';
+
         if (!newTitle) {
             editLectureMessage.innerHTML = '⚠️ يرجى إدخال عنوان المحاضرة';
             editLectureMessage.style.color = '#f59e0b';
             return;
         }
         if (!newUrl) {
-            editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط YouTube';
+            editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط الفيديو';
             editLectureMessage.style.color = '#f59e0b';
             return;
         }
-        if (!extractYouTubeId(newUrl)) {
-            editLectureMessage.innerHTML = '⚠️ رابط YouTube غير صحيح';
+
+        const isValidUrl = newUrl.includes('mediadelivery') ||
+            newUrl.includes('youtube') ||
+            newUrl.includes('youtu.be') ||
+            newUrl.includes('player.') ||
+            newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+
+        if (!isValidUrl) {
+            editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube';
             editLectureMessage.style.color = '#f59e0b';
             return;
         }
+
         const lecture = data.teachers[teacherIndex].semesters[semesterIndex].lectures[lectureIndex];
         if (!lecture) {
             editLectureMessage.innerHTML = '❌ المحاضرة غير موجودة';
@@ -1204,10 +1290,12 @@
                 select.value = currentValue;
             }
         });
-        updateSemesterSelects();
-        updateDeleteSemesterSelects();
-        updateDeleteLectureSemesters();
-        updateEditLectureSemesters();
+        setTimeout(() => {
+            updateSemesterSelects();
+            updateDeleteSemesterSelects();
+            updateDeleteLectureSemesters();
+            updateEditLectureSemesters();
+        }, 50);
     }
 
     function updateSemesterSelects() {
@@ -1559,6 +1647,182 @@
         updateDeleteLectureSemesters();
     };
 
+    // ============================================================
+    // ===== إدارة المشرفين (Add Admin) =====
+    // ============================================================
+
+    window.addNewAdmin = async function() {
+        const emailInput = document.getElementById('adminEmailInput');
+        const messageEl = document.getElementById('addAdminMessage');
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            messageEl.innerHTML = '⚠️ يرجى إدخال البريد الإلكتروني';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        if (!email.includes('@') || !email.includes('.')) {
+            messageEl.innerHTML = '⚠️ البريد الإلكتروني غير صحيح';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        if (!supabaseClient) {
+            messageEl.innerHTML = '❌ Supabase غير متاح';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+
+        try {
+            // البحث عن المستخدم في جدول users أولاً
+            const { data: userData, error: userError } = await supabaseClient
+                .from('users')
+                .select('id, email')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (userError) {
+                messageEl.innerHTML = '❌ خطأ في البحث عن المستخدم';
+                messageEl.style.color = '#ef4444';
+                return;
+            }
+
+            if (!userData) {
+                messageEl.innerHTML = '❌ المستخدم غير موجود في النظام. يجب تسجيل الدخول أولاً.';
+                messageEl.style.color = '#ef4444';
+                return;
+            }
+
+            // التحقق إذا كان المستخدم مشرفاً بالفعل
+            const { data: existingAdmin, error: checkError } = await supabaseClient
+                .from('admins')
+                .select('email')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (existingAdmin) {
+                messageEl.innerHTML = '⚠️ هذا المستخدم مشرف بالفعل';
+                messageEl.style.color = '#f59e0b';
+                return;
+            }
+
+            // إضافة المشرف
+            const { error: insertError } = await supabaseClient
+                .from('admins')
+                .insert({ uid: userData.id, email: email, role: 'admin' });
+
+            if (insertError) {
+                messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + insertError.message;
+                messageEl.style.color = '#ef4444';
+                return;
+            }
+
+            messageEl.innerHTML = `✅ تم إضافة المشرف: ${email} بنجاح!`;
+            messageEl.style.color = '#22c55e';
+            emailInput.value = '';
+            showToast('success', `✅ تم إضافة المشرف: ${email}`);
+            loadAdminsList();
+
+        } catch (error) {
+            messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
+            messageEl.style.color = '#ef4444';
+            console.error('Error adding admin:', error);
+        }
+    };
+
+    async function loadAdminsList() {
+        const container = document.getElementById('adminsListContainer');
+        if (!container) return;
+
+        if (!supabaseClient) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;">⚠️ Supabase غير متاح</p>';
+            return;
+        }
+
+        try {
+            const { data: admins, error } = await supabaseClient
+                .from('admins')
+                .select('email, uid, created_at')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">❌ فشل تحميل المشرفين</p>';
+                return;
+            }
+
+            if (!admins || admins.length === 0) {
+                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">لا يوجد مشرفين حتى الآن</p>';
+                return;
+            }
+
+            let html = `
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                        <thead>
+                            <tr style="background:var(--primary-gradient);color:white;">
+                                <th style="padding:0.5rem;text-align:right;">#</th>
+                                <th style="padding:0.5rem;text-align:right;">البريد الإلكتروني</th>
+                                <th style="padding:0.5rem;text-align:right;">تاريخ الإضافة</th>
+                                <th style="padding:0.5rem;text-align:center;">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            admins.forEach((admin, index) => {
+                const isCurrentUser = admin.email === currentUser?.email;
+                const createdAt = admin.created_at ? new Date(admin.created_at).toLocaleDateString('ar') : 'غير معروف';
+
+                html += `
+                    <tr style="border-bottom:1px solid var(--border);">
+                        <td style="padding:0.4rem 0.5rem;">${index + 1}</td>
+                        <td style="padding:0.4rem 0.5rem;">${admin.email} ${isCurrentUser ? '👑 (أنت)' : ''}</td>
+                        <td style="padding:0.4rem 0.5rem;color:var(--text-light);font-size:0.75rem;">${createdAt}</td>
+                        <td style="padding:0.4rem 0.5rem;text-align:center;">
+                            ${!isCurrentUser ? `<button onclick="deleteAdmin('${admin.email}')" class="btn-delete-admin">🗑️ حذف</button>` : '<span style="color:var(--text-light);font-size:0.7rem;">لا يمكن حذف نفسك</span>'}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;">❌ فشل تحميل المشرفين</p>';
+            console.error('Error loading admins:', error);
+        }
+    }
+
+    window.deleteAdmin = async function(email) {
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المشرف: ${email}؟`)) return;
+
+        if (!supabaseClient) {
+            showToast('error', '❌ Supabase غير متاح');
+            return;
+        }
+
+        try {
+            const { error } = await supabaseClient
+                .from('admins')
+                .delete()
+                .eq('email', email);
+
+            if (error) {
+                showToast('error', '❌ فشل حذف المشرف: ' + error.message);
+                return;
+            }
+
+            showToast('success', `✅ تم حذف المشرف: ${email}`);
+            loadAdminsList();
+
+        } catch (error) {
+            showToast('error', '❌ حدث خطأ: ' + error.message);
+            console.error('Error deleting admin:', error);
+        }
+    };
+
     // ===== PUBLISH =====
     publishBtn?.addEventListener('click', async function() {
         if (pendingChanges === 0) {
@@ -1610,6 +1874,7 @@
             if (this.dataset.tab === 'delete') { updateAdminSelects(); }
             if (this.dataset.tab === 'edit-lecture') { updateEditLectureSemesters(); }
             if (this.dataset.tab === 'users') { renderUsersTable(); }
+            if (this.dataset.tab === 'add-admin') { loadAdminsList(); }
         });
     });
 
@@ -1647,7 +1912,7 @@
         let html = '';
         let index = 1;
         usersMap.forEach((user, email) => {
-            const isAdmin = email === 'zzccvc99@gmail.com';
+            const isAdmin = email === 'zzccvc99@gmail.com' || email === 'sajadsarmd200@gmail.com' || email === 'wisaamhs90@gmail.com';
             html += `
                 <tr>
                     <td>${index++}</td>
@@ -1726,15 +1991,25 @@
         const title = document.getElementById('lectureTitle').value.trim();
         const youtubeUrl = document.getElementById('lectureUrl').value.trim();
         const isFree = document.getElementById('lectureFree').value === 'true';
+
         if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0 || isNaN(semesterIndex) || semesterIndex === '' ||
             semesterIndex < 0 || !number || !title || !youtubeUrl) {
             showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
             return;
         }
-        if (!extractYouTubeId(youtubeUrl)) {
-            showToast('warning', '⚠️ رابط YouTube غير صحيح');
+
+        // التحقق من صحة الرابط (يدعم mediadelivery و YouTube)
+        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+            youtubeUrl.includes('youtube') ||
+            youtubeUrl.includes('youtu.be') ||
+            youtubeUrl.includes('player.') ||
+            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+
+        if (!isValidUrl) {
+            showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
             return;
         }
+
         const newLecture = { number, title, youtubeUrl, isFree };
         data.teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
         saveData();
@@ -1747,10 +2022,22 @@
     });
 
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
-    document.getElementById('lectureTeacher')?.addEventListener('change', updateSemesterSelects);
-    document.getElementById('codeTeacherSelect')?.addEventListener('change', updateCodesManagement);
-    document.getElementById('deleteSemesterTeacher')?.addEventListener('change', updateDeleteSemesterSelects);
-    document.getElementById('deleteLectureTeacher')?.addEventListener('change', updateDeleteLectureSemesters);
+    document.getElementById('lectureTeacher')?.addEventListener('change', function() {
+        updateSemesterSelects();
+    });
+
+    document.getElementById('codeTeacherSelect')?.addEventListener('change', function() {
+        updateCodesManagement();
+    });
+
+    document.getElementById('deleteSemesterTeacher')?.addEventListener('change', function() {
+        updateDeleteSemesterSelects();
+    });
+
+    document.getElementById('deleteLectureTeacher')?.addEventListener('change', function() {
+        updateDeleteLectureSemesters();
+    });
+
     document.getElementById('deleteLectureSemester')?.addEventListener('change', function() {
         const teacherSelect = document.getElementById('deleteLectureTeacher');
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -1770,7 +2057,11 @@
         }
         if (lectureSelect) lectureSelect.innerHTML = options;
     });
-    document.getElementById('editLectureTeacher')?.addEventListener('change', updateEditLectureSemesters);
+
+    document.getElementById('editLectureTeacher')?.addEventListener('change', function() {
+        updateEditLectureSemesters();
+    });
+
     document.getElementById('editLectureSemester')?.addEventListener('change', function() {
         const teacherSelect = document.getElementById('editLectureTeacher');
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -1874,8 +2165,11 @@
 
         renderUsersTable();
         updateAdminSelects();
+        loadAdminsList();
         console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('🔒 جميع الميزات محمية وآمنة');
+        console.log('🎥 دعم منصة mediadelivery للتشغيل');
+        console.log('👑 قسم إدارة المشرفين مفعل');
     }
 
     loadData().then(init).catch((error) => {
