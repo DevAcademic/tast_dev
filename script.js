@@ -146,7 +146,6 @@
 
         // ===== إذا كان الرابط من mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
-            // إضافة معلمات التحكم الكامل مع الصوت
             if (!videoUrl.includes('autoplay')) {
                 const separator = videoUrl.includes('?') ? '&' : '?';
                 videoUrl = videoUrl + separator + 'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
@@ -156,11 +155,9 @@
                 }
             }
 
-            // إزالة muted=true للسماح بالصوت
             videoUrl = videoUrl.replace(/&?muted=true/g, '');
             videoUrl = videoUrl.replace(/&?muted=false/g, '');
 
-            // إنشاء iframe للتشغيل - بدون أي نصوص إضافية
             videoWrapper.innerHTML = `
                 <iframe src="${videoUrl}" 
                         loading="lazy" 
@@ -1648,7 +1645,7 @@
     };
 
     // ============================================================
-    // ===== إدارة المشرفين (Add Admin) =====
+    // ===== إدارة المشرفين (Add Admin) - نسخة محسنة بالكامل =====
     // ============================================================
 
     window.addNewAdmin = async function() {
@@ -1675,24 +1672,33 @@
         }
 
         try {
-            const { data: userData, error: userError } = await supabaseClient
+            // ===== 1) البحث عن المستخدم في جدول users =====
+            let { data: userData, error: userError } = await supabaseClient
                 .from('users')
                 .select('id, email')
                 .eq('email', email)
                 .maybeSingle();
 
-            if (userError) {
-                messageEl.innerHTML = '❌ خطأ في البحث عن المستخدم';
-                messageEl.style.color = '#ef4444';
-                return;
-            }
-
+            // ===== 2) إذا لم يكن موجوداً في public.users =====
             if (!userData) {
-                messageEl.innerHTML = '❌ المستخدم غير موجود في النظام. يجب تسجيل الدخول أولاً.';
-                messageEl.style.color = '#ef4444';
+                messageEl.innerHTML = `
+                    ⚠️ المستخدم <strong>${email}</strong> غير موجود في جدول المستخدمين العام.
+                    <br><br>
+                    <strong>السبب المحتمل:</strong> تم تسجيل المستخدم ولكن لم يتم إنشاء سجله في قاعدة البيانات العامة.
+                    <br><br>
+                    <button onclick="fixUserAndAddAdmin('${email}')" style="background:var(--primary);color:white;border:none;padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;">
+                        <i class="fas fa-sync"></i> إصلاح المشكلة وإضافة المشرف
+                    </button>
+                    <br><br>
+                    <span style="font-size:0.7rem;color:var(--text-light);">
+                        🔧 سيتم إنشاء سجل المستخدم في قاعدة البيانات العامة ثم إضافته كمشرف.
+                    </span>
+                `;
+                messageEl.style.color = '#f59e0b';
                 return;
             }
 
+            // ===== 3) التحقق إذا كان المستخدم مشرفاً بالفعل =====
             const { data: existingAdmin, error: checkError } = await supabaseClient
                 .from('admins')
                 .select('email')
@@ -1705,6 +1711,7 @@
                 return;
             }
 
+            // ===== 4) إضافة المشرف =====
             const { error: insertError } = await supabaseClient
                 .from('admins')
                 .insert({ uid: userData.id, email: email, role: 'admin' });
@@ -1725,6 +1732,98 @@
             messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
             messageEl.style.color = '#ef4444';
             console.error('Error adding admin:', error);
+        }
+    };
+
+    // ===== دالة إصلاح المستخدم وإضافته كمشرف =====
+    window.fixUserAndAddAdmin = async function(email) {
+        const messageEl = document.getElementById('addAdminMessage');
+        
+        if (!supabaseClient) {
+            messageEl.innerHTML = '❌ Supabase غير متاح';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+
+        try {
+            // ===== 1) إنشاء سجل للمستخدم في public.users =====
+            const newUserId = crypto.randomUUID ? crypto.randomUUID() : 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            
+            const { data: newUser, error: insertError } = await supabaseClient
+                .from('users')
+                .insert({
+                    id: newUserId,
+                    email: email,
+                    full_name: email.split('@')[0],
+                    registered_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (insertError) {
+                // إذا فشل الإدراج بسبب تكرار البريد، فهذا يعني أن المستخدم موجود بالفعل
+                if (insertError.code === '23505') {
+                    messageEl.innerHTML = '⚠️ المستخدم موجود بالفعل في قاعدة البيانات. جاري المحاولة مرة أخرى...';
+                    messageEl.style.color = '#f59e0b';
+                    
+                    // محاولة جلب المستخدم مرة أخرى
+                    const { data: existingUser, error: fetchError } = await supabaseClient
+                        .from('users')
+                        .select('id, email')
+                        .eq('email', email)
+                        .maybeSingle();
+                        
+                    if (existingUser) {
+                        // إضافة المستخدم كمشرف
+                        const { error: adminError } = await supabaseClient
+                            .from('admins')
+                            .insert({ uid: existingUser.id, email: email, role: 'admin' });
+                            
+                        if (adminError) {
+                            messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + adminError.message;
+                            messageEl.style.color = '#ef4444';
+                            return;
+                        }
+                        
+                        messageEl.innerHTML = `✅ تم إصلاح المشكلة وإضافة المشرف: ${email} بنجاح!`;
+                        messageEl.style.color = '#22c55e';
+                        showToast('success', `✅ تم إضافة المشرف: ${email}`);
+                        loadAdminsList();
+                        return;
+                    }
+                }
+                
+                messageEl.innerHTML = '❌ فشل إضافة المستخدم: ' + insertError.message;
+                messageEl.style.color = '#ef4444';
+                return;
+            }
+
+            // ===== 2) إضافة المستخدم كمشرف =====
+            const { error: adminError } = await supabaseClient
+                .from('admins')
+                .insert({ uid: newUser.id, email: email, role: 'admin' });
+
+            if (adminError) {
+                messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + adminError.message;
+                messageEl.style.color = '#ef4444';
+                return;
+            }
+
+            messageEl.innerHTML = `
+                ✅ تم إصلاح المشكلة وإضافة المستخدم <strong>${email}</strong> كمشرف بنجاح!
+                <br>
+                <span style="font-size:0.8rem;color:var(--text-light);">
+                    📌 يمكن للمستخدم الآن الدخول إلى لوحة التحكم.
+                </span>
+            `;
+            messageEl.style.color = '#22c55e';
+            showToast('success', `✅ تم إصلاح المشكلة وإضافة المشرف: ${email}`);
+            loadAdminsList();
+
+        } catch (error) {
+            messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
+            messageEl.style.color = '#ef4444';
+            console.error('Error fixing user:', error);
         }
     };
 
@@ -1995,7 +2094,6 @@
             return;
         }
 
-        // التحقق من صحة الرابط (يدعم mediadelivery و YouTube)
         const isValidUrl = youtubeUrl.includes('mediadelivery') ||
             youtubeUrl.includes('youtube') ||
             youtubeUrl.includes('youtu.be') ||
@@ -2166,7 +2264,7 @@
         console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('🔒 جميع الميزات محمية وآمنة');
         console.log('🎥 دعم منصة mediadelivery للتشغيل');
-        console.log('👑 قسم إدارة المشرفين مفعل');
+        console.log('👑 قسم إدارة المشرفين مفعل مع خاصية إصلاح المستخدمين');
     }
 
     loadData().then(init).catch((error) => {
