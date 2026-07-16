@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
-        /* ===== جميع التنسيقات موجودة في style.css ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -674,13 +673,11 @@
         </div>
     </div>
 
-    <!-- ===== VIDEO PLAYER - متوافق مع mediadelivery ===== -->
     <div class="video-player-container" id="videoPlayer">
         <div class="video-player-wrapper">
             <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
-            <div class="player-container" id="playerContainer">
-                <!-- سيتم تحميل الفيديو ديناميكياً عبر JavaScript -->
-                <div id="videoWrapper" style="position:relative;padding-top:56.25%;width:100%;height:0;"></div>
+            <div class="player-container">
+                <iframe id="playerFrame" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
             <div class="player-info">
                 <span id="playerTitle">🎬 تشغيل المحاضرة</span>
@@ -757,7 +754,7 @@
                 </form>
             </div>
 
-            <!-- Add Lecture - معدل لدعم mediadelivery -->
+            <!-- Add Lecture -->
             <div class="tab-content" id="tab-add-lecture">
                 <form id="addLectureForm" class="admin-form">
                     <h3>🎥 إضافة محاضرة جديدة</h3>
@@ -778,11 +775,8 @@
                         <input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" required />
                     </div>
                     <div class="form-group">
-                        <label>📹 رابط الفيديو *</label>
-                        <input type="url" id="lectureUrl" placeholder="https://player.mediadelivery.net/embed/..." required />
-                        <small style="color:var(--text-light);font-size:0.75rem;display:block;margin-top:4px;">
-                            ⚡ أضف رابط التضمين من منصة mediadelivery (مثال: https://player.mediadelivery.net/embed/705296/xxxxx)
-                        </small>
+                        <label>📹 رابط YouTube *</label>
+                        <input type="url" id="lectureUrl" placeholder="https://youtu.be/..." required />
                     </div>
                     <div class="form-group">
                         <label>🔒 حالة المحاضرة *</label>
@@ -970,7 +964,6 @@
         </div>
     </div>
 
-    <!-- Edit Lecture Modal -->
     <div class="modal-overlay" id="editLectureModal">
         <div class="modal modal-small">
             <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
@@ -982,11 +975,8 @@
                     <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
                 </div>
                 <div class="form-group">
-                    <label>📹 رابط الفيديو *</label>
-                    <input type="url" id="editLectureUrl" placeholder="https://player.mediadelivery.net/embed/..." required />
-                    <small style="color:var(--text-light);font-size:0.75rem;display:block;margin-top:4px;">
-                        ⚡ أضف رابط التضمين من منصة mediadelivery
-                    </small>
+                    <label>📹 رابط YouTube *</label>
+                    <input type="url" id="editLectureUrl" placeholder="https://youtu.be/..." required />
                 </div>
                 <div class="form-group">
                     <label>🔒 حالة المحاضرة</label>
