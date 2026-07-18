@@ -43,19 +43,19 @@
     let activeTeacher = null;
     let activeTeacherIndex = null;
     let activeSectionIndex = null;
-    let filteredSection = null;
+    let currentFilter = 'all'; // 'all' أو معرف القسم
 
     // ===== الأقسام الافتراضية =====
     const defaultSections = [
-        { id: 'first-intermediate', name: 'أول متوسط', icon: '📚', teachers: [] },
-        { id: 'second-intermediate', name: 'ثاني متوسط', icon: '📚', teachers: [] },
-        { id: 'third-intermediate', name: 'ثالث متوسط', icon: '📚', teachers: [] },
-        { id: 'fourth-scientific', name: 'رابع علمي', icon: '🔬', teachers: [] },
-        { id: 'fourth-literary', name: 'رابع أدبي', icon: '📖', teachers: [] },
-        { id: 'fifth-scientific', name: 'خامس علمي', icon: '🔬', teachers: [] },
-        { id: 'fifth-literary', name: 'خامس أدبي', icon: '📖', teachers: [] },
-        { id: 'sixth-scientific', name: 'سادس علمي', icon: '🔬', teachers: [] },
-        { id: 'sixth-literary', name: 'سادس أدبي', icon: '📖', teachers: [] }
+        { id: 'first-intermediate', name: 'أول متوسط', teachers: [] },
+        { id: 'second-intermediate', name: 'ثاني متوسط', teachers: [] },
+        { id: 'third-intermediate', name: 'ثالث متوسط', teachers: [] },
+        { id: 'fourth-scientific', name: 'رابع علمي', teachers: [] },
+        { id: 'fourth-literary', name: 'رابع أدبي', teachers: [] },
+        { id: 'fifth-scientific', name: 'خامس علمي', teachers: [] },
+        { id: 'fifth-literary', name: 'خامس أدبي', teachers: [] },
+        { id: 'sixth-scientific', name: 'سادس علمي', teachers: [] },
+        { id: 'sixth-literary', name: 'سادس أدبي', teachers: [] }
     ];
 
     // ===== DOM Elements =====
@@ -64,10 +64,12 @@
     const bottomNav = document.getElementById('bottomNav');
     const footer = document.getElementById('footer');
     const teachersContainer = document.getElementById('teachersContainer');
-    const teachersContainer2 = document.getElementById('teachersContainer2');
-    const sectionsGrid = document.getElementById('sectionsGrid');
-    const sectionsCount = document.getElementById('sectionsCount');
+    const teachersGridContainer = document.getElementById('teachersGridContainer');
+    const teachersGridContainer2 = document.getElementById('teachersGridContainer2');
     const sectionFilter = document.getElementById('sectionFilter');
+    const sectionFilter2 = document.getElementById('sectionFilter2');
+    const teachersCount = document.getElementById('teachersCount');
+    const teachersCount2 = document.getElementById('teachersCount2');
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
     const videoPlayer = document.getElementById('videoPlayer');
@@ -367,7 +369,7 @@
 
         await addCodeToUserCodes(currentUser.id, codeData.code);
         updateUserCodesStorage();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         renderMyCourses();
         renderAccount();
         updateBadge();
@@ -544,7 +546,7 @@
             if (restoredCount > 0) {
                 saveData();
                 updateUserCodesStorage();
-                renderAllSectionsAndTeachers();
+                renderAllData();
                 renderMyCourses();
                 renderAccount();
                 updateBadge();
@@ -664,7 +666,7 @@
     }
 
     // ============================================================
-    // عرض الأقسام والمدرسين
+    // عرض البيانات مع الفلتر
     // ============================================================
 
     function getAllTeachers() {
@@ -695,93 +697,67 @@
         }));
     }
 
-    function renderSections() {
-        if (!sectionsGrid) return;
-
-        if (!data.sections || data.sections.length === 0) {
-            sectionsGrid.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--text-light);">
-                    <span style="font-size:3rem;display:block;margin-bottom:0.5rem;">📚</span>
-                    <h3>لا توجد أقسام</h3>
-                    <p>قم بإضافة أقسام من لوحة التحكم</p>
-                </div>
-            `;
-            if (sectionsCount) sectionsCount.textContent = '0 قسم';
-            return;
+    function getFilteredTeachers() {
+        if (currentFilter === 'all') {
+            return getAllTeachers();
         }
-
-        let html = '';
-        data.sections.forEach((section, index) => {
-            const teacherCount = section.teachers ? section.teachers.length : 0;
-            html += `
-                <div class="section-card" onclick="filterBySection('${section.id}')">
-                    <span class="section-icon">${section.icon || '📚'}</span>
-                    <div class="section-name">${section.name}</div>
-                    <div class="section-count">${teacherCount} مدرس</div>
-                </div>
-            `;
-        });
-
-        sectionsGrid.innerHTML = html;
-        if (sectionsCount) sectionsCount.textContent = data.sections.length + ' قسم';
+        return getTeachersBySection(currentFilter);
     }
 
-    function renderSectionFilter() {
-        if (!sectionFilter) return;
+    // ===== بناء أزرار الفلتر =====
+    function buildFilterButtons(container, countContainer) {
+        if (!container) return;
 
-        let html = `<button class="section-btn active" data-section="all" onclick="filterTeachers('all')">🏫 الكل</button>`;
+        let html = `<button class="filter-btn active" data-section="all" onclick="setFilter('all')">
+            <span class="btn-icon">🏫</span> الكل
+            <span class="btn-count">${getAllTeachers().length}</span>
+        </button>`;
+
         data.sections.forEach(section => {
-            html += `<button class="section-btn" data-section="${section.id}" onclick="filterTeachers('${section.id}')">
-                ${section.icon || '📚'} ${section.name}
+            const teacherCount = section.teachers ? section.teachers.length : 0;
+            const isActive = currentFilter === section.id;
+            html += `<button class="filter-btn ${isActive ? 'active' : ''}" data-section="${section.id}" onclick="setFilter('${section.id}')">
+                <span class="btn-icon">📚</span> ${section.name}
+                <span class="btn-count">${teacherCount}</span>
             </button>`;
         });
 
-        sectionFilter.innerHTML = html;
+        container.innerHTML = html;
+
+        if (countContainer) {
+            const filtered = getFilteredTeachers();
+            countContainer.textContent = filtered.length;
+        }
     }
 
-    window.filterTeachers = function(sectionId) {
-        filteredSection = sectionId === 'all' ? null : sectionId;
-
+    // ===== تعيين الفلتر =====
+    window.setFilter = function(sectionId) {
+        currentFilter = sectionId;
+        renderAllData();
         // تحديث الأزرار
-        document.querySelectorAll('.section-btn').forEach(btn => {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.section === sectionId);
         });
-
-        renderTeachersInPage2();
     };
 
-    window.filterBySection = function(sectionId) {
-        // التنقل إلى صفحة المدرسين وتطبيق الفلتر
-        navigateTo('teachers');
-        setTimeout(() => {
-            filterTeachers(sectionId);
-        }, 300);
-    };
-
+    // ===== عرض المدرسين =====
     function renderTeachers(teachers, container) {
         if (!container) return;
 
         if (!teachers || teachers.length === 0) {
             container.innerHTML = `
-                <div class="empty-state" style="text-align:center;padding:3rem 1rem;color:var(--text-light);">
-                    <div style="font-size:4rem;margin-bottom:1rem;">👨‍🏫</div>
-                    <h3 style="color:var(--text);">لا يوجد مدرسون</h3>
-                    <p>قم بإضافة مدرسين من لوحة التحكم</p>
+                <div class="empty-teachers">
+                    <span class="empty-icon">👨‍🏫</span>
+                    <h3>لا يوجد مدرسون</h3>
+                    <p>${currentFilter === 'all' ? 'قم بإضافة مدرسين من لوحة التحكم' : 'لا يوجد مدرسون في هذا القسم'}</p>
                 </div>
             `;
             return;
         }
 
-        let html = `
-            <div class="row">
-                <div class="row-header">
-                    <h2 class="row-title"><i class="fas fa-chalkboard-teacher"></i> المدرسون</h2>
-                    <span class="row-more">${teachers.length} مدرس</span>
-                </div>
-                <div class="teachers-grid">
-        `;
+        let html = `<div class="teachers-grid">`;
 
-        teachers.forEach((teacher, index) => {
+        teachers.forEach((teacher) => {
             const hasAccess = hasAccessToTeacher(teacher);
             const imageUrl = teacher.image || '';
             const emoji = teacher.emoji || '👨‍🏫';
@@ -792,6 +768,7 @@
 
             html += `
                 <div class="teacher-card" onclick="openTeacher(${teacher._sectionIndex}, ${teacher._teacherIndex})">
+                    <div class="teacher-section-badge">${sectionName}</div>
                     <div class="teacher-card-image">
                         ${imageUrl ? `<img src="${imageUrl}" alt="${name}" onerror="this.style.display='none'; this.parentElement.querySelector('.teacher-emoji').style.display='block';">` : ''}
                         <span class="teacher-emoji" style="${imageUrl ? 'display:none;' : 'display:block;'}">${emoji}</span>
@@ -800,7 +777,7 @@
                     <div class="teacher-card-info">
                         <h3>${name}</h3>
                         ${subject ? `<div class="teacher-subject">${subject}</div>` : ''}
-                        <div class="teacher-stats">📚 ${semestersCount} فصول | ${sectionName}</div>
+                        <div class="teacher-stats">📚 ${semestersCount} فصول</div>
                     </div>
                     <div class="teacher-card-overlay">
                         <i class="fas fa-chevron-left"></i>
@@ -810,28 +787,24 @@
             `;
         });
 
-        html += `</div></div>`;
+        html += `</div>`;
         container.innerHTML = html;
     }
 
-    function renderTeachersInPage1() {
-        const allTeachers = getAllTeachers();
-        renderTeachers(allTeachers, teachersContainer);
-    }
+    function renderAllData() {
+        const filteredTeachers = getFilteredTeachers();
 
-    function renderTeachersInPage2() {
-        let teachers = getAllTeachers();
-        if (filteredSection) {
-            teachers = teachers.filter(t => t._sectionId === filteredSection);
-        }
-        renderTeachers(teachers, teachersContainer2);
-    }
+        // تحديث العداد
+        if (teachersCount) teachersCount.textContent = filteredTeachers.length;
+        if (teachersCount2) teachersCount2.textContent = filteredTeachers.length;
 
-    function renderAllSectionsAndTeachers() {
-        renderSections();
-        renderSectionFilter();
-        renderTeachersInPage1();
-        renderTeachersInPage2();
+        // عرض المدرسين
+        renderTeachers(filteredTeachers, teachersGridContainer);
+        renderTeachers(filteredTeachers, teachersGridContainer2);
+
+        // بناء أزرار الفلتر
+        buildFilterButtons(sectionFilter, teachersCount);
+        buildFilterButtons(sectionFilter2, teachersCount2);
     }
 
     // ===== OPEN TEACHER =====
@@ -925,7 +898,7 @@
 
         if (result.valid) {
             showToast('success', '✅ تم التفعيل بنجاح!');
-            renderAllSectionsAndTeachers();
+            renderAllData();
             renderMyCourses();
             renderAccount();
             updateBadge();
@@ -1122,7 +1095,7 @@
             renderMyCourses();
             renderAccount();
             updateBadge();
-            renderAllSectionsAndTeachers();
+            renderAllData();
             showToast('success', '✅ تم تسجيل الخروج بنجاح');
             setTimeout(() => {
                 window.location.href = 'index.html';
@@ -1176,7 +1149,7 @@
             renderAccount();
         }
         if (page === 'teachers' || page === 'home') {
-            renderAllSectionsAndTeachers();
+            renderAllData();
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1246,7 +1219,7 @@
     function applyFilters() {
         const term = searchInput.value.trim().toLowerCase();
         if (term === '') {
-            renderAllSectionsAndTeachers();
+            renderAllData();
             return;
         }
 
@@ -1258,8 +1231,8 @@
             (t._sectionName && t._sectionName.toLowerCase().includes(term))
         );
 
-        renderTeachers(filtered, teachersContainer);
-        renderTeachers(filtered, teachersContainer2);
+        renderTeachers(filtered, teachersGridContainer);
+        renderTeachers(filtered, teachersGridContainer2);
     }
 
     searchBtn.addEventListener('click', applyFilters);
@@ -1310,7 +1283,6 @@
 
     // ===== تحديث القوائم المنسدلة =====
     function updateAdminSelects() {
-        // تحديث جميع القوائم التي تحتاج إلى أقسام
         const sectionSelects = [
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
@@ -1324,7 +1296,7 @@
             const currentValue = select.value;
             let options = '<option value="">اختر القسم...</option>';
             data.sections.forEach((s, i) => {
-                options += `<option value="${i}">${s.icon || '📚'} ${s.name}</option>`;
+                options += `<option value="${i}">${s.name}</option>`;
             });
             select.innerHTML = options;
             if (currentValue && data.sections[parseInt(currentValue)]) {
@@ -1332,13 +1304,11 @@
             }
         });
 
-        // تحديث القوائم المعتمدة على المدرس
         updateTeacherSelects();
         updateCodeTeacherSelect();
         updateEditTeacherSelect();
         updateDeleteSelects();
 
-        // تحديث القوائم المتسلسلة
         setTimeout(() => {
             updateSemesterSelects();
             updateDeleteSemesterSelects();
@@ -1357,7 +1327,6 @@
             const select = document.getElementById(id);
             if (!select) return;
 
-            // نبحث عن القسم المرتبط
             let sectionIndex = -1;
             if (id === 'semesterTeacher' || id === 'semesterSection') {
                 const sectionSelect = document.getElementById('semesterSection');
@@ -1445,7 +1414,6 @@
     }
 
     function updateDeleteSelects() {
-        // تحديث deleteTeacherSelect عند تغيير القسم
         const sectionSelect = document.getElementById('deleteTeacherSection');
         const teacherSelect = document.getElementById('deleteTeacherSelect');
         if (sectionSelect && teacherSelect) {
@@ -1464,7 +1432,6 @@
             }
         }
 
-        // تحديث deleteSemesterTeacher
         const semSectionSelect = document.getElementById('deleteSemesterSection');
         const semTeacherSelect = document.getElementById('deleteSemesterTeacher');
         if (semSectionSelect && semTeacherSelect) {
@@ -1483,7 +1450,6 @@
             }
         }
 
-        // تحديث deleteLectureTeacher
         const lecSectionSelect = document.getElementById('deleteLectureSection');
         const lecTeacherSelect = document.getElementById('deleteLectureTeacher');
         if (lecSectionSelect && lecTeacherSelect) {
@@ -1593,7 +1559,6 @@
         document.getElementById('editLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
     }
 
-    // ===== تحميل بيانات المدرس للتعديل =====
     function updateEditTeacherData() {
         const sectionSelect = document.getElementById('editTeacherSection');
         const teacherSelect = document.getElementById('editTeacherSelect');
@@ -1630,7 +1595,6 @@
     addSectionForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('sectionName').value.trim();
-        const icon = document.getElementById('sectionIcon').value.trim() || '📚';
 
         if (!name) {
             showToast('warning', '⚠️ يرجى إدخال اسم القسم');
@@ -1640,13 +1604,12 @@
         const newSection = {
             id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
             name: name,
-            icon: icon,
             teachers: []
         };
 
         data.sections.push(newSection);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1690,7 +1653,7 @@
 
         data.sections[sectionIndex].teachers.push(newTeacher);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1723,7 +1686,7 @@
 
         data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -1768,7 +1731,7 @@
         const newLecture = { number, title, youtubeUrl, isFree };
         data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2070,7 +2033,7 @@
         teacher.image = newImage || '';
 
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2084,7 +2047,6 @@
     // ===== DELETE FUNCTIONS =====
     // ============================================================
 
-    // حذف قسم
     window.deleteSelectedSection = function() {
         const select = document.getElementById('deleteSection');
         const sectionIndex = parseInt(select?.value);
@@ -2101,7 +2063,7 @@
 
         data.sections.splice(sectionIndex, 1);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2112,7 +2074,6 @@
         showToast('success', `✅ تم حذف القسم "${section.name}"`);
     };
 
-    // حذف مدرس
     window.deleteSelectedTeacherFromTab = function() {
         const sectionSelect = document.getElementById('deleteTeacherSection');
         const teacherSelect = document.getElementById('deleteTeacherSelect');
@@ -2136,7 +2097,7 @@
 
         data.sections[sectionIndex].teachers.splice(teacherIndex, 1);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2147,7 +2108,6 @@
         showToast('success', `✅ تم حذف المدرس "${teacher.name}"`);
     };
 
-    // حذف فصل
     window.deleteSelectedSemesterFromTab = function() {
         const sectionSelect = document.getElementById('deleteSemesterSection');
         const teacherSelect = document.getElementById('deleteSemesterTeacher');
@@ -2179,7 +2139,7 @@
 
         data.sections[sectionIndex].teachers[teacherIndex].semesters.splice(semesterIndex, 1);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2191,7 +2151,6 @@
         updateDeleteSemesterSelects();
     };
 
-    // حذف محاضرة
     window.deleteSelectedLectureFromTab = function() {
         const sectionSelect = document.getElementById('deleteLectureSection');
         const teacherSelect = document.getElementById('deleteLectureTeacher');
@@ -2230,7 +2189,7 @@
 
         data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.splice(lectureIndex, 1);
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         updateAdminSelects();
         pendingChanges++;
         updatePendingChanges();
@@ -2366,7 +2325,7 @@
         lecture.isFree = newIsFree;
 
         saveData();
-        renderAllSectionsAndTeachers();
+        renderAllData();
         pendingChanges++;
         updatePendingChanges();
 
@@ -2793,7 +2752,6 @@ grant execute on function add_user_and_admin(text) to authenticated;
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
     // ============================================================
 
-    // تحديث قائمة المدرسين عند تغيير القسم
     document.getElementById('teacherSection')?.addEventListener('change', function() {
         updateAdminSelects();
     });
@@ -2925,7 +2883,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
                     }));
                     updateUI();
                     await loadUserCodesFromSupabase();
-                    renderAllSectionsAndTeachers();
+                    renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
@@ -2962,7 +2920,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
                                 data = remoteData;
                                 normalizeDataStructure(data);
                                 saveData();
-                                renderAllSectionsAndTeachers();
+                                renderAllData();
                                 renderMyCourses();
                                 renderAccount();
                                 updateBadge();
@@ -2980,7 +2938,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         renderUsersTable();
         updateAdminSelects();
         loadAdminsList();
-        console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام');
+        console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام والفلتر');
         console.log('🔒 جميع الميزات محمية وآمنة');
         console.log('🎥 دعم منصة mediadelivery للتشغيل');
         console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
