@@ -43,7 +43,7 @@
     let activeTeacher = null;
     let activeTeacherIndex = null;
     let activeSectionIndex = null;
-    let currentFilter = 'all'; // 'all' أو معرف القسم
+    let currentFilter = 'all';
 
     // ===== الأقسام الافتراضية =====
     const defaultSections = [
@@ -1190,7 +1190,7 @@
         isUserAdmin(currentUser.email).then(isAdmin => {
             if (isAdmin) {
                 adminPanel.classList.add('active');
-                updateAdminSelects();
+                updateAllAdminSelects();
                 updatePendingChanges();
                 loadAdminsList();
                 showToast('success', '🔓 مرحباً بك في لوحة التحكم');
@@ -1281,16 +1281,32 @@
     // دوال إدارة الأقسام والمدرسين في لوحة التحكم
     // ============================================================
 
-    // ===== تحديث القوائم المنسدلة =====
-    function updateAdminSelects() {
-        const sectionSelects = [
+    // ===== تحديث جميع القوائم المنسدلة =====
+    function updateAllAdminSelects() {
+        // تحديث جميع القوائم الأساسية
+        updateBasicSelects();
+        // تحديث القوائم التابعة
+        updateTeacherSelects();
+        updateSemesterSelects();
+        updateLectureSelects();
+        updateDeleteSelects();
+        updateEditSelects();
+        // تحديث قائمة الأكواد
+        updateCodeSelects();
+        // تحديث الأكواد المعروضة
+        updateCodesManagement();
+    }
+
+    // ===== تحديث القوائم الأساسية =====
+    function updateBasicSelects() {
+        const selectIds = [
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
             'deleteSection', 'deleteTeacherSection', 'deleteSemesterSection',
             'deleteLectureSection'
         ];
 
-        sectionSelects.forEach(id => {
+        selectIds.forEach(id => {
             const select = document.getElementById(id);
             if (!select) return;
             const currentValue = select.value;
@@ -1303,60 +1319,31 @@
                 select.value = currentValue;
             }
         });
-
-        updateTeacherSelects();
-        updateCodeTeacherSelect();
-        updateEditTeacherSelect();
-        updateDeleteSelects();
-
-        setTimeout(() => {
-            updateSemesterSelects();
-            updateDeleteSemesterSelects();
-            updateDeleteLectureSemesters();
-            updateEditLectureSemesters();
-            updateEditTeacherData();
-        }, 100);
     }
 
+    // ===== تحديث قوائم المدرسين =====
     function updateTeacherSelects() {
-        const teacherSelects = ['semesterTeacher', 'lectureTeacher', 'editTeacherSelect', 'deleteTeacherSelect',
-            'deleteSemesterTeacher', 'deleteLectureTeacher', 'editLectureTeacher'
+        const teacherSelects = [
+            { selectId: 'semesterTeacher', sectionId: 'semesterSection' },
+            { selectId: 'lectureTeacher', sectionId: 'lectureSection' },
+            { selectId: 'editTeacherSelect', sectionId: 'editTeacherSection' },
+            { selectId: 'editLectureTeacher', sectionId: 'editLectureSection' },
+            { selectId: 'deleteTeacherSelect', sectionId: 'deleteTeacherSection' },
+            { selectId: 'deleteSemesterTeacher', sectionId: 'deleteSemesterSection' },
+            { selectId: 'deleteLectureTeacher', sectionId: 'deleteLectureSection' }
         ];
 
-        teacherSelects.forEach(id => {
-            const select = document.getElementById(id);
-            if (!select) return;
+        teacherSelects.forEach(({ selectId, sectionId }) => {
+            const select = document.getElementById(selectId);
+            const sectionSelect = document.getElementById(sectionId);
+            if (!select || !sectionSelect) return;
 
-            let sectionIndex = -1;
-            if (id === 'semesterTeacher' || id === 'semesterSection') {
-                const sectionSelect = document.getElementById('semesterSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'lectureTeacher') {
-                const sectionSelect = document.getElementById('lectureSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'editTeacherSelect') {
-                const sectionSelect = document.getElementById('editTeacherSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'editLectureTeacher') {
-                const sectionSelect = document.getElementById('editLectureSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'deleteTeacherSelect' || id === 'deleteTeacherSection') {
-                const sectionSelect = document.getElementById('deleteTeacherSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'deleteSemesterTeacher') {
-                const sectionSelect = document.getElementById('deleteSemesterSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            } else if (id === 'deleteLectureTeacher') {
-                const sectionSelect = document.getElementById('deleteLectureSection');
-                sectionIndex = parseInt(sectionSelect?.value);
-            }
-
+            const sectionIndex = parseInt(sectionSelect.value);
             const currentValue = select.value;
             let options = '<option value="">اختر المدرس...</option>';
 
             if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                const section = data.sections[sectionIndex];
-                section.teachers.forEach((t, i) => {
+                data.sections[sectionIndex].teachers.forEach((t, i) => {
                     options += `<option value="${i}">${t.name}</option>`;
                 });
             }
@@ -1369,7 +1356,136 @@
         });
     }
 
-    function updateCodeTeacherSelect() {
+    // ===== تحديث قوائم الفصول =====
+    function updateSemesterSelects() {
+        // للفصول في إضافة محاضرة
+        const semesterSelects = [
+            { selectId: 'lectureSemester', teacherId: 'lectureTeacher', sectionId: 'lectureSection' },
+            { selectId: 'deleteSemesterSelect', teacherId: 'deleteSemesterTeacher', sectionId: 'deleteSemesterSection' },
+            { selectId: 'deleteLectureSemester', teacherId: 'deleteLectureTeacher', sectionId: 'deleteLectureSection' },
+            { selectId: 'editLectureSemester', teacherId: 'editLectureTeacher', sectionId: 'editLectureSection' }
+        ];
+
+        semesterSelects.forEach(({ selectId, teacherId, sectionId }) => {
+            const select = document.getElementById(selectId);
+            const teacherSelect = document.getElementById(teacherId);
+            const sectionSelect = document.getElementById(sectionId);
+            if (!select || !teacherSelect || !sectionSelect) return;
+
+            const sectionIndex = parseInt(sectionSelect.value);
+            const teacherIndex = parseInt(teacherSelect.value);
+            const currentValue = select.value;
+
+            let options = '<option value="">اختر الفصل...</option>';
+            if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[teacherIndex]) {
+                const teacher = data.sections[sectionIndex].teachers[teacherIndex];
+                if (teacher.semesters) {
+                    teacher.semesters.forEach((s, i) => {
+                        options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+                    });
+                }
+            }
+
+            select.innerHTML = options;
+            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[parseInt(currentValue)]) {
+                select.value = currentValue;
+            }
+        });
+    }
+
+    // ===== تحديث قوائم المحاضرات =====
+    function updateLectureSelects() {
+        // لمحاضرات التعديل والحذف
+        const lectureSelects = [
+            { selectId: 'editLectureSelect', semesterId: 'editLectureSemester', sectionId: 'editLectureSection', teacherId: 'editLectureTeacher' },
+            { selectId: 'deleteLectureSelect', semesterId: 'deleteLectureSemester', sectionId: 'deleteLectureSection', teacherId: 'deleteLectureTeacher' }
+        ];
+
+        lectureSelects.forEach(({ selectId, semesterId, sectionId, teacherId }) => {
+            const select = document.getElementById(selectId);
+            const semesterSelect = document.getElementById(semesterId);
+            const sectionSelect = document.getElementById(sectionId);
+            const teacherSelect = document.getElementById(teacherId);
+            if (!select || !semesterSelect || !sectionSelect || !teacherSelect) return;
+
+            const sectionIndex = parseInt(sectionSelect.value);
+            const teacherIndex = parseInt(teacherSelect.value);
+            const semesterIndex = parseInt(semesterSelect.value);
+            const currentValue = select.value;
+
+            let options = '<option value="">اختر المحاضرة...</option>';
+            if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures) {
+                const lectures = data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures;
+                lectures.forEach((l, i) => {
+                    options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                });
+            }
+
+            select.innerHTML = options;
+            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[parseInt(currentValue)]) {
+                select.value = currentValue;
+            }
+        });
+    }
+
+    // ===== تحديث قوائم الحذف =====
+    function updateDeleteSelects() {
+        // تحديث قوائم الحذف بشكل خاص
+        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
+        const deleteTeacherSection = document.getElementById('deleteTeacherSection');
+        if (deleteTeacherSelect && deleteTeacherSection) {
+            const sectionIndex = parseInt(deleteTeacherSection.value);
+            const currentValue = deleteTeacherSelect.value;
+            let options = '<option value="">اختر المدرس...</option>';
+            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
+                data.sections[sectionIndex].teachers.forEach((t, i) => {
+                    options += `<option value="${i}">${t.name}</option>`;
+                });
+            }
+            deleteTeacherSelect.innerHTML = options;
+            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
+                deleteTeacherSelect.value = currentValue;
+            }
+        }
+    }
+
+    // ===== تحديث قوائم التعديل =====
+    function updateEditSelects() {
+        // تحديث قوائم تعديل المدرس
+        const editTeacherSelect = document.getElementById('editTeacherSelect');
+        const editTeacherSection = document.getElementById('editTeacherSection');
+        if (editTeacherSelect && editTeacherSection) {
+            const sectionIndex = parseInt(editTeacherSection.value);
+            const currentValue = editTeacherSelect.value;
+            let options = '<option value="">اختر المدرس...</option>';
+            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
+                data.sections[sectionIndex].teachers.forEach((t, i) => {
+                    options += `<option value="${i}">${t.name}</option>`;
+                });
+            }
+            editTeacherSelect.innerHTML = options;
+            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
+                editTeacherSelect.value = currentValue;
+            }
+            // تحديث بيانات المدرس
+            updateEditTeacherData();
+        }
+    }
+
+    // ===== تحديث قوائم الأكواد =====
+    function updateCodeSelects() {
         const sectionSelect = document.getElementById('codeSection');
         const teacherSelect = document.getElementById('codeTeacherSelect');
         if (!sectionSelect || !teacherSelect) return;
@@ -1391,174 +1507,7 @@
         }
     }
 
-    function updateEditTeacherSelect() {
-        const sectionSelect = document.getElementById('editTeacherSection');
-        const teacherSelect = document.getElementById('editTeacherSelect');
-        if (!sectionSelect || !teacherSelect) return;
-
-        const sectionIndex = parseInt(sectionSelect.value);
-        const currentValue = teacherSelect.value;
-        let options = '<option value="">اختر المدرس...</option>';
-
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-            data.sections[sectionIndex].teachers.forEach((t, i) => {
-                options += `<option value="${i}">${t.name}</option>`;
-            });
-        }
-
-        teacherSelect.innerHTML = options;
-        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-            teacherSelect.value = currentValue;
-        }
-    }
-
-    function updateDeleteSelects() {
-        const sectionSelect = document.getElementById('deleteTeacherSection');
-        const teacherSelect = document.getElementById('deleteTeacherSelect');
-        if (sectionSelect && teacherSelect) {
-            const sectionIndex = parseInt(sectionSelect.value);
-            const currentValue = teacherSelect.value;
-            let options = '<option value="">اختر المدرس...</option>';
-            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                data.sections[sectionIndex].teachers.forEach((t, i) => {
-                    options += `<option value="${i}">${t.name}</option>`;
-                });
-            }
-            teacherSelect.innerHTML = options;
-            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-                teacherSelect.value = currentValue;
-            }
-        }
-
-        const semSectionSelect = document.getElementById('deleteSemesterSection');
-        const semTeacherSelect = document.getElementById('deleteSemesterTeacher');
-        if (semSectionSelect && semTeacherSelect) {
-            const sectionIndex = parseInt(semSectionSelect.value);
-            const currentValue = semTeacherSelect.value;
-            let options = '<option value="">اختر المدرس...</option>';
-            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                data.sections[sectionIndex].teachers.forEach((t, i) => {
-                    options += `<option value="${i}">${t.name}</option>`;
-                });
-            }
-            semTeacherSelect.innerHTML = options;
-            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-                semTeacherSelect.value = currentValue;
-            }
-        }
-
-        const lecSectionSelect = document.getElementById('deleteLectureSection');
-        const lecTeacherSelect = document.getElementById('deleteLectureTeacher');
-        if (lecSectionSelect && lecTeacherSelect) {
-            const sectionIndex = parseInt(lecSectionSelect.value);
-            const currentValue = lecTeacherSelect.value;
-            let options = '<option value="">اختر المدرس...</option>';
-            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                data.sections[sectionIndex].teachers.forEach((t, i) => {
-                    options += `<option value="${i}">${t.name}</option>`;
-                });
-            }
-            lecTeacherSelect.innerHTML = options;
-            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-                lecTeacherSelect.value = currentValue;
-            }
-        }
-    }
-
-    function updateSemesterSelects() {
-        const teacherSelect = document.getElementById('lectureTeacher');
-        const semesterSelect = document.getElementById('lectureSemester');
-        if (!teacherSelect || !semesterSelect) return;
-
-        const sectionSelect = document.getElementById('lectureSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect.value);
-
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-            if (teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-    }
-
-    function updateDeleteSemesterSelects() {
-        const teacherSelect = document.getElementById('deleteSemesterTeacher');
-        const semesterSelect = document.getElementById('deleteSemesterSelect');
-        if (!teacherSelect || !semesterSelect) return;
-
-        const sectionSelect = document.getElementById('deleteSemesterSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect.value);
-
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-            if (teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-    }
-
-    function updateDeleteLectureSemesters() {
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-        if (!teacherSelect || !semesterSelect) return;
-
-        const sectionSelect = document.getElementById('deleteLectureSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect.value);
-
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-            if (teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-        document.getElementById('deleteLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
-    function updateEditLectureSemesters() {
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const semesterSelect = document.getElementById('editLectureSemester');
-        if (!teacherSelect || !semesterSelect) return;
-
-        const sectionSelect = document.getElementById('editLectureSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect.value);
-
-        let options = '<option value="">اختر الفصل...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-            if (teacher.semesters) {
-                teacher.semesters.forEach((s, i) => {
-                    options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                });
-            }
-        }
-        semesterSelect.innerHTML = options;
-        document.getElementById('editLectureSelect').innerHTML = '<option value="">اختر الفصل أولاً</option>';
-    }
-
+    // ===== تحديث بيانات تعديل المدرس =====
     function updateEditTeacherData() {
         const sectionSelect = document.getElementById('editTeacherSection');
         const teacherSelect = document.getElementById('editTeacherSelect');
@@ -1585,8 +1534,17 @@
         document.getElementById('editTeacherMessage').innerHTML = '';
     }
 
+    // ===== تحديث عدد التغييرات =====
     function updatePendingChanges() {
         if (pendingChangesSpan) pendingChangesSpan.textContent = pendingChanges;
+    }
+
+    // ============================================================
+    // ===== إضافة تغيير =====
+    // ============================================================
+    function addChange() {
+        pendingChanges++;
+        updatePendingChanges();
     }
 
     // ============================================================
@@ -1610,9 +1568,8 @@
         data.sections.push(newSection);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
         addSectionForm.reset();
         showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
     });
@@ -1654,9 +1611,8 @@
         data.sections[sectionIndex].teachers.push(newTeacher);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
         addTeacherForm.reset();
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
     });
@@ -1687,9 +1643,8 @@
         data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
         addSemesterForm.reset();
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
     });
@@ -1732,9 +1687,8 @@
         data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
         addLectureForm.reset();
         showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
     });
@@ -1802,14 +1756,13 @@
         });
 
         saveData();
-        pendingChanges++;
-        updatePendingChanges();
+        addChange();
         updateCodesManagement();
         if (codeInput) codeInput.value = '';
         codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
         codeMessage.style.color = '#22c55e';
         showToast('success', `✅ تم إضافة الكود: ${code}`);
-        updateAdminSelects();
+        updateAllAdminSelects();
     };
 
     window.generateCodes = function(count = 5) {
@@ -1855,11 +1808,10 @@
         }
 
         saveData();
-        pendingChanges++;
-        updatePendingChanges();
+        addChange();
         updateCodesManagement();
         showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
-        updateAdminSelects();
+        updateAllAdminSelects();
     };
 
     function updateCodesManagement() {
@@ -1949,8 +1901,7 @@
 
         codeData.locked = !codeData.locked;
         saveData();
-        pendingChanges++;
-        updatePendingChanges();
+        addChange();
         updateCodesManagement();
         showToast('success', `✅ تم ${codeData.locked ? 'قفل' : 'فتح'} الكود ${code}`);
     };
@@ -1971,8 +1922,7 @@
 
         teacher.codes.splice(index, 1);
         saveData();
-        pendingChanges++;
-        updatePendingChanges();
+        addChange();
         updateCodesManagement();
         showToast('success', `✅ تم حذف الكود: ${code}`);
     };
@@ -1981,11 +1931,12 @@
     // ===== EDIT TEACHER =====
     // ============================================================
     document.getElementById('editTeacherSection')?.addEventListener('change', function() {
-        updateEditTeacherSelect();
-        updateEditTeacherData();
+        updateAllAdminSelects();
     });
 
-    document.getElementById('editTeacherSelect')?.addEventListener('change', updateEditTeacherData);
+    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
+        updateEditTeacherData();
+    });
 
     editTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -2034,9 +1985,8 @@
 
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
 
         messageEl.innerHTML = `✅ تم تعديل بيانات المدرس "${newName}" بنجاح!`;
         messageEl.style.color = '#22c55e';
@@ -2064,9 +2014,8 @@
         data.sections.splice(sectionIndex, 1);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
 
         const msg = document.getElementById('deleteSectionMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف القسم "${section.name}" بنجاح`;
@@ -2098,9 +2047,8 @@
         data.sections[sectionIndex].teachers.splice(teacherIndex, 1);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
 
         const msg = document.getElementById('deleteTeacherMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
@@ -2140,15 +2088,14 @@
         data.sections[sectionIndex].teachers[teacherIndex].semesters.splice(semesterIndex, 1);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
 
         const msg = document.getElementById('deleteSemesterMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف الفصل ${semester.number}`);
-        updateDeleteSemesterSelects();
+        updateAllAdminSelects();
     };
 
     window.deleteSelectedLectureFromTab = function() {
@@ -2190,15 +2137,14 @@
         data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.splice(lectureIndex, 1);
         saveData();
         renderAllData();
-        updateAdminSelects();
-        pendingChanges++;
-        updatePendingChanges();
+        updateAllAdminSelects();
+        addChange();
 
         const msg = document.getElementById('deleteLectureMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف المحاضرة "${lecture.title}"`);
-        updateDeleteLectureSemesters();
+        updateAllAdminSelects();
     };
 
     // ============================================================
@@ -2326,8 +2272,7 @@
 
         saveData();
         renderAllData();
-        pendingChanges++;
-        updatePendingChanges();
+        addChange();
 
         editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
         editLectureMessage.style.color = '#22c55e';
@@ -2723,13 +2668,14 @@ grant execute on function add_user_and_admin(text) to authenticated;
             document.getElementById('tab-' + this.dataset.tab).classList.add('active');
 
             if (this.dataset.tab === 'manage-codes') {
+                updateAllAdminSelects();
                 updateCodesManagement();
             }
             if (this.dataset.tab === 'delete') {
-                updateAdminSelects();
+                updateAllAdminSelects();
             }
             if (this.dataset.tab === 'edit-lecture') {
-                updateEditLectureSemesters();
+                updateAllAdminSelects();
             }
             if (this.dataset.tab === 'users') {
                 renderUsersTable();
@@ -2738,12 +2684,11 @@ grant execute on function add_user_and_admin(text) to authenticated;
                 loadAdminsList();
             }
             if (this.dataset.tab === 'edit-teacher') {
-                updateEditTeacherSelect();
-                updateEditTeacherData();
+                updateAllAdminSelects();
             }
             if (this.dataset.tab === 'add-teacher' || this.dataset.tab === 'add-semester' ||
                 this.dataset.tab === 'add-lecture' || this.dataset.tab === 'add-section') {
-                updateAdminSelects();
+                updateAllAdminSelects();
             }
         });
     });
@@ -2752,102 +2697,87 @@ grant execute on function add_user_and_admin(text) to authenticated;
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
     // ============================================================
 
+    // تحديث القوائم عند تغيير القسم
     document.getElementById('teacherSection')?.addEventListener('change', function() {
-        updateAdminSelects();
+        updateAllAdminSelects();
     });
 
     document.getElementById('semesterSection')?.addEventListener('change', function() {
-        updateAdminSelects();
+        updateAllAdminSelects();
     });
 
     document.getElementById('lectureSection')?.addEventListener('change', function() {
-        updateAdminSelects();
+        updateAllAdminSelects();
     });
 
     document.getElementById('codeSection')?.addEventListener('change', function() {
-        updateCodeTeacherSelect();
-        updateCodesManagement();
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editLectureSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteTeacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteSemesterSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteLectureSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    // تحديث القوائم عند تغيير المدرس
+    document.getElementById('semesterTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('lectureTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
     });
 
     document.getElementById('codeTeacherSelect')?.addEventListener('change', function() {
         updateCodesManagement();
     });
 
-    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
-        updateEditTeacherSelect();
+    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
         updateEditTeacherData();
     });
 
-    document.getElementById('editLectureSection')?.addEventListener('change', function() {
-        updateAdminSelects();
-    });
-
     document.getElementById('editLectureTeacher')?.addEventListener('change', function() {
-        updateEditLectureSemesters();
-    });
-
-    document.getElementById('editLectureSemester')?.addEventListener('change', function() {
-        const sectionSelect = document.getElementById('editLectureSection');
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const semesterSelect = document.getElementById('editLectureSemester');
-
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const semesterIndex = parseInt(semesterSelect?.value);
-        const lectureSelect = document.getElementById('editLectureSelect');
-
-        let options = '<option value="">اختر المحاضرة...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            !isNaN(semesterIndex) && semesterIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures) {
-            const lectures = data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures;
-            lectures.forEach((l, i) => {
-                options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
-            });
-        }
-        if (lectureSelect) lectureSelect.innerHTML = options;
-    });
-
-    document.getElementById('deleteTeacherSection')?.addEventListener('change', function() {
-        updateAdminSelects();
-    });
-
-    document.getElementById('deleteSemesterSection')?.addEventListener('change', function() {
-        updateAdminSelects();
+        updateAllAdminSelects();
     });
 
     document.getElementById('deleteSemesterTeacher')?.addEventListener('change', function() {
-        updateDeleteSemesterSelects();
-    });
-
-    document.getElementById('deleteLectureSection')?.addEventListener('change', function() {
-        updateAdminSelects();
+        updateAllAdminSelects();
     });
 
     document.getElementById('deleteLectureTeacher')?.addEventListener('change', function() {
-        updateDeleteLectureSemesters();
+        updateAllAdminSelects();
+    });
+
+    // تحديث القوائم عند تغيير الفصل
+    document.getElementById('lectureSemester')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editLectureSemester')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteSemesterSelect')?.addEventListener('change', function() {
+        updateAllAdminSelects();
     });
 
     document.getElementById('deleteLectureSemester')?.addEventListener('change', function() {
-        const sectionSelect = document.getElementById('deleteLectureSection');
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const semesterIndex = parseInt(semesterSelect?.value);
-        const lectureSelect = document.getElementById('deleteLectureSelect');
-
-        let options = '<option value="">اختر المحاضرة...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && !isNaN(teacherIndex) && teacherIndex >= 0 &&
-            !isNaN(semesterIndex) && semesterIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures) {
-            const lectures = data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures;
-            lectures.forEach((l, i) => {
-                options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
-            });
-        }
-        if (lectureSelect) lectureSelect.innerHTML = options;
+        updateAllAdminSelects();
     });
 
     // ============================================================
@@ -2936,7 +2866,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         }
 
         renderUsersTable();
-        updateAdminSelects();
+        updateAllAdminSelects();
         loadAdminsList();
         console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام والفلتر');
         console.log('🔒 جميع الميزات محمية وآمنة');
