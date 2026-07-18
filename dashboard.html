@@ -8,6 +8,89 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
+        /* ============================================================
+           أنماط إضافية - الأقسام والتصفية
+           ============================================================ */
+
+        /* ===== شبكة الأقسام ===== */
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.2rem;
+            text-align: center;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .section-card .section-icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .section-card .section-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text);
+        }
+
+        .section-card .section-count {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .section-card.active {
+            border-color: var(--primary);
+            background: var(--bg-hover);
+        }
+
+        /* ===== أزرار تصفية الأقسام ===== */
+        .section-selector {
+            margin: 1rem 0;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .section-selector .section-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .section-selector .section-btn:hover {
+            border-color: var(--primary);
+        }
+
+        .section-selector .section-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* ===== إصلاحات إضافية ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -21,11 +104,6 @@
             padding: 0.5rem 0;
             z-index: 999;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        body.dark-mode .bottom-nav {
-            background: var(--bg-card);
-            border-top-color: var(--border);
         }
 
         .bottom-nav .nav-item {
@@ -60,7 +138,7 @@
         }
 
         .bottom-nav .nav-item .badge {
-            background: var(--danger);
+            background: #ef4444;
             color: white;
             border-radius: 50%;
             padding: 0.1rem 0.4rem;
@@ -70,6 +148,31 @@
             right: -6px;
             min-width: 18px;
             text-align: center;
+        }
+
+        .btn-delete-admin {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-delete-admin:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        .video-player-wrapper .player-info {
+            display: none !important;
+        }
+
+        .player-container iframe,
+        .player-container video {
+            pointer-events: auto !important;
         }
 
         .admin-login-btn {
@@ -177,7 +280,7 @@
         }
 
         .account-section .account-actions .btn-logout-account {
-            background: var(--danger);
+            background: #ef4444;
             color: white;
         }
 
@@ -280,7 +383,7 @@
 
         .course-card-mini .course-badge {
             display: inline-block;
-            background: var(--success);
+            background: #22c55e;
             color: white;
             padding: 0.15rem 0.6rem;
             border-radius: 20px;
@@ -396,6 +499,48 @@
             }
         }
 
+        .btn-admin {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-admin:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+
+        .btn-logout-account {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-logout-account:hover {
+            background: #dc2626;
+            transform: scale(1.02);
+        }
+
         @media (max-width: 480px) {
             .hero {
                 min-height: 25vh;
@@ -442,6 +587,9 @@
             .course-card-mini .course-name {
                 font-size: 0.85rem;
             }
+            .sections-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
         }
 
         @media (max-width: 380px) {
@@ -457,83 +605,9 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 0.4rem;
             }
-        }
-
-        .btn-admin {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.8rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn-admin:hover {
-            background: var(--primary-dark);
-            transform: scale(1.02);
-        }
-
-        .btn-admin i {
-            font-size: 1.2rem;
-        }
-
-        .btn-logout-account {
-            background: var(--danger);
-            color: white;
-            border: none;
-            padding: 0.8rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn-logout-account:hover {
-            background: #dc2626;
-            transform: scale(1.02);
-        }
-
-        .btn-logout-account i {
-            font-size: 1.2rem;
-        }
-
-        /* ===== إصلاح مشكلة الفيديو - إخفاء النص العلوي ===== */
-        .video-player-wrapper .player-info {
-            display: none !important;
-        }
-
-        /* ===== التأكد من أن أزرار التحكم قابلة للضغط ===== */
-        .player-container iframe,
-        .player-container video {
-            pointer-events: auto !important;
-        }
-
-        /* ===== زر حذف الأدمن ===== */
-        .btn-delete-admin {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 0.3rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            transition: all 0.3s ease;
-        }
-        .btn-delete-admin:hover {
-            background: #dc2626;
-            transform: scale(1.05);
+            .sections-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
         }
     </style>
 </head>
@@ -542,6 +616,7 @@
         <div class="spinner"></div>
     </div>
 
+    <!-- ===== NAVBAR ===== -->
     <nav class="navbar" id="navbar" style="display:none;">
         <div class="nav-container">
             <div class="nav-left">
@@ -570,11 +645,12 @@
         </div>
     </nav>
 
+    <!-- ===== PAGE HOME ===== -->
     <div id="page-home" style="display:none;">
         <section class="hero" id="hero">
             <div class="hero-content">
                 <h1 class="hero-title">📚 ديف <span>أكاديمي</span></h1>
-                <p class="hero-desc">منصة تعليمية متكاملة. تعلم من أفضل المدرسين في أي وقت.</p>
+                <p class="hero-desc">منصة تعليمية متكاملة. اختر صفك وابدأ التعلم</p>
                 <div class="hero-buttons">
                     <button class="btn-play" onclick="navigateTo('teachers')">
                         <i class="fas fa-play"></i> ابدأ التعلم
@@ -586,9 +662,22 @@
             </div>
         </section>
 
+        <!-- ===== الأقسام الدراسية ===== -->
+        <div class="teachers-container" id="sectionsContainer">
+            <div class="row">
+                <div class="row-header">
+                    <h2 class="row-title"><i class="fas fa-school"></i> الأقسام الدراسية</h2>
+                    <span class="row-more" id="sectionsCount">0 قسم</span>
+                </div>
+                <div class="sections-grid" id="sectionsGrid"></div>
+            </div>
+        </div>
+
+        <!-- ===== المدرسين ===== -->
         <div class="teachers-container" id="teachersContainer"></div>
     </div>
 
+    <!-- ===== PAGE MY COURSES ===== -->
     <div id="page-my-courses" style="display:none;">
         <div class="my-courses-section">
             <div class="section-header">
@@ -599,16 +688,20 @@
         </div>
     </div>
 
+    <!-- ===== PAGE TEACHERS ===== -->
     <div id="page-teachers" style="display:none;">
         <div class="teachers-container" style="padding-top:1rem;">
             <div class="teachers-page-header">
                 <h2>👨‍🏫 جميع المدرسين</h2>
-                <p>اختر المدرس وابدأ رحلة التعلم</p>
+                <p>اختر القسم ثم المدرس وابدأ رحلة التعلم</p>
             </div>
+            <!-- ===== أزرار تصفية الأقسام ===== -->
+            <div class="section-selector" id="sectionFilter"></div>
             <div id="teachersContainer2"></div>
         </div>
     </div>
 
+    <!-- ===== PAGE ACCOUNT ===== -->
     <div id="page-account" style="display:none;">
         <div class="account-section">
             <div class="profile-header">
@@ -640,6 +733,7 @@
         </div>
     </div>
 
+    <!-- ===== BOTTOM NAV ===== -->
     <nav class="bottom-nav" id="bottomNav" style="display:none;">
         <button class="nav-item active" data-page="home">
             <i class="fas fa-home"></i>
@@ -660,6 +754,7 @@
         </button>
     </nav>
 
+    <!-- ===== FOOTER ===== -->
     <footer class="footer" style="padding-bottom:80px;display:none;" id="footer">
         <div class="footer-content">
             <div class="footer-logo">
@@ -700,20 +795,22 @@
         </div>
     </div>
 
-    <!-- ===== VIDEO PLAYER - مشغل الفيديو بدون نصوص علوية ===== -->
+    <!-- ===== VIDEO PLAYER ===== -->
     <div class="video-player-container" id="videoPlayer">
         <div class="video-player-wrapper">
             <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
             <div class="player-container" id="playerContainer">
                 <div id="videoWrapper" style="position:relative;padding-top:56.25%;width:100%;height:0;"></div>
             </div>
-            <!-- تم إزالة النص العلوي الذي كان يمنع اللمس -->
         </div>
     </div>
 
+    <!-- ===== TOAST ===== -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ===== ADMIN PANEL ===== -->
+    <!-- ============================================================
+    ADMIN PANEL
+    ============================================================ -->
     <div class="admin-panel" id="adminPanel">
         <div class="admin-content">
             <div class="admin-header">
@@ -721,24 +818,45 @@
                 <button class="admin-close" id="adminClose"><i class="fas fa-times"></i></button>
             </div>
 
+            <!-- ===== TABS ===== -->
             <div class="admin-tabs">
-                <button class="tab-btn active" data-tab="add-teacher">➕ إضافة</button>
+                <button class="tab-btn active" data-tab="add-section">📚 إضافة قسم</button>
+                <button class="tab-btn" data-tab="add-teacher">➕ إضافة مدرس</button>
                 <button class="tab-btn" data-tab="add-semester">📀 فصل</button>
                 <button class="tab-btn" data-tab="add-lecture">🎥 محاضرة</button>
                 <button class="tab-btn" data-tab="manage-codes">🔑 أكواد</button>
-                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
-                <!-- ===== التعديل الجديد: تبويب تعديل المدرس ===== -->
                 <button class="tab-btn" data-tab="edit-teacher">✏️ تعديل مدرس</button>
+                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
                 <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
                 <button class="tab-btn" data-tab="users">👥 مستخدمين</button>
                 <button class="tab-btn" data-tab="add-admin">👑 إضافة أدمن</button>
                 <button class="tab-btn" data-tab="publish">📤 نشر</button>
             </div>
 
-            <!-- Add Teacher -->
-            <div class="tab-content active" id="tab-add-teacher">
+            <!-- ===== TAB: ADD SECTION ===== -->
+            <div class="tab-content active" id="tab-add-section">
+                <form id="addSectionForm" class="admin-form">
+                    <h3>📚 إضافة قسم جديد</h3>
+                    <div class="form-group">
+                        <label>📝 اسم القسم *</label>
+                        <input type="text" id="sectionName" placeholder="مثال: أول متوسط" required />
+                    </div>
+                    <div class="form-group">
+                        <label>🖼️ أيقونة القسم</label>
+                        <input type="text" id="sectionIcon" placeholder="📚" value="📚" maxlength="2" />
+                    </div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة القسم</button>
+                </form>
+            </div>
+
+            <!-- ===== TAB: ADD TEACHER ===== -->
+            <div class="tab-content" id="tab-add-teacher">
                 <form id="addTeacherForm" class="admin-form">
                     <h3>👨‍🏫 إضافة مدرس جديد</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم *</label>
+                        <select id="teacherSection" required></select>
+                    </div>
                     <div class="form-group">
                         <label>📝 اسم المدرس *</label>
                         <input type="text" id="teacherName" placeholder="مثال: الأستاذ حيدر طابور" required />
@@ -763,10 +881,14 @@
                 </form>
             </div>
 
-            <!-- Add Semester -->
+            <!-- ===== TAB: ADD SEMESTER ===== -->
             <div class="tab-content" id="tab-add-semester">
                 <form id="addSemesterForm" class="admin-form">
                     <h3>📀 إضافة فصل جديد</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم *</label>
+                        <select id="semesterSection" required></select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس *</label>
                         <select id="semesterTeacher" required></select>
@@ -783,10 +905,14 @@
                 </form>
             </div>
 
-            <!-- Add Lecture -->
+            <!-- ===== TAB: ADD LECTURE ===== -->
             <div class="tab-content" id="tab-add-lecture">
                 <form id="addLectureForm" class="admin-form">
                     <h3>🎥 إضافة محاضرة جديدة</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم *</label>
+                        <select id="lectureSection" required></select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس *</label>
                         <select id="lectureTeacher" required></select>
@@ -821,11 +947,15 @@
                 </form>
             </div>
 
-            <!-- Manage Codes -->
+            <!-- ===== TAB: MANAGE CODES ===== -->
             <div class="tab-content" id="tab-manage-codes">
                 <div class="codes-management">
                     <h3 style="font-size:1rem;margin-bottom:0.8rem;">🔑 إدارة أكواد التفعيل</h3>
 
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="codeSection" required></select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="codeTeacherSelect" required></select>
@@ -841,7 +971,7 @@
                     </div>
 
                     <div class="code-actions">
-                        <button onclick="generateCodes(5)" class="btn-submit" style="background:var(--success);flex:1;">
+                        <button onclick="generateCodes(5)" class="btn-submit" style="background:#22c55e;flex:1;">
                             <i class="fas fa-plus"></i> 5
                         </button>
                         <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);flex:1;">
@@ -855,45 +985,17 @@
                 </div>
             </div>
 
-            <!-- Edit Lecture -->
-            <div class="tab-content" id="tab-edit-lecture">
-                <div class="edit-lecture-section">
-                    <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل محاضرة</h3>
-                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر المدرس ثم الفصل ثم المحاضرة</p>
-
-                    <div class="form-group">
-                        <label>👨‍🏫 اختر المدرس</label>
-                        <select id="editLectureTeacher" required>
-                            <option value="">اختر المدرس...</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>📀 اختر الفصل</label>
-                        <select id="editLectureSemester" required>
-                            <option value="">اختر المدرس أولاً</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>🎥 اختر المحاضرة</label>
-                        <select id="editLectureSelect" required>
-                            <option value="">اختر الفصل أولاً</option>
-                        </select>
-                    </div>
-
-                    <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
-                        <i class="fas fa-edit"></i> فتح التعديل
-                    </button>
-                    <div id="editLectureAdminMessage"></div>
-                </div>
-            </div>
-
-            <!-- ===== ✏️ EDIT TEACHER - التعديل الجديد ===== -->
+            <!-- ===== TAB: EDIT TEACHER ===== -->
             <div class="tab-content" id="tab-edit-teacher">
                 <div class="edit-teacher-section">
                     <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل بيانات المدرس</h3>
-                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر المدرس وقم بتعديل بياناته</p>
+                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر القسم ثم المدرس وقم بتعديل بياناته</p>
 
                     <form id="editTeacherForm" class="admin-form">
+                        <div class="form-group">
+                            <label>📚 اختر القسم *</label>
+                            <select id="editTeacherSection" required></select>
+                        </div>
                         <div class="form-group">
                             <label>👨‍🏫 اختر المدرس *</label>
                             <select id="editTeacherSelect" required>
@@ -929,10 +1031,72 @@
                 </div>
             </div>
 
-            <!-- Delete -->
+            <!-- ===== TAB: EDIT LECTURE ===== -->
+            <div class="tab-content" id="tab-edit-lecture">
+                <div class="edit-lecture-section">
+                    <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل محاضرة</h3>
+                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر القسم ثم المدرس ثم الفصل ثم المحاضرة</p>
+
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="editLectureSection" required>
+                            <option value="">اختر القسم...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>👨‍🏫 اختر المدرس</label>
+                        <select id="editLectureTeacher" required>
+                            <option value="">اختر المدرس...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>📀 اختر الفصل</label>
+                        <select id="editLectureSemester" required>
+                            <option value="">اختر الفصل...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>🎥 اختر المحاضرة</label>
+                        <select id="editLectureSelect" required>
+                            <option value="">اختر المحاضرة...</option>
+                        </select>
+                    </div>
+
+                    <button onclick="openEditLectureFromAdmin()" class="btn-submit" style="background:var(--primary);">
+                        <i class="fas fa-edit"></i> فتح التعديل
+                    </button>
+                    <div id="editLectureAdminMessage"></div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: DELETE ===== -->
             <div class="tab-content" id="tab-delete">
+                <!-- ===== حذف قسم ===== -->
+                <div class="delete-section">
+                    <h3>🗑️ حذف قسم</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="deleteSection" required>
+                            <option value="">اختر القسم...</option>
+                        </select>
+                    </div>
+                    <button onclick="deleteSelectedSection()" class="btn-delete">
+                        <i class="fas fa-trash"></i> حذف القسم
+                    </button>
+                    <div id="deleteSectionMessage"></div>
+                </div>
+
+                <hr style="margin:1.5rem 0;border-color:var(--border);">
+
+                <!-- ===== حذف مدرس ===== -->
                 <div class="delete-section">
                     <h3>🗑️ حذف مدرس</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="deleteTeacherSection" required>
+                            <option value="">اختر القسم...</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteTeacherSelect" required>
@@ -940,13 +1104,22 @@
                         </select>
                     </div>
                     <button onclick="deleteSelectedTeacherFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف
+                        <i class="fas fa-trash"></i> حذف المدرس
                     </button>
                     <div id="deleteTeacherMessage"></div>
                 </div>
 
+                <hr style="margin:1.5rem 0;border-color:var(--border);">
+
+                <!-- ===== حذف فصل ===== -->
                 <div class="delete-section">
                     <h3>🗑️ حذف فصل</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="deleteSemesterSection" required>
+                            <option value="">اختر القسم...</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteSemesterTeacher" required>
@@ -956,17 +1129,26 @@
                     <div class="form-group">
                         <label>📀 اختر الفصل</label>
                         <select id="deleteSemesterSelect" required>
-                            <option value="">اختر المدرس أولاً</option>
+                            <option value="">اختر الفصل...</option>
                         </select>
                     </div>
                     <button onclick="deleteSelectedSemesterFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف
+                        <i class="fas fa-trash"></i> حذف الفصل
                     </button>
                     <div id="deleteSemesterMessage"></div>
                 </div>
 
+                <hr style="margin:1.5rem 0;border-color:var(--border);">
+
+                <!-- ===== حذف محاضرة ===== -->
                 <div class="delete-section">
                     <h3>🗑️ حذف محاضرة</h3>
+                    <div class="form-group">
+                        <label>📚 اختر القسم</label>
+                        <select id="deleteLectureSection" required>
+                            <option value="">اختر القسم...</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>👨‍🏫 اختر المدرس</label>
                         <select id="deleteLectureTeacher" required>
@@ -976,23 +1158,23 @@
                     <div class="form-group">
                         <label>📀 اختر الفصل</label>
                         <select id="deleteLectureSemester" required>
-                            <option value="">اختر المدرس أولاً</option>
+                            <option value="">اختر الفصل...</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>🎥 اختر المحاضرة</label>
                         <select id="deleteLectureSelect" required>
-                            <option value="">اختر الفصل أولاً</option>
+                            <option value="">اختر المحاضرة...</option>
                         </select>
                     </div>
                     <button onclick="deleteSelectedLectureFromTab()" class="btn-delete">
-                        <i class="fas fa-trash"></i> حذف
+                        <i class="fas fa-trash"></i> حذف المحاضرة
                     </button>
                     <div id="deleteLectureMessage"></div>
                 </div>
             </div>
 
-            <!-- Users Management -->
+            <!-- ===== TAB: USERS ===== -->
             <div class="tab-content" id="tab-users">
                 <div class="users-management">
                     <h3 style="font-size:1rem;margin-bottom:0.5rem;">👥 المستخدمين المسجلين</h3>
@@ -1018,17 +1200,17 @@
                 </div>
             </div>
 
-            <!-- Add Admin -->
+            <!-- ===== TAB: ADD ADMIN ===== -->
             <div class="tab-content" id="tab-add-admin">
                 <div class="add-admin-section">
                     <h3 style="font-size:1rem;margin-bottom:0.5rem;">👑 إضافة مشرف جديد</h3>
                     <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">أدخل البريد الإلكتروني لإضافة مشرف جديد</p>
-                    
+
                     <div class="form-group">
                         <label>📧 البريد الإلكتروني للمشرف</label>
                         <input type="email" id="adminEmailInput" placeholder="example@gmail.com" />
                     </div>
-                    
+
                     <button onclick="addNewAdmin()" class="btn-submit" style="background:var(--primary-gradient);">
                         <i class="fas fa-user-plus"></i> إضافة مشرف
                     </button>
@@ -1043,7 +1225,7 @@
                 </div>
             </div>
 
-            <!-- Publish -->
+            <!-- ===== TAB: PUBLISH ===== -->
             <div class="tab-content" id="tab-publish">
                 <div class="publish-section">
                     <h3>📤 نشر التحديثات</h3>
@@ -1063,7 +1245,9 @@
         </div>
     </div>
 
-    <!-- Edit Lecture Modal -->
+    <!-- ============================================================
+    EDIT LECTURE MODAL
+    ============================================================ -->
     <div class="modal-overlay" id="editLectureModal">
         <div class="modal modal-small">
             <button class="close-btn" id="closeEditLecture"><i class="fas fa-times"></i></button>
