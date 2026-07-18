@@ -113,7 +113,7 @@
     let editTarget = { teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
+    // 🔥 دوال تشغيل الفيديو
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -144,7 +144,6 @@
 
         let videoUrl = extractVideoUrl(url);
 
-        // ===== إذا كان الرابط من mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
             if (!videoUrl.includes('autoplay')) {
                 const separator = videoUrl.includes('?') ? '&' : '?';
@@ -175,7 +174,6 @@
             return;
         }
 
-        // ===== دعم YouTube =====
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
@@ -193,7 +191,6 @@
             return;
         }
 
-        // ===== دعم الروابط المباشرة =====
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
             videoWrapper.innerHTML = `
                 <video controls autoplay 
@@ -1272,7 +1269,7 @@
     // ===== ADMIN FUNCTIONS =====
     function updateAdminSelects() {
         const selects = ['semesterTeacher', 'lectureTeacher', 'codeTeacherSelect', 'deleteTeacherSelect',
-            'deleteSemesterTeacher', 'deleteLectureTeacher', 'editLectureTeacher'
+            'deleteSemesterTeacher', 'deleteLectureTeacher', 'editLectureTeacher', 'editTeacherSelect'
         ];
         selects.forEach(id => {
             const select = document.getElementById(id);
@@ -1287,6 +1284,8 @@
                 select.value = currentValue;
             }
         });
+        // ===== التعديل الجديد: تحديث select تعديل المدرس =====
+        updateEditTeacherSelect();
         setTimeout(() => {
             updateSemesterSelects();
             updateDeleteSemesterSelects();
@@ -1294,6 +1293,97 @@
             updateEditLectureSemesters();
         }, 50);
     }
+
+    // ============================================================
+    // ===== ✏️ تعديل بيانات المدرس - التعديل الجديد =====
+    // ============================================================
+
+    function updateEditTeacherSelect() {
+        const select = document.getElementById('editTeacherSelect');
+        if (!select) return;
+        const currentValue = select.value;
+        let options = '<option value="">اختر المدرس...</option>';
+        data.teachers.forEach((t, i) => {
+            options += `<option value="${i}">${t.name}</option>`;
+        });
+        select.innerHTML = options;
+        if (currentValue && data.teachers[parseInt(currentValue)]) {
+            select.value = currentValue;
+        }
+    }
+
+    function loadTeacherDataForEdit() {
+        const select = document.getElementById('editTeacherSelect');
+        const teacherIndex = parseInt(select?.value);
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            document.getElementById('editTeacherName').value = '';
+            document.getElementById('editTeacherSubject').value = '';
+            document.getElementById('editTeacherDesc').value = '';
+            document.getElementById('editTeacherImage').value = '';
+            return;
+        }
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) return;
+        document.getElementById('editTeacherName').value = teacher.name || '';
+        document.getElementById('editTeacherSubject').value = teacher.subject || '';
+        document.getElementById('editTeacherDesc').value = teacher.description || '';
+        document.getElementById('editTeacherImage').value = teacher.image || '';
+        document.getElementById('editTeacherMessage').innerHTML = '';
+    }
+
+    document.getElementById('editTeacherSelect')?.addEventListener('change', loadTeacherDataForEdit);
+
+    document.getElementById('editTeacherForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const select = document.getElementById('editTeacherSelect');
+        const teacherIndex = parseInt(select?.value);
+        const messageEl = document.getElementById('editTeacherMessage');
+
+        if (isNaN(teacherIndex) || teacherIndex === '' || teacherIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        const teacher = data.teachers[teacherIndex];
+        if (!teacher) {
+            messageEl.innerHTML = '❌ المدرس غير موجود';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+
+        const newName = document.getElementById('editTeacherName').value.trim();
+        const newSubject = document.getElementById('editTeacherSubject').value.trim();
+        const newDesc = document.getElementById('editTeacherDesc').value.trim();
+        const newImage = document.getElementById('editTeacherImage').value.trim();
+
+        if (!newName) {
+            messageEl.innerHTML = '⚠️ يرجى إدخال اسم المدرس';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        teacher.name = newName;
+        teacher.subject = newSubject || 'مدرس';
+        teacher.description = newDesc || '';
+        teacher.image = newImage || '';
+
+        saveData();
+        renderAllTeachers();
+        updateAdminSelects();
+        updateEditTeacherSelect();
+        pendingChanges++;
+        updatePendingChanges();
+
+        messageEl.innerHTML = `✅ تم تعديل بيانات المدرس "${newName}" بنجاح!`;
+        messageEl.style.color = '#22c55e';
+        showToast('success', `✅ تم تعديل بيانات المدرس "${newName}"`);
+
+        setTimeout(() => {
+            updateAdminSelects();
+            updateEditTeacherSelect();
+        }, 200);
+    });
 
     function updateSemesterSelects() {
         const lectureSemester = document.getElementById('lectureSemester');
@@ -1645,7 +1735,7 @@
     };
 
     // ============================================================
-    // ===== إدارة المشرفين (Add Admin) - نسخة محسنة بالكامل =====
+    // ===== إدارة المشرفين =====
     // ============================================================
 
     window.addNewAdmin = async function() {
@@ -1672,14 +1762,12 @@
         }
 
         try {
-            // ===== 1) البحث عن المستخدم في جدول users =====
             let { data: userData, error: userError } = await supabaseClient
                 .from('users')
                 .select('id, email')
                 .eq('email', email)
                 .maybeSingle();
 
-            // ===== 2) إذا لم يكن موجوداً في public.users =====
             if (!userData) {
                 messageEl.innerHTML = `
                     ⚠️ المستخدم <strong>${email}</strong> غير موجود في جدول المستخدمين العام.
@@ -1698,7 +1786,6 @@
                 return;
             }
 
-            // ===== 3) التحقق إذا كان المستخدم مشرفاً بالفعل =====
             const { data: existingAdmin, error: checkError } = await supabaseClient
                 .from('admins')
                 .select('email')
@@ -1711,7 +1798,6 @@
                 return;
             }
 
-            // ===== 4) إضافة المشرف =====
             const { error: insertError } = await supabaseClient
                 .from('admins')
                 .insert({ uid: userData.id, email: email, role: 'admin' });
@@ -1735,7 +1821,6 @@
         }
     };
 
-    // ===== دالة إصلاح المستخدم وإضافته كمشرف - باستخدام RPC =====
     window.fixUserAndAddAdmin = async function(email) {
         const messageEl = document.getElementById('addAdminMessage');
         
@@ -1746,64 +1831,12 @@
         }
 
         try {
-            // ===== المحاولة الأولى: استخدام RPC لتجاوز RLS =====
-            // نقوم بإنشاء دالة RPC في Supabase تسمح للمشرفين بإضافة مستخدمين
-            
-            // ===== المحاولة الثانية: استخدام جدول users مع تعطيل RLS مؤقتاً =====
-            // ولكن هذا غير ممكن من العميل، لذلك نستخدم طريقة بديلة
-            
-            // ===== الحل: نطلب من المستخدم تسجيل الدخول أولاً =====
-            // أو نستخدم API المفتاح السري (Service Role Key) ولكن هذا غير آمن في العميل
-            
-            // ===== الحل الأمثل: استخدام دالة RPC =====
-            // يجب عليك إنشاء هذه الدالة في Supabase SQL Editor:
-            /*
-            create or replace function add_user_and_admin(p_email text)
-            returns jsonb language plpgsql security definer as $$
-            declare
-                v_user_id uuid;
-                v_result jsonb;
-            begin
-                -- التحقق إذا كان المستخدم موجوداً
-                select id into v_user_id from public.users where email = p_email;
-                
-                if v_user_id is null then
-                    -- إنشاء مستخدم جديد
-                    v_user_id := gen_random_uuid();
-                    insert into public.users (id, email, full_name, registered_at)
-                    values (v_user_id, p_email, split_part(p_email, '@', 1), now());
-                end if;
-                
-                -- إضافة المستخدم كمشرف
-                insert into public.admins (uid, email, role)
-                values (v_user_id, p_email, 'admin')
-                on conflict (uid) do nothing;
-                
-                v_result := jsonb_build_object(
-                    'success', true,
-                    'message', 'تم إضافة المستخدم والمشرف بنجاح',
-                    'user_id', v_user_id::text,
-                    'email', p_email
-                );
-                
-                return v_result;
-            exception when others then
-                return jsonb_build_object(
-                    'success', false,
-                    'message', 'حدث خطأ: ' || sqlerrm
-                );
-            end;
-            $$;
-            */
-            
-            // ===== محاولة استدعاء الدالة RPC =====
             const { data: result, error: rpcError } = await supabaseClient
                 .rpc('add_user_and_admin', { p_email: email });
 
             if (rpcError) {
                 console.error('RPC Error:', rpcError);
                 
-                // إذا فشلت الدالة RPC، نعرض رسالة توضيحية
                 messageEl.innerHTML = `
                     ❌ فشل إضافة المستخدم: ${rpcError.message}
                     <br><br>
@@ -1844,7 +1877,6 @@
         }
     };
 
-    // ===== دالة نسخ كود RPC =====
     window.copyRpcFunction = function() {
         const sql = `
 -- ===== دالة RPC لإضافة مستخدم ومشرف =====
@@ -1854,17 +1886,14 @@ declare
     v_user_id uuid;
     v_result jsonb;
 begin
-    -- التحقق إذا كان المستخدم موجوداً
     select id into v_user_id from public.users where email = p_email;
     
     if v_user_id is null then
-        -- إنشاء مستخدم جديد
         v_user_id := gen_random_uuid();
         insert into public.users (id, email, full_name, registered_at)
         values (v_user_id, p_email, split_part(p_email, '@', 1), now());
     end if;
     
-    -- إضافة المستخدم كمشرف
     insert into public.admins (uid, email, role)
     values (v_user_id, p_email, 'admin')
     on conflict (uid) do nothing;
@@ -1885,14 +1914,12 @@ exception when others then
 end;
 $$;
 
--- ===== منح الصلاحيات =====
 grant execute on function add_user_and_admin(text) to authenticated;
         `;
         
         navigator.clipboard.writeText(sql).then(() => {
             showToast('success', '✅ تم نسخ كود الدالة RPC');
         }).catch(() => {
-            // طريقة بديلة للنسخ
             const textarea = document.createElement('textarea');
             textarea.value = sql;
             document.body.appendChild(textarea);
@@ -2045,6 +2072,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
             if (this.dataset.tab === 'manage-codes') { updateCodesManagement(); }
             if (this.dataset.tab === 'delete') { updateAdminSelects(); }
             if (this.dataset.tab === 'edit-lecture') { updateEditLectureSemesters(); }
+            if (this.dataset.tab === 'edit-teacher') { updateEditTeacherSelect(); loadTeacherDataForEdit(); } // ===== التعديل الجديد =====
             if (this.dataset.tab === 'users') { renderUsersTable(); }
             if (this.dataset.tab === 'add-admin') { loadAdminsList(); }
         });
@@ -2341,6 +2369,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         console.log('🔒 جميع الميزات محمية وآمنة');
         console.log('🎥 دعم منصة mediadelivery للتشغيل');
         console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
+        console.log('✏️ تم إضافة خيار تعديل بيانات المدرس');
     }
 
     loadData().then(init).catch((error) => {

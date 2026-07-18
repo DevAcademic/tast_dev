@@ -726,7 +726,9 @@
                 <button class="tab-btn" data-tab="add-semester">📀 فصل</button>
                 <button class="tab-btn" data-tab="add-lecture">🎥 محاضرة</button>
                 <button class="tab-btn" data-tab="manage-codes">🔑 أكواد</button>
-                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل</button>
+                <button class="tab-btn" data-tab="edit-lecture">✏️ تعديل محاضرة</button>
+                <!-- ===== التعديل الجديد: تبويب تعديل المدرس ===== -->
+                <button class="tab-btn" data-tab="edit-teacher">✏️ تعديل مدرس</button>
                 <button class="tab-btn" data-tab="delete">🗑️ حذف</button>
                 <button class="tab-btn" data-tab="users">👥 مستخدمين</button>
                 <button class="tab-btn" data-tab="add-admin">👑 إضافة أدمن</button>
@@ -781,7 +783,7 @@
                 </form>
             </div>
 
-            <!-- Add Lecture - دعم mediadelivery -->
+            <!-- Add Lecture -->
             <div class="tab-content" id="tab-add-lecture">
                 <form id="addLectureForm" class="admin-form">
                     <h3>🎥 إضافة محاضرة جديدة</h3>
@@ -882,6 +884,48 @@
                         <i class="fas fa-edit"></i> فتح التعديل
                     </button>
                     <div id="editLectureAdminMessage"></div>
+                </div>
+            </div>
+
+            <!-- ===== ✏️ EDIT TEACHER - التعديل الجديد ===== -->
+            <div class="tab-content" id="tab-edit-teacher">
+                <div class="edit-teacher-section">
+                    <h3 style="font-size:1rem;margin-bottom:0.5rem;">✏️ تعديل بيانات المدرس</h3>
+                    <p style="color:var(--text-light);font-size:0.8rem;margin-bottom:0.8rem;">اختر المدرس وقم بتعديل بياناته</p>
+
+                    <form id="editTeacherForm" class="admin-form">
+                        <div class="form-group">
+                            <label>👨‍🏫 اختر المدرس *</label>
+                            <select id="editTeacherSelect" required>
+                                <option value="">اختر المدرس...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>📝 اسم المدرس *</label>
+                            <input type="text" id="editTeacherName" placeholder="اسم المدرس" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>📚 التخصص (المادة)</label>
+                            <input type="text" id="editTeacherSubject" placeholder="مثال: مدرس رياضيات" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>📄 الوصف</label>
+                            <textarea id="editTeacherDesc" rows="2" placeholder="وصف مختصر عن المدرس"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>🖼️ رابط الصورة</label>
+                            <input type="url" id="editTeacherImage" placeholder="https://..." />
+                        </div>
+
+                        <button type="submit" class="btn-submit" style="background:var(--primary-gradient);">
+                            <i class="fas fa-save"></i> 💾 حفظ التعديلات
+                        </button>
+                        <div id="editTeacherMessage" style="text-align:center;font-weight:600;margin-top:0.5rem;font-size:0.85rem;"></div>
+                    </form>
                 </div>
             </div>
 
