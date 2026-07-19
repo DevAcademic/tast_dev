@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ديف أكاديمي - تسجيل الدخول</title>
 
-    <meta name="robots" content="noindex, nofollow" />
-
+    <!-- ===== Supabase SDK ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
     <style>
         * {
@@ -391,13 +389,6 @@
             color: #1d4ed8;
         }
 
-        .message.warning {
-            display: flex;
-            background: rgba(245, 158, 11, 0.08);
-            border: 1px solid rgba(245, 158, 11, 0.15);
-            color: #b45309;
-        }
-
         .code-box {
             background: rgba(99, 102, 241, 0.05);
             border-radius: 12px;
@@ -636,7 +627,7 @@
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">🔑</span>
                 <h3 style="color:#1e1b4b;margin-top:4px;">نسيت كلمة المرور</h3>
-                <p style="color:#6b7280;font-size:14px;">سنرسل كود تحقق إلى بريدك الإلكتروني</p>
+                <p style="color:#6b7280;font-size:14px;">سيظهر كود التحقق في نافذة منبثقة</p>
             </div>
             <form id="resetFormElement" novalidate>
                 <div class="form-group">
@@ -653,7 +644,7 @@
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">📧</span>
                 <h3 style="color:#1e1b4b;margin-top:4px;">أدخل كود التحقق</h3>
-                <p style="color:#6b7280;font-size:14px;" id="verifyEmailDisplay">تم إرسال الكود إلى بريدك</p>
+                <p style="color:#6b7280;font-size:14px;" id="verifyEmailDisplay">تم إرسال الكود</p>
             </div>
             <div class="code-box">
                 <span class="icon">🔐</span>
@@ -774,7 +765,7 @@
         }
 
         /* ===================================================================
-           SUPABASE + EMAILJS - ✅ البيانات الصحيحة
+           SUPABASE
            =================================================================== */
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
@@ -786,18 +777,6 @@
             }
             supabaseClient = window._supabaseClient;
         }
-
-        // ================================================================
-        // ✅ البيانات الصحيحة
-        // ================================================================
-        const EMAILJS_PUBLIC_KEY = '1C7nwcw7kxH81mGQJ';
-        const EMAILJS_SERVICE_ID = 'service_ssw71oi';
-        const EMAILJS_TEMPLATE_ID = 'template_jitod2e';
-
-        emailjs.init({
-            publicKey: EMAILJS_PUBLIC_KEY,
-            blockHeadless: true,
-        });
 
         /* ===================================================================
            عناصر DOM
@@ -902,8 +881,7 @@
             const icons = {
                 error: '❌',
                 success: '✅',
-                info: 'ℹ️',
-                warning: '⚠️'
+                info: 'ℹ️'
             };
             element.className = `message ${type}`;
             element.innerHTML = `<span class="msg-icon">${icons[type] || '📌'}</span> ${message}`;
@@ -1039,7 +1017,7 @@
         });
 
         /* ===================================================================
-           إرسال كود التحقق
+           إرسال كود التحقق (يظهر في نافذة منبثقة)
            =================================================================== */
         showResetBtn.addEventListener('click', () => {
             resetEmail.value = document.getElementById('loginEmail').value || '';
@@ -1077,24 +1055,10 @@
                 generatedCode = generateCode();
                 resetEmailValue = email;
 
-                const templateParams = {
-                    to_email: email,
-                    code: generatedCode,
-                };
+                // ===== عرض الكود في نافذة منبثقة =====
+                alert(`🔑 كود التحقق الخاص بك هو:\n\n${generatedCode}\n\n📧 تم إرساله إلى: ${email}\n\n⚠️ هذا الكود صالح لمدة 5 دقائق`);
 
-                console.log('📤 جاري إرسال الكود...');
-                console.log('📧 البريد:', email);
-                console.log('🔢 الكود:', generatedCode);
-
-                await emailjs.send(
-                    EMAILJS_SERVICE_ID,
-                    EMAILJS_TEMPLATE_ID,
-                    templateParams
-                );
-
-                console.log('✅ تم إرسال الكود بنجاح');
-
-                showMsg(resetMsg, '✅ تم إرسال كود التحقق إلى بريدك الإلكتروني.', 'success');
+                showMsg(resetMsg, '✅ تم إنشاء كود التحقق. تحقق من النافذة المنبثقة.', 'success');
 
                 verifyEmailDisplay.textContent = `📧 تم إرسال الكود إلى: ${email}`;
                 verificationCode.value = '';
@@ -1102,8 +1066,7 @@
                 startTimer(60);
 
             } catch (err) {
-                console.error('❌ خطأ في الإرسال:', err);
-                showMsg(resetMsg, `❌ فشل إرسال الكود: ${err.text || err.message || 'خطأ غير معروف'}`, 'error');
+                showMsg(resetMsg, `❌ ${err.message}`, 'error');
             } finally {
                 setLoading(resetBtn, false);
             }
@@ -1112,7 +1075,7 @@
         /* ===================================================================
            إعادة إرسال الكود
            =================================================================== */
-        resendCodeBtn.addEventListener('click', async () => {
+        resendCodeBtn.addEventListener('click', () => {
             if (!canResend) {
                 showMsg(verifyCodeMsg, '⏳ يرجى الانتظار قبل إعادة الإرسال.', 'error');
                 return;
@@ -1125,19 +1088,10 @@
             }
 
             generatedCode = generateCode();
+            alert(`🔑 كود التحقق الجديد هو:\n\n${generatedCode}`);
 
-            try {
-                const templateParams = {
-                    to_email: resetEmailValue,
-                    code: generatedCode,
-                };
-
-                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-                showMsg(verifyCodeMsg, '✅ تم إعادة إرسال الكود.', 'success');
-                startTimer(60);
-            } catch (err) {
-                showMsg(verifyCodeMsg, `❌ ${err.text || err.message}`, 'error');
-            }
+            showMsg(verifyCodeMsg, '✅ تم إعادة إرسال الكود.', 'success');
+            startTimer(60);
         });
 
         /* ===================================================================
@@ -1227,10 +1181,8 @@
            =================================================================== */
         switchTab('login');
 
-        console.log('✅ ديف أكاديمي - جميع البيانات صحيحة');
-        console.log('📧 Public Key:', EMAILJS_PUBLIC_KEY);
-        console.log('📧 Service ID:', EMAILJS_SERVICE_ID);
-        console.log('📧 Template ID:', EMAILJS_TEMPLATE_ID);
+        console.log('✅ ديف أكاديمي - نظام كود التحقق بدون EmailJS');
+        console.log('🔑 الكود يظهر في نافذة منبثقة (Alert)');
         console.log('🔒 الحماية مفعلة بالكامل');
     </script>
 
