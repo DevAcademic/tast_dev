@@ -9,14 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
     <style>
-        /* ============================================================
-           RESET & BASE
-           ============================================================ */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
 
         body {
@@ -26,245 +23,70 @@
             justify-content: center;
             background: linear-gradient(145deg, #f0f4ff 0%, #e8edf8 100%);
             padding: 20px;
-            position: relative;
-            overflow-x: hidden;
         }
 
-        /* ===== خلفية متحركة ===== */
-        .bg-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .bg-shapes .shape {
-            position: absolute;
-            border-radius: 50%;
-            opacity: 0.15;
-            animation: floatShape 20s ease-in-out infinite alternate;
-        }
-
-        .bg-shapes .shape:nth-child(1) {
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(135deg, #818cf8, #6366f1);
-            top: -150px;
-            right: -150px;
-            animation-duration: 25s;
-            animation-delay: 0s;
-        }
-
-        .bg-shapes .shape:nth-child(2) {
-            width: 400px;
-            height: 400px;
-            background: linear-gradient(135deg, #a78bfa, #7c3aed);
-            bottom: -100px;
-            left: -100px;
-            animation-duration: 20s;
-            animation-delay: 3s;
-        }
-
-        .bg-shapes .shape:nth-child(3) {
-            width: 200px;
-            height: 200px;
-            background: linear-gradient(135deg, #60a5fa, #3b82f6);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation-duration: 30s;
-            animation-delay: 1.5s;
-            opacity: 0.08;
-        }
-
-        @keyframes floatShape {
-            0% {
-                transform: translate(0, 0) scale(1) rotate(0deg);
-            }
-            33% {
-                transform: translate(30px, -40px) scale(1.05) rotate(5deg);
-            }
-            66% {
-                transform: translate(-20px, 30px) scale(0.95) rotate(-3deg);
-            }
-            100% {
-                transform: translate(15px, -15px) scale(1.02) rotate(2deg);
-            }
-        }
-
-        /* ============================================================
-           CARD
-           ============================================================ */
         .auth-card {
-            position: relative;
-            z-index: 1;
             width: 100%;
-            max-width: 460px;
-            background: rgba(255, 255, 255, 0.75);
+            max-width: 450px;
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
             border-radius: 32px;
-            padding: 44px 36px 38px;
-            box-shadow:
-                0 20px 60px rgba(99, 102, 241, 0.12),
-                0 8px 24px rgba(0, 0, 0, 0.04),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            padding: 40px 32px;
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.12);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow 0.4s ease;
-            animation: cardAppear 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            transform: translateY(30px);
-            opacity: 0;
-            max-height: 95vh;
-            overflow-y: auto;
+            animation: fadeUp 0.6s ease;
         }
 
-        .auth-card::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .auth-card::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .auth-card::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.3);
-            border-radius: 8px;
-        }
-
-        @keyframes cardAppear {
-            0% {
-                transform: translateY(30px) scale(0.96);
+        @keyframes fadeUp {
+            from {
                 opacity: 0;
+                transform: translateY(30px);
             }
-            100% {
-                transform: translateY(0) scale(1);
+            to {
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .auth-card:hover {
-            box-shadow:
-                0 30px 80px rgba(99, 102, 241, 0.18),
-                0 8px 24px rgba(0, 0, 0, 0.04),
-                inset 0 1px 0 rgba(255, 255, 255, 0.6);
-            transform: translateY(-2px);
-        }
-
-        /* ===== الشعار ===== */
-        .auth-card .logo-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 4px;
-        }
-
-        .auth-card .logo-icon {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #fff;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            animation: pulseGlow 3s ease-in-out infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%,
-            100% {
-                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            }
-            50% {
-                box-shadow: 0 8px 40px rgba(99, 102, 241, 0.5);
-            }
-        }
-
-        .auth-card h1 {
+        .logo {
             text-align: center;
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 800;
             color: #1e1b4b;
-            letter-spacing: -0.5px;
-            margin-bottom: 2px;
         }
 
-        .auth-card h1 span {
+        .logo span {
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
-        .auth-card .subtitle {
+        .subtitle {
             text-align: center;
             color: #6b7280;
             font-size: 14px;
-            font-weight: 400;
-            margin-bottom: 6px;
+            margin: 4px 0 20px;
         }
 
-        .auth-card .supabase-info {
-            text-align: center;
-            color: #8b5cf6;
-            font-size: 12px;
-            font-weight: 500;
-            margin-bottom: 22px;
-            background: rgba(139, 92, 246, 0.08);
-            padding: 4px 16px;
-            border-radius: 20px;
-            display: inline-block;
-            width: auto;
-            margin-left: auto;
-            margin-right: auto;
-            letter-spacing: 0.3px;
-        }
-
-        /* ============================================================
-           TABS
-           ============================================================ */
         .tabs {
             display: flex;
             background: rgba(99, 102, 241, 0.06);
-            border-radius: 16px;
+            border-radius: 14px;
             padding: 4px;
-            margin-bottom: 28px;
-            border: 1px solid rgba(99, 102, 241, 0.08);
+            margin-bottom: 24px;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 12px 0;
+            padding: 10px 0;
             border: none;
             background: transparent;
             color: #9ca3af;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-        }
-
-        .tab-btn::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%) scaleX(0);
-            width: 30px;
-            height: 3px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 4px;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s;
         }
 
         .tab-btn.active {
@@ -273,40 +95,17 @@
             box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
         }
 
-        .tab-btn.active::after {
-            transform: translateX(-50%) scaleX(1);
-        }
-
-        .tab-btn:hover:not(.active) {
-            color: #4b5563;
-        }
-
-        /* ============================================================
-           FORMS
-           ============================================================ */
         .form-container {
             display: none;
-            animation: slideFade 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: fadeUp 0.4s ease;
         }
 
         .form-container.active {
             display: block;
         }
 
-        @keyframes slideFade {
-            0% {
-                opacity: 0;
-                transform: translateY(16px) scale(0.98);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
         .form-group {
-            margin-bottom: 18px;
-            position: relative;
+            margin-bottom: 16px;
         }
 
         .form-group label {
@@ -314,155 +113,51 @@
             color: #374151;
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 5px;
-            letter-spacing: 0.2px;
-        }
-
-        .form-group label .required {
-            color: #ef4444;
-            margin-right: 2px;
+            margin-bottom: 4px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 14px 18px;
+            padding: 12px 16px;
             background: #f8fafc;
             border: 2px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 12px;
             color: #1e1b4b;
             font-size: 15px;
             outline: none;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .form-group input::placeholder {
-            color: #b0b8c4;
-            font-weight: 400;
+            transition: all 0.3s;
         }
 
         .form-group input:focus {
             border-color: #818cf8;
-            background: #ffffff;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-            transform: translateY(-1px);
         }
 
-        .form-group input:hover:not(:focus) {
-            border-color: #c7d2fe;
-        }
-
-        .form-group input.error {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-        }
-
-        .form-group input:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* ============================================================
-           SUBMIT BTN
-           ============================================================ */
         .submit-btn {
             width: 100%;
-            padding: 16px;
+            padding: 14px;
             border: none;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 700;
             color: #fff;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             cursor: pointer;
-            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: all 0.3s;
             margin-top: 4px;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.3px;
-        }
-
-        .submit-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-            transition: left 0.6s ease;
-        }
-
-        .submit-btn:hover:not(:disabled)::before {
-            left: 100%;
         }
 
         .submit-btn:hover:not(:disabled) {
-            transform: translateY(-3px) scale(1.01);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35);
-        }
-
-        .submit-btn:active:not(:disabled) {
-            transform: scale(0.97);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3);
         }
 
         .submit-btn:disabled {
-            opacity: 0.7;
+            opacity: 0.6;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
 
-        .submit-btn .spinner {
-            display: none;
-            width: 22px;
-            height: 22px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto;
-        }
-
-        .submit-btn.loading .spinner {
-            display: block;
-        }
-        .submit-btn.loading .btn-text {
-            display: none;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ===== زر ثانوي ===== */
-        .btn-secondary {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid #e5e7eb;
-            border-radius: 14px;
-            background: transparent;
-            color: #6b7280;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 8px;
-        }
-
-        .btn-secondary:hover {
-            border-color: #818cf8;
-            color: #4f46e5;
-            background: rgba(99, 102, 241, 0.05);
-        }
-
-        /* ============================================================
-           FORGOT PASSWORD
-           ============================================================ */
-        .forgot-password-link {
+        .forgot-link {
             display: block;
             text-align: left;
             color: #6366f1;
@@ -470,300 +165,227 @@
             font-weight: 500;
             margin-top: 4px;
             cursor: pointer;
-            transition: color 0.3s ease;
             background: none;
             border: none;
-            padding: 0;
         }
 
-        .forgot-password-link:hover {
-            color: #4f46e5;
+        .forgot-link:hover {
             text-decoration: underline;
         }
 
-        .back-to-login {
-            display: inline-block;
-            color: #6366f1;
-            font-weight: 600;
-            cursor: pointer;
-            transition: color 0.3s ease;
-            background: none;
-            border: none;
-            padding: 0;
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
             font-size: 14px;
-        }
-
-        .back-to-login:hover {
-            color: #4f46e5;
-            text-decoration: underline;
-        }
-
-        /* ===== حالة نجاح إرسال الرمز ===== */
-        .reset-success-box {
-            background: rgba(34, 197, 94, 0.08);
-            border: 1px solid rgba(34, 197, 94, 0.15);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            color: #15803d;
             font-weight: 500;
             margin-top: 12px;
-            animation: slideFade 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .reset-success-box .icon {
-            font-size: 32px;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        /* ============================================================
-           MESSAGES
-           ============================================================ */
-        .message {
-            padding: 14px 18px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            margin-top: 16px;
             display: none;
-            align-items: center;
-            gap: 10px;
-            animation: slideFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .message .msg-icon {
-            font-size: 18px;
-            flex-shrink: 0;
         }
 
         .message.error {
-            display: flex;
+            display: block;
             background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.15);
             color: #b91c1c;
         }
 
         .message.success {
-            display: flex;
+            display: block;
             background: rgba(34, 197, 94, 0.08);
             border: 1px solid rgba(34, 197, 94, 0.15);
             color: #15803d;
         }
 
         .message.info {
-            display: flex;
+            display: block;
             background: rgba(59, 130, 246, 0.08);
             border: 1px solid rgba(59, 130, 246, 0.15);
             color: #1d4ed8;
         }
 
-        /* ============================================================
-           FOOTER
-           ============================================================ */
-        .auth-footer {
+        .footer-text {
             text-align: center;
-            margin-top: 24px;
+            margin-top: 20px;
             color: #9ca3af;
             font-size: 14px;
         }
 
-        .auth-footer a {
+        .footer-text a {
             color: #6366f1;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s ease;
-            position: relative;
         }
 
-        .auth-footer a::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            transition: width 0.3s ease;
-        }
-
-        .auth-footer a:hover::after {
+        .back-btn {
             width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: transparent;
+            color: #6b7280;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
         }
 
-        .auth-footer a:hover {
+        .back-btn:hover {
+            border-color: #818cf8;
             color: #4f46e5;
         }
 
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
-        @media (max-width: 520px) {
-            .auth-card {
-                padding: 32px 20px 28px;
-                border-radius: 24px;
-            }
-
-            .auth-card h1 {
-                font-size: 22px;
-            }
-
-            .auth-card .logo-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-            }
-
-            .tab-btn {
-                font-size: 13px;
-                padding: 10px 0;
-            }
-
-            .form-group input {
-                padding: 12px 16px;
-                font-size: 14px;
-            }
-
-            .submit-btn {
-                padding: 14px;
-                font-size: 15px;
-            }
-
-            .bg-shapes .shape:nth-child(1) {
-                width: 300px;
-                height: 300px;
-                top: -100px;
-                right: -100px;
-            }
-
-            .bg-shapes .shape:nth-child(2) {
-                width: 250px;
-                height: 250px;
-                bottom: -80px;
-                left: -80px;
-            }
+        .success-box {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            color: #15803d;
+            margin-top: 12px;
+            display: none;
         }
 
-        @media (max-width: 380px) {
+        .success-box .icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .success-box.show {
+            display: block;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .reset-password-box {
+            text-align: center;
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 12px;
+            margin-top: 12px;
+        }
+
+        .reset-password-box .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .reset-password-box h3 {
+            color: #1e1b4b;
+            margin-bottom: 4px;
+        }
+
+        .reset-password-box p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        @media (max-width: 500px) {
             .auth-card {
-                padding: 24px 14px 20px;
-                border-radius: 20px;
-            }
-
-            .auth-card h1 {
-                font-size: 20px;
-            }
-
-            .tab-btn {
-                font-size: 12px;
-                padding: 8px 0;
-            }
-
-            .form-group input {
-                padding: 10px 14px;
-                font-size: 13px;
+                padding: 28px 16px;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- ===== خلفية متحركة ===== -->
-    <div class="bg-shapes">
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!--                     CARD تسجيل الدخول / إنشاء حساب             -->
-    <!-- ============================================================ -->
-    <div class="auth-card" id="authCard">
-
-        <div class="logo-wrapper">
-            <div class="logo-icon">📚</div>
-        </div>
-        <h1>ديف <span>أكاديمي</span></h1>
-        <p class="subtitle" id="pageSubtitle">سجل الدخول أو أنشئ حساباً جديداً</p>
-        <div style="text-align:center;">
-            <span class="supabase-info" id="supabaseInfo">🔄 جارِ الاتصال...</span>
-        </div>
+    <div class="auth-card" id="app">
+        <div class="logo">ديف <span>أكاديمي</span></div>
+        <p class="subtitle" id="pageSubtitle">سجل الدخول أو أنشئ حساباً</p>
 
         <!-- ===== TABS ===== -->
-        <div class="tabs" role="tablist" id="mainTabs">
-            <button class="tab-btn active" data-tab="login" role="tab">🔐 تسجيل الدخول</button>
-            <button class="tab-btn" data-tab="signup" role="tab">📝 إنشاء حساب</button>
+        <div class="tabs" id="mainTabs">
+            <button class="tab-btn active" data-tab="login">🔐 تسجيل الدخول</button>
+            <button class="tab-btn" data-tab="signup">📝 إنشاء حساب</button>
         </div>
 
-        <!-- ===== FORM: تسجيل الدخول ===== -->
-        <div class="form-container active" id="loginForm" role="tabpanel">
-            <form id="loginFormElement" novalidate>
+        <!-- ===== تسجيل الدخول ===== -->
+        <div class="form-container active" id="loginForm">
+            <form id="loginFormElement">
                 <div class="form-group">
-                    <label for="loginEmail">📧 البريد الإلكتروني <span class="required">*</span></label>
-                    <input type="email" id="loginEmail" placeholder="example@email.com" required autocomplete="email" />
+                    <label>📧 البريد الإلكتروني</label>
+                    <input type="email" id="loginEmail" placeholder="example@email.com" required />
                 </div>
                 <div class="form-group">
-                    <label for="loginPassword">🔑 كلمة المرور <span class="required">*</span></label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+                    <label>🔑 كلمة المرور</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required />
                 </div>
-                <button type="button" class="forgot-password-link" id="forgotPasswordBtn">
-                    نسيت كلمة المرور؟
-                </button>
-                <button type="submit" class="submit-btn" id="loginBtn">
-                    <span class="btn-text">🚀 تسجيل الدخول</span>
-                    <span class="spinner"></span>
-                </button>
+                <button type="button" class="forgot-link" id="showResetBtn">نسيت كلمة المرور؟</button>
+                <button type="submit" class="submit-btn" id="loginBtn">🚀 تسجيل الدخول</button>
             </form>
-            <div class="message" id="loginMessage"></div>
+            <div class="message" id="loginMsg"></div>
         </div>
 
-        <!-- ===== FORM: إنشاء حساب ===== -->
-        <div class="form-container" id="signupForm" role="tabpanel">
-            <form id="signupFormElement" novalidate>
+        <!-- ===== إنشاء حساب ===== -->
+        <div class="form-container" id="signupForm">
+            <form id="signupFormElement">
                 <div class="form-group">
-                    <label for="signupName">👤 الاسم الكامل <span class="required">*</span></label>
-                    <input type="text" id="signupName" placeholder="أحمد محمد" required autocomplete="name" />
+                    <label>👤 الاسم الكامل</label>
+                    <input type="text" id="signupName" placeholder="أحمد محمد" required />
                 </div>
                 <div class="form-group">
-                    <label for="signupEmail">📧 البريد الإلكتروني <span class="required">*</span></label>
-                    <input type="email" id="signupEmail" placeholder="example@email.com" required autocomplete="email" />
+                    <label>📧 البريد الإلكتروني</label>
+                    <input type="email" id="signupEmail" placeholder="example@email.com" required />
                 </div>
                 <div class="form-group">
-                    <label for="signupPassword">🔑 كلمة المرور <span class="required">*</span></label>
-                    <input type="password" id="signupPassword" placeholder="•••••••• (٦ أحرف على الأقل)" required autocomplete="new-password" minlength="6" />
+                    <label>🔑 كلمة المرور</label>
+                    <input type="password" id="signupPassword" placeholder="•••••••• (٦ أحرف)" required minlength="6" />
                 </div>
-                <button type="submit" class="submit-btn" id="signupBtn">
-                    <span class="btn-text">✨ إنشاء حساب</span>
-                    <span class="spinner"></span>
-                </button>
+                <button type="submit" class="submit-btn" id="signupBtn">✨ إنشاء حساب</button>
             </form>
-            <div class="message" id="signupMessage"></div>
+            <div class="message" id="signupMsg"></div>
         </div>
 
-        <!-- ===== FORM: نسيت كلمة المرور ===== -->
-        <div class="form-container" id="resetForm" role="tabpanel">
-            <form id="resetFormElement" novalidate>
+        <!-- ===== إعادة تعيين كلمة المرور ===== -->
+        <div class="form-container" id="resetForm">
+            <div style="text-align:center;margin-bottom:16px;">
+                <span style="font-size:40px;">🔑</span>
+                <h3 style="color:#1e1b4b;margin-top:4px;">إعادة تعيين كلمة المرور</h3>
+                <p style="color:#6b7280;font-size:14px;">أدخل بريدك الإلكتروني وسنرسل لك رابطاً</p>
+            </div>
+            <form id="resetFormElement">
                 <div class="form-group">
-                    <label for="resetEmail">📧 البريد الإلكتروني <span class="required">*</span></label>
-                    <input type="email" id="resetEmail" placeholder="example@email.com" required autocomplete="email" />
-                    <p style="font-size:12px;color:#6b7280;margin-top:4px;">
-                        سنرسل لك رابطاً لإعادة تعيين كلمة المرور
-                    </p>
+                    <label>📧 البريد الإلكتروني</label>
+                    <input type="email" id="resetEmail" placeholder="example@email.com" required />
                 </div>
-                <button type="submit" class="submit-btn" id="resetBtn">
-                    <span class="btn-text">📤 إرسال رابط إعادة التعيين</span>
-                    <span class="spinner"></span>
-                </button>
-                <button type="button" class="btn-secondary" id="backToLoginBtn">
-                    🔙 العودة إلى تسجيل الدخول
-                </button>
+                <button type="submit" class="submit-btn" id="resetBtn">📤 إرسال الرابط</button>
+                <button type="button" class="back-btn" id="backToLogin">🔙 العودة</button>
             </form>
-            <div class="message" id="resetMessage"></div>
-            <div id="resetSuccessBox" style="display:none;"></div>
+            <div class="message" id="resetMsg"></div>
+            <div class="success-box" id="resetSuccessBox"></div>
         </div>
 
-        <div class="auth-footer">
-            <span id="footerText">ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a></span>
+        <!-- ===== إعادة تعيين كلمة المرور (صفحة مخفية داخل نفس الصفحة) ===== -->
+        <div class="form-container" id="resetPasswordForm">
+            <div style="text-align:center;margin-bottom:16px;">
+                <span style="font-size:40px;">🔑</span>
+                <h3 style="color:#1e1b4b;margin-top:4px;">إعادة تعيين كلمة المرور</h3>
+                <p style="color:#6b7280;font-size:14px;" id="resetPasswordSubtitle">أدخل كلمة المرور الجديدة</p>
+            </div>
+            
+            <div id="resetPasswordStatus" style="text-align:center;padding:12px;background:rgba(99,102,241,0.06);border-radius:10px;margin-bottom:16px;color:#6366f1;">
+                <span style="font-size:20px;display:block;">⏳</span>
+                جارِ التحقق من الرابط...
+            </div>
+
+            <form id="resetPasswordFormElement" style="display:none;">
+                <div class="form-group">
+                    <label>🔑 كلمة المرور الجديدة</label>
+                    <input type="password" id="newPassword" placeholder="•••••••• (٦ أحرف)" required minlength="6" />
+                </div>
+                <div class="form-group">
+                    <label>✅ تأكيد كلمة المرور</label>
+                    <input type="password" id="confirmNewPassword" placeholder="أعد كتابة كلمة المرور" required minlength="6" />
+                </div>
+                <button type="submit" class="submit-btn" id="resetPasswordBtn">✅ تأكيد</button>
+                <a href="#" class="back-btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px;" onclick="window.location.reload()">🔙 العودة</a>
+            </form>
+            <div class="message" id="resetPasswordMsg"></div>
+        </div>
+
+        <div class="footer-text" id="footerText">
+            ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>
         </div>
     </div>
 
@@ -771,15 +393,10 @@
     <!--                     JAVASCRIPT                                 -->
     <!-- ============================================================ -->
     <script>
-        /* ===================================================================
-           ⚠️  استبدل القيمتين أدناه بـ بيانات مشروعك من الخدمة
-           =================================================================== */
+        // ===== إعدادات Supabase =====
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
 
-        /* ===================================================================
-           🔒  تهيئة Supabase – مرة واحدة فقط
-           =================================================================== */
         let supabaseClient = null;
         if (window.supabase) {
             if (!window._supabaseClient) {
@@ -787,75 +404,63 @@
             }
             supabaseClient = window._supabaseClient;
         }
-        const supabaseInfo = document.getElementById('supabaseInfo');
-        if (supabaseInfo) {
-            if (supabaseClient) {
-                supabaseInfo.textContent = '✅ الخدمة جاهزة';
-                supabaseInfo.style.color = '#22c55e';
-            } else {
-                supabaseInfo.textContent = '⚠️ لم يتم تحميل الخدمة';
-                supabaseInfo.style.color = '#ef4444';
-            }
-        }
 
-        /* ===================================================================
-           📦  عناصر DOM
-           =================================================================== */
+        // ===== عناصر DOM =====
         const tabs = document.querySelectorAll('.tab-btn');
         const loginContainer = document.getElementById('loginForm');
         const signupContainer = document.getElementById('signupForm');
         const resetContainer = document.getElementById('resetForm');
+        const resetPasswordContainer = document.getElementById('resetPasswordForm');
         const loginForm = document.getElementById('loginFormElement');
         const signupForm = document.getElementById('signupFormElement');
         const resetForm = document.getElementById('resetFormElement');
+        const resetPasswordForm = document.getElementById('resetPasswordFormElement');
         const loginBtn = document.getElementById('loginBtn');
         const signupBtn = document.getElementById('signupBtn');
         const resetBtn = document.getElementById('resetBtn');
-        const loginMsg = document.getElementById('loginMessage');
-        const signupMsg = document.getElementById('signupMessage');
-        const resetMsg = document.getElementById('resetMessage');
+        const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+        const loginMsg = document.getElementById('loginMsg');
+        const signupMsg = document.getElementById('signupMsg');
+        const resetMsg = document.getElementById('resetMsg');
+        const resetPasswordMsg = document.getElementById('resetPasswordMsg');
         const resetSuccessBox = document.getElementById('resetSuccessBox');
+        const resetPasswordStatus = document.getElementById('resetPasswordStatus');
         const footerText = document.getElementById('footerText');
-        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
-        const backToLoginBtn = document.getElementById('backToLoginBtn');
+        const showResetBtn = document.getElementById('showResetBtn');
+        const backToLogin = document.getElementById('backToLogin');
         const pageSubtitle = document.getElementById('pageSubtitle');
         const mainTabs = document.getElementById('mainTabs');
+        const newPassword = document.getElementById('newPassword');
+        const confirmNewPassword = document.getElementById('confirmNewPassword');
 
-        /* ===================================================================
-           🔄  تبديل التبويبات الأساسية
-           =================================================================== */
+        // ===== تبديل التبويبات =====
         function switchTab(tabId) {
-            tabs.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
+            tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
 
             loginContainer.classList.toggle('active', tabId === 'login');
             signupContainer.classList.toggle('active', tabId === 'signup');
             resetContainer.classList.toggle('active', tabId === 'reset');
+            resetPasswordContainer.classList.toggle('active', tabId === 'reset-password');
 
-            // إخفاء/إظهار التبويبات
-            mainTabs.style.display = (tabId === 'reset') ? 'none' : 'flex';
-            pageSubtitle.textContent = (tabId === 'reset') ? 'أدخل بريدك لإعادة تعيين كلمة المرور' :
-                'سجل الدخول أو أنشئ حساباً جديداً';
+            mainTabs.style.display = (tabId === 'reset' || tabId === 'reset-password') ? 'none' : 'flex';
+            pageSubtitle.textContent = tabId === 'reset' ? 'أدخل بريدك لإعادة تعيين كلمة المرور' :
+                tabId === 'reset-password' ? 'أدخل كلمة المرور الجديدة' :
+                'سجل الدخول أو أنشئ حساباً';
 
             // مسح الرسائل
-            [loginMsg, signupMsg, resetMsg].forEach(el => {
+            [loginMsg, signupMsg, resetMsg, resetPasswordMsg].forEach(el => {
                 el.className = 'message';
                 el.textContent = '';
             });
-            resetSuccessBox.style.display = 'none';
-            resetSuccessBox.innerHTML = '';
 
             if (tabId === 'login') {
-                footerText.innerHTML =
-                    'ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>';
+                footerText.innerHTML = 'ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>';
                 document.getElementById('switchToSignup')?.addEventListener('click', (e) => {
                     e.preventDefault();
                     switchTab('signup');
                 });
             } else if (tabId === 'signup') {
-                footerText.innerHTML =
-                    'لديك حساب بالفعل؟ <a href="#" id="switchToLogin">سجل الدخول</a>';
+                footerText.innerHTML = 'لديك حساب بالفعل؟ <a href="#" id="switchToLogin">سجل الدخول</a>';
                 document.getElementById('switchToLogin')?.addEventListener('click', (e) => {
                     e.preventDefault();
                     switchTab('login');
@@ -866,322 +471,288 @@
         }
 
         tabs.forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
-            });
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
         });
 
-        // تعيين التبويب الافتراضي
-        switchTab('login');
-
-        /* ===================================================================
-           🔄  فتح نافذة نسيت كلمة المرور
-           =================================================================== */
-        forgotPasswordBtn.addEventListener('click', () => {
-            switchTab('reset');
-            document.getElementById('resetEmail').focus();
-        });
-
-        backToLoginBtn.addEventListener('click', () => {
-            switchTab('login');
-        });
-
-        /* ===================================================================
-           💬  عرض الرسائل
-           =================================================================== */
-        function showMessage(element, message, type = 'error') {
-            const icons = {
-                error: '❌',
-                success: '✅',
-                info: 'ℹ️'
-            };
+        // ===== عرض الرسائل =====
+        function showMsg(element, message, type) {
             element.className = `message ${type}`;
-            element.innerHTML = `<span class="msg-icon">${icons[type] || '📌'}</span> ${message}`;
+            element.textContent = message;
         }
 
-        function clearMessage(element) {
-            element.className = 'message';
-            element.textContent = '';
-        }
-
-        /* ===================================================================
-           ⏳  حالة الزر (تحميل / عادي)
-           =================================================================== */
         function setLoading(btn, loading) {
-            if (loading) {
-                btn.classList.add('loading');
-                btn.disabled = true;
-            } else {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
+            btn.disabled = loading;
+            btn.textContent = loading ? '⏳ جارٍ...' : btn.textContent;
         }
 
-        /* ===================================================================
-           ✅  التحقق من صحة البريد الإلكتروني
-           =================================================================== */
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        /* ===================================================================
-           🔐  تسجيل الدخول
-           =================================================================== */
+        // ===== التحقق من جلسة المستخدم =====
+        (async function checkSession() {
+            try {
+                if (!supabaseClient) return;
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.user) {
+                    localStorage.setItem('devAcademicUser', JSON.stringify({
+                        email: session.user.email,
+                        name: session.user.user_metadata?.full_name || null
+                    }));
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (_) {}
+        })();
+
+        // ===== تسجيل الدخول =====
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            clearMessage(loginMsg);
-
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
-            if (!email || !password) {
-                showMessage(loginMsg, 'يرجى ملء جميع الحقول.', 'error');
-                return;
-            }
-            if (!isValidEmail(email)) {
-                showMessage(loginMsg, 'البريد الإلكتروني غير صحيح.', 'error');
-                return;
-            }
-            if (password.length < 6) {
-                showMessage(loginMsg, 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.', 'error');
-                return;
-            }
+            if (!email || !password) { showMsg(loginMsg, 'يرجى ملء جميع الحقول.', 'error'); return; }
+            if (!isValidEmail(email)) { showMsg(loginMsg, 'البريد الإلكتروني غير صحيح.', 'error'); return; }
+            if (password.length < 6) { showMsg(loginMsg, 'كلمة المرور يجب أن تكون ٦ أحرف.', 'error'); return; }
 
             setLoading(loginBtn, true);
 
             try {
-                if (!supabaseClient) {
-                    showMessage(loginMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
-                    setLoading(loginBtn, false);
-                    return;
-                }
-
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-
                 if (data?.user) {
-                    localStorage.setItem('devAcademicUser', JSON.stringify({
-                        email,
-                        name: data.user.user_metadata?.full_name || null
-                    }));
-                    showMessage(loginMsg, 'تم تسجيل الدخول بنجاح، جارِ التوجيه...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 800);
-                } else {
-                    showMessage(loginMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
+                    localStorage.setItem('devAcademicUser', JSON.stringify({ email, name: data.user.user_metadata?.full_name || null }));
+                    showMsg(loginMsg, '✅ تم تسجيل الدخول بنجاح!', 'success');
+                    setTimeout(() => window.location.href = 'dashboard.html', 800);
                 }
             } catch (err) {
-                console.error('Login error:', err);
                 if (err.message.includes('Invalid login credentials')) {
-                    showMessage(loginMsg, 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'error');
-                } else if (err.message.includes('Email not confirmed')) {
-                    showMessage(loginMsg, 'يرجى تأكيد بريدك الإلكتروني أولاً.', 'info');
+                    showMsg(loginMsg, '❌ البريد أو كلمة المرور غير صحيحة.', 'error');
                 } else {
-                    showMessage(loginMsg, `${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
+                    showMsg(loginMsg, `❌ ${err.message}`, 'error');
                 }
             } finally {
                 setLoading(loginBtn, false);
+                loginBtn.textContent = '🚀 تسجيل الدخول';
             }
         });
 
-        /* ===================================================================
-           📝  إنشاء حساب
-           =================================================================== */
+        // ===== إنشاء حساب =====
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            clearMessage(signupMsg);
-
             const name = document.getElementById('signupName').value.trim();
             const email = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
 
-            if (!name || !email || !password) {
-                showMessage(signupMsg, 'يرجى ملء جميع الحقول.', 'error');
-                return;
-            }
-            if (name.length < 2) {
-                showMessage(signupMsg, 'الاسم يجب أن يكون حرفين على الأقل.', 'error');
-                return;
-            }
-            if (!isValidEmail(email)) {
-                showMessage(signupMsg, 'البريد الإلكتروني غير صحيح.', 'error');
-                return;
-            }
-            if (password.length < 6) {
-                showMessage(signupMsg, 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.', 'error');
-                return;
-            }
+            if (!name || !email || !password) { showMsg(signupMsg, 'يرجى ملء جميع الحقول.', 'error'); return; }
+            if (name.length < 2) { showMsg(signupMsg, 'الاسم يجب أن يكون حرفين على الأقل.', 'error'); return; }
+            if (!isValidEmail(email)) { showMsg(signupMsg, 'البريد الإلكتروني غير صحيح.', 'error'); return; }
+            if (password.length < 6) { showMsg(signupMsg, 'كلمة المرور يجب أن تكون ٦ أحرف.', 'error'); return; }
 
             setLoading(signupBtn, true);
 
             try {
-                if (!supabaseClient) {
-                    showMessage(signupMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
-                    setLoading(signupBtn, false);
-                    return;
-                }
-
                 const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
-                    options: {
-                        data: {
-                            full_name: name,
-                        },
-                    },
+                    options: { data: { full_name: name } }
+                });
+                if (error) throw error;
+                if (data?.user) {
+                    localStorage.setItem('devAcademicUser', JSON.stringify({ email, name }));
+                    showMsg(signupMsg, '✅ تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني.', 'success');
+                    setTimeout(() => window.location.href = 'dashboard.html', 1500);
+                }
+            } catch (err) {
+                if (err.message.includes('User already registered')) {
+                    showMsg(signupMsg, '⚠️ هذا البريد مسجل بالفعل.', 'error');
+                } else {
+                    showMsg(signupMsg, `❌ ${err.message}`, 'error');
+                }
+            } finally {
+                setLoading(signupBtn, false);
+                signupBtn.textContent = '✨ إنشاء حساب';
+            }
+        });
+
+        // ===== إظهار/إخفاء نافذة إعادة التعيين =====
+        showResetBtn.addEventListener('click', () => switchTab('reset'));
+        backToLogin.addEventListener('click', () => switchTab('login'));
+
+        // ===== إرسال رابط إعادة التعيين =====
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('resetEmail').value.trim();
+
+            if (!email) { showMsg(resetMsg, 'يرجى إدخال البريد الإلكتروني.', 'error'); return; }
+            if (!isValidEmail(email)) { showMsg(resetMsg, 'البريد الإلكتروني غير صحيح.', 'error'); return; }
+
+            setLoading(resetBtn, true);
+
+            try {
+                // ===== الحل السهل: استخدام الرابط الحالي مع معامل reset =====
+                const resetUrl = window.location.href.split('?')[0].split('#')[0] + '?reset=true';
+                
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: resetUrl,
+                });
+                
+                if (error) throw error;
+
+                // عرض رسالة نجاح
+                resetSuccessBox.className = 'success-box show';
+                resetSuccessBox.innerHTML = `
+                    <span class="icon">📧</span>
+                    <p>✅ تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني</p>
+                    <p style="font-size:13px;color:#6b7280;margin-top:4px;">⏱️ الرابط صالح لمدة 24 ساعة</p>
+                `;
+                showMsg(resetMsg, '✅ تم الإرسال بنجاح!', 'success');
+                document.getElementById('resetEmail').value = '';
+
+                // العودة بعد 5 ثواني
+                setTimeout(() => switchTab('login'), 5000);
+
+            } catch (err) {
+                if (err.message.includes('User not found')) {
+                    showMsg(resetMsg, '⚠️ لا يوجد حساب بهذا البريد.', 'error');
+                } else {
+                    showMsg(resetMsg, `❌ ${err.message}`, 'error');
+                }
+            } finally {
+                setLoading(resetBtn, false);
+                resetBtn.textContent = '📤 إرسال الرابط';
+            }
+        });
+
+        // ===== التحقق من الرابط وإعادة تعيين كلمة المرور (داخل نفس الصفحة) =====
+        (async function checkResetLink() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resetMode = urlParams.get('reset');
+            const hash = window.location.hash;
+
+            // إذا كان هناك hash أو reset=true
+            if (resetMode === 'true' || hash.includes('access_token')) {
+                switchTab('reset-password');
+
+                let access_token = null;
+                let refresh_token = null;
+
+                // محاولة استخراج التوكن من hash أو search
+                if (hash) {
+                    try {
+                        const params = new URLSearchParams(hash.substring(1));
+                        access_token = params.get('access_token');
+                        refresh_token = params.get('refresh_token');
+                    } catch (e) {}
+                }
+
+                if (!access_token) {
+                    // محاولة من search
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        access_token = params.get('access_token');
+                        refresh_token = params.get('refresh_token');
+                    } catch (e) {}
+                }
+
+                if (!access_token || !refresh_token) {
+                    resetPasswordStatus.innerHTML = `
+                        <span style="font-size:20px;display:block;">❌</span>
+                        رابط غير صحيح أو منتهي الصلاحية
+                        <br><br>
+                        <a href="#" onclick="window.location.reload()" style="color:#6366f1;font-weight:600;text-decoration:none;">🔙 العودة</a>
+                    `;
+                    return;
+                }
+
+                try {
+                    // تعيين الجلسة
+                    const { data, error } = await supabaseClient.auth.setSession({
+                        access_token: access_token,
+                        refresh_token: refresh_token
+                    });
+
+                    if (error) throw error;
+
+                    if (data?.user) {
+                        resetPasswordStatus.innerHTML = `
+                            <span style="font-size:20px;display:block;">✅</span>
+                            مرحباً ${data.user.user_metadata?.full_name || data.user.email}
+                            <br>
+                            <span style="font-size:13px;color:#6b7280;">أدخل كلمة المرور الجديدة</span>
+                        `;
+                        resetPasswordStatus.style.background = 'rgba(34,197,94,0.08)';
+                        resetPasswordStatus.style.color = '#15803d';
+                        document.getElementById('resetPasswordFormElement').style.display = 'block';
+                        document.getElementById('resetPasswordSubtitle').textContent = 'مرحباً، أدخل كلمة المرور الجديدة';
+                    }
+                } catch (err) {
+                    resetPasswordStatus.innerHTML = `
+                        <span style="font-size:20px;display:block;">❌</span>
+                        ${err.message || 'حدث خطأ'}
+                        <br><br>
+                        <a href="#" onclick="window.location.reload()" style="color:#6366f1;font-weight:600;text-decoration:none;">🔙 العودة</a>
+                    `;
+                    resetPasswordStatus.style.background = 'rgba(239,68,68,0.08)';
+                    resetPasswordStatus.style.color = '#b91c1c';
+                }
+            }
+        })();
+
+        // ===== إعادة تعيين كلمة المرور =====
+        resetPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = newPassword.value;
+            const confirm = confirmNewPassword.value;
+
+            if (!password || password.length < 6) {
+                showMsg(resetPasswordMsg, 'كلمة المرور يجب أن تكون ٦ أحرف.', 'error');
+                return;
+            }
+            if (password !== confirm) {
+                showMsg(resetPasswordMsg, 'كلمتا المرور غير متطابقتين.', 'error');
+                return;
+            }
+
+            setLoading(resetPasswordBtn, true);
+
+            try {
+                const { data, error } = await supabaseClient.auth.updateUser({
+                    password: password
                 });
 
                 if (error) throw error;
 
                 if (data?.user) {
-                    localStorage.setItem('devAcademicUser', JSON.stringify({
-                        email,
-                        name
-                    }));
+                    showMsg(resetPasswordMsg, '✅ تم إعادة تعيين كلمة المرور بنجاح!', 'success');
+                    document.getElementById('resetPasswordFormElement').style.display = 'none';
+                    resetPasswordStatus.innerHTML = `
+                        <span style="font-size:30px;display:block;">🎉</span>
+                        تم تغيير كلمة المرور بنجاح!
+                        <br>
+                        <span style="font-size:13px;color:#6b7280;">سيتم توجيهك لتسجيل الدخول...</span>
+                    `;
+                    resetPasswordStatus.style.background = 'rgba(34,197,94,0.08)';
+                    resetPasswordStatus.style.color = '#15803d';
 
-                    if (data.user.confirmed_at === null) {
-                        showMessage(
-                            signupMsg,
-                            'تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني عبر الرابط الذي أرسلناه لك.',
-                            'info'
-                        );
-                    } else {
-                        showMessage(signupMsg, 'تم إنشاء الحساب بنجاح! جارِ التوجيه...', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html';
-                        }, 800);
-                    }
-                } else {
-                    showMessage(signupMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
+                    setTimeout(() => {
+                        window.location.href = window.location.href.split('?')[0];
+                    }, 3000);
                 }
             } catch (err) {
-                console.error('Signup error:', err);
-                if (err.message.includes('User already registered')) {
-                    showMessage(signupMsg, 'هذا البريد الإلكتروني مسجل بالفعل.', 'error');
-                } else {
-                    showMessage(signupMsg, `${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
-                }
+                showMsg(resetPasswordMsg, `❌ ${err.message}`, 'error');
             } finally {
-                setLoading(signupBtn, false);
+                setLoading(resetPasswordBtn, false);
+                resetPasswordBtn.textContent = '✅ تأكيد';
             }
         });
 
-        /* ===================================================================
-           🔑  نسيت كلمة المرور - إرسال رابط إعادة التعيين
-           =================================================================== */
-        resetForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearMessage(resetMsg);
-            resetSuccessBox.style.display = 'none';
-            resetSuccessBox.innerHTML = '';
+        // ===== التبديل الافتراضي =====
+        switchTab('login');
 
-            const email = document.getElementById('resetEmail').value.trim();
-
-            if (!email) {
-                showMessage(resetMsg, 'يرجى إدخال البريد الإلكتروني.', 'error');
-                return;
-            }
-            if (!isValidEmail(email)) {
-                showMessage(resetMsg, 'البريد الإلكتروني غير صحيح.', 'error');
-                return;
-            }
-
-            setLoading(resetBtn, true);
-
-            try {
-                if (!supabaseClient) {
-                    showMessage(resetMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
-                    setLoading(resetBtn, false);
-                    return;
-                }
-
-                // استخدام Supabase لإرسال رابط إعادة تعيين كلمة المرور
-                const resetUrl = window.location.origin + '/reset-password.html';
-                
-                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-                    redirectTo: resetUrl,
-                });
-
-                if (error) throw error;
-
-                // عرض رسالة نجاح
-                resetSuccessBox.style.display = 'block';
-                resetSuccessBox.innerHTML = `
-                    <div class="reset-success-box">
-                        <span class="icon">📧</span>
-                        <p>تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.</p>
-                        <p style="font-size:13px;margin-top:4px;color:#6b7280;">
-                            يرجى التحقق من صندوق الوارد (أو البريد غير المرغوب فيه) واتباع التعليمات.
-                        </p>
-                        <p style="font-size:12px;color:#6b7280;margin-top:8px;">
-                            ⏱️ الرابط صالح لمدة 24 ساعة
-                        </p>
-                    </div>
-                `;
-
-                showMessage(resetMsg, '✅ تم إرسال الرابط بنجاح!', 'success');
-
-                // إفراغ الحقل
-                document.getElementById('resetEmail').value = '';
-
-                // العودة تلقائياً إلى صفحة تسجيل الدخول بعد 5 ثواني
-                setTimeout(() => {
-                    switchTab('login');
-                }, 5000);
-
-            } catch (err) {
-                console.error('Reset password error:', err);
-                if (err.message.includes('User not found')) {
-                    showMessage(resetMsg, '⚠️ لا يوجد حساب مرتبط بهذا البريد الإلكتروني.', 'error');
-                } else {
-                    showMessage(resetMsg, `❌ ${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
-                }
-            } finally {
-                setLoading(resetBtn, false);
-            }
-        });
-
-        /* ===================================================================
-           ⚡  التحقق من جلسة المستخدم عند تحميل الصفحة
-           =================================================================== */
-        (async function checkSession() {
-            try {
-                const storedUser = localStorage.getItem('devAcademicUser');
-
-                if (!supabaseClient && storedUser) {
-                    try {
-                        const user = JSON.parse(storedUser);
-                        if (user && user.email) {
-                            window.location.href = 'dashboard.html';
-                            return;
-                        }
-                    } catch (e) {
-                        localStorage.removeItem('devAcademicUser');
-                    }
-                    return;
-                }
-
-                if (!supabaseClient) return;
-
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session?.user) {
-                    window.location.href = 'dashboard.html';
-                } else {
-                    localStorage.removeItem('devAcademicUser');
-                }
-            } catch (_) {
-                localStorage.removeItem('devAcademicUser');
-            }
-        })();
-
-        console.log('✅ Auth page ready – Supabase initialized once.');
-        console.log('🔑 ميزة "نسيت كلمة المرور" مفعلة مع إرسال رابط إعادة التعيين');
-        console.log('🎨 تصميم احترافي مع أنيميشن وألوان فاتحة مريحة');
+        console.log('✅ صفحة تسجيل الدخول جاهزة');
+        console.log('🔑 ميزة إعادة تعيين كلمة المرور تعمل داخل نفس الصفحة');
+        console.log('📱 يعمل على جميع الأجهزة - لا حاجة لصفحة إضافية');
     </script>
 
 </body>
