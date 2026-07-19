@@ -135,11 +135,49 @@
     let editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
+    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube و DynTube
     // ============================================================
 
     function extractVideoUrl(url) {
         if (!url) return '';
+        
+        // ===== دعم DynTube بجميع صيغه =====
+        if (url.includes('dyntube.com') || url.includes('videos.dyntube.com')) {
+            // تحويل أي رابط DynTube إلى صيغة embed
+            let embedUrl = url;
+            
+            // إذا كان الرابط من نوع /iframes/ أو /video/ أو /watch/
+            if (url.includes('/iframes/')) {
+                const videoId = url.split('/iframes/')[1]?.split('?')[0] || '';
+                if (videoId) {
+                    embedUrl = `https://dyntube.com/embed/${videoId}`;
+                }
+            } else if (url.includes('/video/')) {
+                const videoId = url.split('/video/')[1]?.split('?')[0] || '';
+                if (videoId) {
+                    embedUrl = `https://dyntube.com/embed/${videoId}`;
+                }
+            } else if (url.includes('/watch/')) {
+                const videoId = url.split('/watch/')[1]?.split('?')[0] || '';
+                if (videoId) {
+                    embedUrl = `https://dyntube.com/embed/${videoId}`;
+                }
+            } else if (!url.includes('/embed/')) {
+                // محاولة استخراج ID من الرابط
+                const videoId = url.split('/').pop()?.split('?')[0] || '';
+                if (videoId && videoId.length > 5) {
+                    embedUrl = `https://dyntube.com/embed/${videoId}`;
+                }
+            }
+            
+            // إضافة معاملات التشغيل
+            const separator = embedUrl.includes('?') ? '&' : '?';
+            embedUrl = embedUrl + separator + 'autoplay=1&controls=1&loop=0&muted=0';
+            
+            return embedUrl;
+        }
+        
+        // ===== دعم mediadelivery =====
         if (url.includes('player.mediadelivery.net/play/')) {
             return url;
         }
@@ -149,13 +187,21 @@
         if (url.includes('mediadelivery.net')) {
             return url;
         }
+        
+        // ===== استخراج iframe =====
         if (url.includes('<iframe')) {
             const match = url.match(/src=["']([^"']+)["']/);
             if (match) {
                 return match[1];
             }
         }
+        
         return url;
+    }
+
+    function isDynTubeUrl(url) {
+        if (!url) return false;
+        return url.includes('dyntube.com') || url.includes('videos.dyntube.com') || url.includes('dyntube');
     }
 
     window.playVideo = function(url, title) {
@@ -166,6 +212,38 @@
 
         let videoUrl = extractVideoUrl(url);
 
+        // ===== دعم DynTube =====
+        if (isDynTubeUrl(videoUrl)) {
+            // التأكد من صيغة embed
+            if (!videoUrl.includes('/embed/')) {
+                const videoId = videoUrl.split('/').pop()?.split('?')[0] || '';
+                if (videoId && videoId.length > 5) {
+                    videoUrl = `https://dyntube.com/embed/${videoId}`;
+                }
+            }
+            
+            // إضافة autoplay و params
+            const separator = videoUrl.includes('?') ? '&' : '?';
+            videoUrl = videoUrl + separator + 'autoplay=1&controls=1&loop=0&muted=0';
+
+            videoWrapper.innerHTML = `
+                <iframe src="${videoUrl}" 
+                        loading="lazy" 
+                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+                        allowfullscreen="true"
+                        webkitallowfullscreen="true"
+                        mozallowfullscreen="true">
+                </iframe>
+            `;
+
+            videoPlayer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'} (DynTube)`);
+            return;
+        }
+
+        // ===== دعم mediadelivery =====
         if (videoUrl.includes('mediadelivery')) {
             if (!videoUrl.includes('autoplay')) {
                 const separator = videoUrl.includes('?') ? '&' : '?';
@@ -196,6 +274,7 @@
             return;
         }
 
+        // ===== دعم YouTube =====
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
@@ -213,6 +292,7 @@
             return;
         }
 
+        // ===== دعم ملفات الفيديو المباشرة =====
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
             videoWrapper.innerHTML = `
                 <video controls autoplay 
@@ -238,7 +318,7 @@
             return;
         }
 
-        showToast('error', '❌ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
+        showToast('error', '❌ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube أو DynTube');
     };
 
     function closeVideoPlayer() {
@@ -933,7 +1013,8 @@
             const canWatch = isFree || hasAccess;
             const videoUrl = lecture.youtubeUrl || '';
             const isMediaDelivery = videoUrl.includes('mediadelivery');
-            const videoIcon = isMediaDelivery ? 'fa-video' : 'fa-play-circle';
+            const isDynTube = videoUrl.includes('dyntube.com') || videoUrl.includes('videos.dyntube.com');
+            const videoIcon = isMediaDelivery ? 'fa-video' : (isDynTube ? 'fa-film' : 'fa-play-circle');
 
             html += `
                 <div class="lecture-item ${canWatch ? '' : 'locked'}" 
@@ -943,6 +1024,7 @@
                     <div class="lecture-status">
                         ${isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
                         ${isMediaDelivery ? '<span style="font-size:0.6rem;color:var(--primary);margin-left:0.3rem;">📹</span>' : ''}
+                        ${isDynTube ? '<span style="font-size:0.6rem;color:var(--secondary);margin-left:0.3rem;">🎬</span>' : ''}
                         ${canWatch ? `<i class="fas ${videoIcon}" style="color:var(--primary);"></i>` : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
                     </div>
                 </div>
@@ -1650,7 +1732,7 @@
     });
 
     // ============================================================
-    // ===== إضافة محاضرة =====
+    // ===== إضافة محاضرة (مع دعم DynTube) =====
     // ============================================================
     addLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1672,14 +1754,18 @@
             return;
         }
 
+        // دعم DynTube بجميع صيغه بالإضافة إلى mediadelivery و YouTube
         const isValidUrl = youtubeUrl.includes('mediadelivery') ||
             youtubeUrl.includes('youtube') ||
             youtubeUrl.includes('youtu.be') ||
             youtubeUrl.includes('player.') ||
+            youtubeUrl.includes('dyntube.com') ||
+            youtubeUrl.includes('videos.dyntube.com') ||
+            youtubeUrl.includes('dyntube') ||
             youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
         if (!isValidUrl) {
-            showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
+            showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube أو DynTube');
             return;
         }
 
@@ -2148,7 +2234,7 @@
     };
 
     // ============================================================
-    // ===== EDIT LECTURE =====
+    // ===== EDIT LECTURE (مع دعم DynTube) =====
     // ============================================================
     function openEditLecture(sectionIndex, teacherIndex, semesterIndex, lectureIndex) {
         const section = data.sections[sectionIndex];
@@ -2247,14 +2333,18 @@
             return;
         }
 
+        // دعم DynTube بجميع صيغه بالإضافة إلى mediadelivery و YouTube
         const isValidUrl = newUrl.includes('mediadelivery') ||
             newUrl.includes('youtube') ||
             newUrl.includes('youtu.be') ||
             newUrl.includes('player.') ||
+            newUrl.includes('dyntube.com') ||
+            newUrl.includes('videos.dyntube.com') ||
+            newUrl.includes('dyntube') ||
             newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
         if (!isValidUrl) {
-            editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube';
+            editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube أو DynTube';
             editLectureMessage.style.color = '#f59e0b';
             return;
         }
@@ -2870,7 +2960,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         loadAdminsList();
         console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام والفلتر');
         console.log('🔒 جميع الميزات محمية وآمنة');
-        console.log('🎥 دعم منصة mediadelivery للتشغيل');
+        console.log('🎥 دعم منصة mediadelivery و YouTube و DynTube للتشغيل');
         console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
     }
 
