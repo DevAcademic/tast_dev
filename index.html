@@ -15,9 +15,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
     <style>
-        /* ============================================================
-           منع التحديد والنسخ
-           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -38,9 +35,6 @@
             user-select: text;
         }
 
-        /* ============================================================
-           خلفية الصفحة
-           ============================================================ */
         body {
             min-height: 100vh;
             display: flex;
@@ -52,7 +46,6 @@
             overflow: hidden;
         }
 
-        /* ===== خلفية متحركة ===== */
         .bg-shapes {
             position: fixed;
             top: 0;
@@ -118,9 +111,6 @@
             }
         }
 
-        /* ============================================================
-           البطاقة الرئيسية
-           ============================================================ */
         .auth-card {
             position: relative;
             z-index: 1;
@@ -164,7 +154,6 @@
             }
         }
 
-        /* ===== الشعار ===== */
         .logo {
             text-align: center;
             font-size: 28px;
@@ -187,9 +176,6 @@
             margin: 4px 0 20px;
         }
 
-        /* ============================================================
-           التبويبات
-           ============================================================ */
         .tabs {
             display: flex;
             background: rgba(99, 102, 241, 0.06);
@@ -222,9 +208,6 @@
             color: #4b5563;
         }
 
-        /* ============================================================
-           النماذج
-           ============================================================ */
         .form-container {
             display: none;
             animation: slideFade 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -294,9 +277,6 @@
             text-align: center;
         }
 
-        /* ============================================================
-           الأزرار
-           ============================================================ */
         .submit-btn {
             width: 100%;
             padding: 14px;
@@ -377,9 +357,6 @@
             background: rgba(99, 102, 241, 0.05);
         }
 
-        /* ============================================================
-           الرسائل
-           ============================================================ */
         .message {
             padding: 12px 16px;
             border-radius: 10px;
@@ -425,9 +402,6 @@
             color: #b45309;
         }
 
-        /* ============================================================
-           مكونات إضافية
-           ============================================================ */
         .code-box {
             background: rgba(99, 102, 241, 0.05);
             border-radius: 12px;
@@ -478,9 +452,6 @@
             text-decoration: underline;
         }
 
-        /* ============================================================
-           Toast Notifications
-           ============================================================ */
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -540,9 +511,6 @@
             }
         }
 
-        /* ============================================================
-           حاجب أدوات المطور
-           ============================================================ */
         #dev-tools-blocker {
             position: fixed;
             top: 0;
@@ -575,29 +543,22 @@
             font-size: 14px;
         }
 
-        /* ============================================================
-           استجابة للشاشات الصغيرة
-           ============================================================ */
         @media (max-width: 500px) {
             .auth-card {
                 padding: 24px 16px;
                 border-radius: 24px;
             }
-
             .logo {
                 font-size: 24px;
             }
-
             .form-group input.code-input {
                 font-size: 20px;
                 letter-spacing: 6px;
             }
-
             .tab-btn {
                 font-size: 13px;
                 padding: 8px 0;
             }
-
             .submit-btn {
                 padding: 12px;
                 font-size: 15px;
@@ -609,7 +570,6 @@
                 padding: 20px 12px;
                 border-radius: 20px;
             }
-
             .logo {
                 font-size: 20px;
             }
@@ -618,37 +578,29 @@
 </head>
 <body>
 
-    <!-- ===== حاجب أدوات المطور ===== -->
     <div id="dev-tools-blocker">
         <div class="icon">🚫</div>
         <h2>تم منع أدوات المطور</h2>
         <p>هذه الميزة غير متاحة في هذه الصفحة</p>
     </div>
 
-    <!-- ===== خلفية متحركة ===== -->
     <div class="bg-shapes">
         <div class="shape"></div>
         <div class="shape"></div>
         <div class="shape"></div>
     </div>
 
-    <!-- ===== Toast Container ===== -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ============================================================ -->
-    <!--                     البطاقة الرئيسية                          -->
-    <!-- ============================================================ -->
     <div class="auth-card">
         <div class="logo">ديف <span>أكاديمي</span></div>
         <p class="subtitle" id="pageSubtitle">سجل الدخول أو أنشئ حساباً</p>
 
-        <!-- ===== التبويبات ===== -->
         <div class="tabs" id="mainTabs">
             <button class="tab-btn active" data-tab="login">🔐 تسجيل الدخول</button>
             <button class="tab-btn" data-tab="signup">📝 إنشاء حساب</button>
         </div>
 
-        <!-- ===== تسجيل الدخول ===== -->
         <div class="form-container active" id="loginForm">
             <form id="loginFormElement" novalidate>
                 <div class="form-group">
@@ -665,7 +617,6 @@
             <div class="message" id="loginMsg"></div>
         </div>
 
-        <!-- ===== إنشاء حساب ===== -->
         <div class="form-container" id="signupForm">
             <form id="signupFormElement" novalidate>
                 <div class="form-group">
@@ -685,7 +636,6 @@
             <div class="message" id="signupMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - طلب الكود ===== -->
         <div class="form-container" id="resetForm">
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">🔑</span>
@@ -703,7 +653,6 @@
             <div class="message" id="resetMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - إدخال الكود ===== -->
         <div class="form-container" id="verifyCodeForm">
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">📧</span>
@@ -726,7 +675,6 @@
             <div class="message" id="verifyCodeMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - كلمة مرور جديدة ===== -->
         <div class="form-container" id="newPasswordForm">
             <div style="text-align:center;margin-bottom:16px;">
                 <div class="reset-success-icon">✅</div>
@@ -753,104 +701,34 @@
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!--                     JAVASCRIPT                                 -->
-    <!-- ============================================================ -->
     <script>
         /* ===================================================================
-           🔒  حماية قوية - منع جميع محاولات الوصول لأدوات المطور
+           🔒 حماية
            =================================================================== */
-
-        // ===== 1. منع F12 وكل اختصارات أدوات المطور =====
         document.addEventListener('keydown', function(e) {
-            // منع F12
-            if (e.key === 'F12') {
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
+                (e.ctrlKey && (e.key === 'U' || e.key === 'u')) ||
+                (e.ctrlKey && (e.key === 'S' || e.key === 's')) ||
+                (e.ctrlKey && (e.key === 'P' || e.key === 'p')) ||
+                e.key === 'PrintScreen') {
                 e.preventDefault();
                 e.stopPropagation();
                 showToast('🚫 هذه الميزة غير متاحة');
                 return false;
             }
-
-            // منع Ctrl+Shift+I (أدوات المطور)
-            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-                e.preventDefault();
-                e.stopPropagation();
-                showToast('🚫 هذه الميزة غير متاحة');
-                return false;
-            }
-
-            // منع Ctrl+Shift+J (وحدة التحكم)
-            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
-                e.preventDefault();
-                e.stopPropagation();
-                showToast('🚫 هذه الميزة غير متاحة');
-                return false;
-            }
-
-            // منع Ctrl+U (عرض المصدر)
-            if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
-                e.preventDefault();
-                e.stopPropagation();
-                showToast('🚫 هذه الميزة غير متاحة');
-                return false;
-            }
-
-            // منع Ctrl+S (حفظ الصفحة)
-            if (e.ctrlKey && (e.key === 'S' || e.key === 's')) {
-                e.preventDefault();
-                e.stopPropagation();
-                showToast('🚫 هذه الميزة غير متاحة');
-                return false;
-            }
-
-            // منع Ctrl+C (نسخ) في غير الحقول
-            if (e.ctrlKey && (e.key === 'C' || e.key === 'c')) {
+            if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.key === 'V' || e.key === 'v' || e.key === 'X' || e
+                    .key === 'x')) {
                 const target = e.target;
                 if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
                     e.preventDefault();
-                    showToast('🚫 النسخ غير مسموح');
                     return false;
                 }
             }
-
-            // منع Ctrl+V (لصق) في غير الحقول
-            if (e.ctrlKey && (e.key === 'V' || e.key === 'v')) {
-                const target = e.target;
-                if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
-                    e.preventDefault();
-                    showToast('🚫 اللصق غير مسموح');
-                    return false;
-                }
-            }
-
-            // منع Ctrl+X (قص) في غير الحقول
-            if (e.ctrlKey && (e.key === 'X' || e.key === 'x')) {
-                const target = e.target;
-                if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
-                    e.preventDefault();
-                    showToast('🚫 القص غير مسموح');
-                    return false;
-                }
-            }
-
-            // منع Ctrl+P (طباعة)
-            if (e.ctrlKey && (e.key === 'P' || e.key === 'p')) {
-                e.preventDefault();
-                showToast('🚫 الطباعة غير مسموحة');
-                return false;
-            }
-
-            // منع Print Screen
-            if (e.key === 'PrintScreen') {
-                e.preventDefault();
-                showToast('🚫 لقطة الشاشة غير مسموحة');
-                return false;
-            }
-
             return true;
         });
 
-        // ===== 2. منع النقر بزر الماوس الأيمن =====
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -858,7 +736,6 @@
             return false;
         });
 
-        // ===== 3. منع تحديد النص (في غير الحقول) =====
         document.addEventListener('selectstart', function(e) {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -866,13 +743,11 @@
             }
         });
 
-        // ===== 4. منع السحب =====
         document.addEventListener('dragstart', function(e) {
             e.preventDefault();
             return false;
         });
 
-        // ===== 5. منع النقر المزدوج =====
         document.addEventListener('dblclick', function(e) {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
@@ -880,7 +755,6 @@
             }
         });
 
-        // ===== 6. منع الضغط المطول على الهواتف =====
         document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) {
                 e.preventDefault();
@@ -889,31 +763,11 @@
             }
         }, { passive: false });
 
-        // ===== 7. منع التكبير بالإصبعين =====
         document.addEventListener('gesturestart', function(e) {
             e.preventDefault();
             return false;
         });
 
-        // ===== 8. كشف أدوات المطور =====
-        function detectDevTools() {
-            const element = new Image();
-            Object.defineProperty(element, 'id', {
-                get: function() {
-                    document.getElementById('dev-tools-blocker').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('dev-tools-blocker').style.display = 'none';
-                    }, 3000);
-                    throw new Error('DevTools detected');
-                }
-            });
-            console.log('%c', element);
-        }
-        setInterval(detectDevTools, 3000);
-
-        /* ===================================================================
-           TOAST - رسائل منبثقة
-           =================================================================== */
         function showToast(message, type = 'error') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -924,7 +778,7 @@
         }
 
         /* ===================================================================
-           SUPABASE + EMAILJS
+           SUPABASE + EMAILJS - ✅ البيانات الصحيحة
            =================================================================== */
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
@@ -938,13 +792,12 @@
         }
 
         // ================================================================
-        // ✅ بيانات EmailJS (تم تعبئتها بالكامل)
+        // ✅ بيانات EmailJS الصحيحة
         // ================================================================
-        const EMAILJS_PUBLIC_KEY = 'TsvUDMH1BX';
+        const EMAILJS_PUBLIC_KEY = '_RI2yCyv28TuNg-6XdTyu';
         const EMAILJS_SERVICE_ID = 'service_ssw71oi';
         const EMAILJS_TEMPLATE_ID = 'template_jitod2e';
 
-        // تهيئة EmailJS
         emailjs.init({
             publicKey: EMAILJS_PUBLIC_KEY,
             blockHeadless: true,
@@ -994,7 +847,6 @@
         const newPassword = document.getElementById('newPassword');
         const confirmNewPassword = document.getElementById('confirmNewPassword');
 
-        // ===== متغيرات =====
         let resetEmailValue = '';
         let generatedCode = '';
         let canResend = true;
@@ -1013,7 +865,7 @@
             newPasswordContainer.classList.toggle('active', tabId === 'new-password');
 
             mainTabs.style.display = (tabId === 'reset' || tabId === 'verify-code' || tabId === 'new-password') ? 'none' :
-            'flex';
+                'flex';
 
             const titles = {
                 'login': 'سجل الدخول أو أنشئ حساباً',
@@ -1133,14 +985,12 @@
                 if (data?.user) {
                     localStorage.setItem('devAcademicUser', JSON.stringify({ email, name: data.user.user_metadata
                             ?.full_name || null }));
-                    showMsg(loginMsg, 'تم تسجيل الدخول بنجاح! جارِ التوجيه...', 'success');
+                    showMsg(loginMsg, 'تم تسجيل الدخول بنجاح!', 'success');
                     setTimeout(() => window.location.href = 'dashboard.html', 800);
                 }
             } catch (err) {
                 if (err.message.includes('Invalid login credentials')) {
                     showMsg(loginMsg, 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'error');
-                } else if (err.message.includes('Email not confirmed')) {
-                    showMsg(loginMsg, 'يرجى تأكيد بريدك الإلكتروني أولاً.', 'info');
                 } else {
                     showMsg(loginMsg, `${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
                 }
@@ -1177,7 +1027,7 @@
                     if (data.user.confirmed_at === null) {
                         showMsg(signupMsg, 'تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني.', 'info');
                     } else {
-                        showMsg(signupMsg, 'تم إنشاء الحساب بنجاح! جارِ التوجيه...', 'success');
+                        showMsg(signupMsg, 'تم إنشاء الحساب بنجاح!', 'success');
                         setTimeout(() => window.location.href = 'dashboard.html', 1000);
                     }
                 }
@@ -1210,13 +1060,12 @@
             if (!email) { showMsg(resetMsg, 'يرجى إدخال البريد الإلكتروني.', 'error'); return; }
             if (!isValidEmail(email)) { showMsg(resetMsg, 'البريد الإلكتروني غير صحيح.', 'error'); return; }
 
-            // ===== التحقق من وجود المستخدم =====
+            // التحقق من وجود المستخدم
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: 'temp_pass_123'
                 });
-
                 if (error && !error.message.includes('Invalid login credentials')) {
                     showMsg(resetMsg, 'لا يوجد حساب بهذا البريد الإلكتروني.', 'error');
                     return;
@@ -1232,7 +1081,6 @@
                 generatedCode = generateCode();
                 resetEmailValue = email;
 
-                // ===== إرسال الكود عبر EmailJS =====
                 const templateParams = {
                     to_email: email,
                     code: generatedCode,
@@ -1341,14 +1189,12 @@
             setLoading(newPasswordBtn, true);
 
             try {
-                // تسجيل الدخول باستخدام البريد والكود المؤقت
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: resetEmailValue,
                     password: generatedCode
                 });
 
                 if (error) {
-                    // بديل: إرسال رابط إعادة تعيين
                     await supabaseClient.auth.resetPasswordForEmail(resetEmailValue, {
                         redirectTo: window.location.origin + '/reset-password.html',
                     });
@@ -1385,8 +1231,10 @@
            =================================================================== */
         switchTab('login');
 
-        console.log('✅ ديف أكاديمي - نظام تسجيل الدخول');
-        console.log('📧 EmailJS جاهز للإرسال');
+        console.log('✅ ديف أكاديمي - جميع البيانات صحيحة');
+        console.log('📧 Public Key:', EMAILJS_PUBLIC_KEY);
+        console.log('📧 Service ID:', EMAILJS_SERVICE_ID);
+        console.log('📧 Template ID:', EMAILJS_TEMPLATE_ID);
         console.log('🔒 الحماية مفعلة بالكامل');
     </script>
 
