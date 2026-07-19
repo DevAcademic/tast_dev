@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>تسجيل الدخول</title>
 
-    <!-- ===== Supabase SDK ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    
-    <!-- ===== EmailJS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
     <style>
@@ -20,13 +17,11 @@
             -webkit-user-select: none;
             user-select: none;
         }
-
         input,
         textarea {
             -webkit-user-select: text;
             user-select: text;
         }
-
         body {
             min-height: 100vh;
             display: flex;
@@ -35,7 +30,6 @@
             background: linear-gradient(145deg, #f0f4ff 0%, #e8edf8 100%);
             padding: 20px;
         }
-
         .auth-card {
             width: 100%;
             max-width: 420px;
@@ -47,7 +41,6 @@
             border: 1px solid rgba(255, 255, 255, 0.4);
             animation: fadeUp 0.6s ease;
         }
-
         @keyframes fadeUp {
             from {
                 opacity: 0;
@@ -58,27 +51,23 @@
                 transform: translateY(0);
             }
         }
-
         .logo {
             text-align: center;
             font-size: 28px;
             font-weight: 800;
             color: #1e1b4b;
         }
-
         .logo span {
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .subtitle {
             text-align: center;
             color: #6b7280;
             font-size: 14px;
             margin: 4px 0 20px;
         }
-
         .tabs {
             display: flex;
             background: rgba(99, 102, 241, 0.06);
@@ -86,7 +75,6 @@
             padding: 4px;
             margin-bottom: 20px;
         }
-
         .tab-btn {
             flex: 1;
             padding: 10px 0;
@@ -99,26 +87,21 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .tab-btn.active {
             background: #ffffff;
             color: #1e1b4b;
             box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12);
         }
-
         .form-container {
             display: none;
             animation: fadeUp 0.4s ease;
         }
-
         .form-container.active {
             display: block;
         }
-
         .form-group {
             margin-bottom: 14px;
         }
-
         .form-group label {
             display: block;
             color: #374151;
@@ -126,7 +109,6 @@
             font-weight: 600;
             margin-bottom: 4px;
         }
-
         .form-group input {
             width: 100%;
             padding: 12px 16px;
@@ -139,18 +121,15 @@
             transition: all 0.3s;
             text-align: center;
         }
-
         .form-group input:focus {
             border-color: #818cf8;
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
         }
-
         .form-group input.code-input {
             font-size: 24px;
             letter-spacing: 8px;
             font-weight: 700;
         }
-
         .submit-btn {
             width: 100%;
             padding: 14px;
@@ -164,17 +143,14 @@
             transition: all 0.3s;
             margin-top: 4px;
         }
-
         .submit-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3);
         }
-
         .submit-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
-
         .forgot-link {
             display: block;
             text-align: left;
@@ -186,11 +162,9 @@
             background: none;
             border: none;
         }
-
         .forgot-link:hover {
             text-decoration: underline;
         }
-
         .message {
             padding: 12px 16px;
             border-radius: 10px;
@@ -199,41 +173,35 @@
             margin-top: 12px;
             display: none;
         }
-
         .message.error {
             display: block;
             background: rgba(239, 68, 68, 0.08);
             border: 1px solid rgba(239, 68, 68, 0.15);
             color: #b91c1c;
         }
-
         .message.success {
             display: block;
             background: rgba(34, 197, 94, 0.08);
             border: 1px solid rgba(34, 197, 94, 0.15);
             color: #15803d;
         }
-
         .message.info {
             display: block;
             background: rgba(59, 130, 246, 0.08);
             border: 1px solid rgba(59, 130, 246, 0.15);
             color: #1d4ed8;
         }
-
         .footer-text {
             text-align: center;
             margin-top: 20px;
             color: #9ca3af;
             font-size: 14px;
         }
-
         .footer-text a {
             color: #6366f1;
             text-decoration: none;
             font-weight: 600;
         }
-
         .back-btn {
             width: 100%;
             padding: 12px;
@@ -247,12 +215,10 @@
             transition: all 0.3s;
             margin-top: 8px;
         }
-
         .back-btn:hover {
             border-color: #818cf8;
             color: #4f46e5;
         }
-
         .code-box {
             background: rgba(99, 102, 241, 0.05);
             border-radius: 12px;
@@ -260,18 +226,15 @@
             text-align: center;
             margin: 8px 0;
         }
-
         .code-box .icon {
             font-size: 36px;
             display: block;
         }
-
         .reset-success-icon {
             text-align: center;
             font-size: 48px;
             margin-bottom: 10px;
         }
-
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -284,7 +247,6 @@
             gap: 8px;
             pointer-events: none;
         }
-
         .toast {
             background: rgba(239, 68, 68, 0.95);
             color: white;
@@ -299,11 +261,9 @@
             max-width: 90%;
             text-align: center;
         }
-
         .toast.warning {
             background: rgba(245, 158, 11, 0.95);
         }
-
         @keyframes toastIn {
             from {
                 opacity: 0;
@@ -314,7 +274,6 @@
                 transform: translateY(0) scale(1);
             }
         }
-
         @keyframes toastOut {
             from {
                 opacity: 1;
@@ -325,14 +284,12 @@
                 transform: translateY(-10px) scale(0.9);
             }
         }
-
         .timer-text {
             font-size: 12px;
             color: #6b7280;
             text-align: center;
             margin-top: 6px;
         }
-
         @media (max-width: 500px) {
             .auth-card {
                 padding: 24px 16px;
@@ -497,7 +454,7 @@
         }
 
         /* ===================================================================
-           SUPABASE + EMAILJS - البيانات النهائية
+           SUPABASE + EMAILJS
            =================================================================== */
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
@@ -511,13 +468,17 @@
         }
 
         // ================================================================
-        // ✅ بيانات EmailJS (تم تعبئتها)
+        // ✅ بيانات EmailJS
         // ================================================================
         const EMAILJS_PUBLIC_KEY = 'TsvUDMH1BX';
         const EMAILJS_SERVICE_ID = 'service_ssw71oi';
         const EMAILJS_TEMPLATE_ID = 'template_sb1rcjr';
 
-        emailjs.init(EMAILJS_PUBLIC_KEY);
+        // تهيئة EmailJS
+        emailjs.init({
+            publicKey: EMAILJS_PUBLIC_KEY,
+            blockHeadless: true,
+        });
 
         /* ===================================================================
            عناصر DOM
@@ -762,7 +723,7 @@
             if (!email) { showMsg(resetMsg, 'يرجى إدخال البريد.', 'error'); return; }
             if (!isValidEmail(email)) { showMsg(resetMsg, 'البريد غير صحيح.', 'error'); return; }
 
-            // ===== التحقق من وجود المستخدم في Supabase =====
+            // ===== التحقق من وجود المستخدم =====
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
@@ -789,14 +750,21 @@
                 const templateParams = {
                     to_email: email,
                     code: generatedCode,
-                    subject: '🔑 كود إعادة تعيين كلمة المرور',
-                    message: `كود التحقق الخاص بك هو: ${generatedCode}`,
                 };
 
-                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+                console.log('📤 جاري إرسال الكود...');
+                console.log('📧 البريد:', email);
+                console.log('🔢 الكود:', generatedCode);
+                console.log('📋 Service ID:', EMAILJS_SERVICE_ID);
+                console.log('📋 Template ID:', EMAILJS_TEMPLATE_ID);
 
-                console.log('📧 تم إرسال الكود إلى:', email);
-                console.log('📧 الكود:', generatedCode);
+                const response = await emailjs.send(
+                    EMAILJS_SERVICE_ID,
+                    EMAILJS_TEMPLATE_ID,
+                    templateParams
+                );
+
+                console.log('✅ تم الإرسال بنجاح:', response);
 
                 showMsg(resetMsg, '✅ تم إرسال الكود إلى بريدك الإلكتروني.', 'success');
 
@@ -806,8 +774,8 @@
                 startTimer(60);
 
             } catch (err) {
-                console.error('Error:', err);
-                showMsg(resetMsg, `❌ فشل إرسال الكود: ${err.message}`, 'error');
+                console.error('❌ خطأ في الإرسال:', err);
+                showMsg(resetMsg, `❌ فشل إرسال الكود: ${err.text || err.message || 'خطأ غير معروف'}`, 'error');
             } finally {
                 setLoading(resetBtn, false);
             }
@@ -834,8 +802,6 @@
                 const templateParams = {
                     to_email: resetEmailValue,
                     code: generatedCode,
-                    subject: '🔑 كود إعادة تعيين كلمة المرور (إعادة إرسال)',
-                    message: `كود التحقق الخاص بك هو: ${generatedCode}`,
                 };
 
                 await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
@@ -845,7 +811,7 @@
                 startTimer(60);
 
             } catch (err) {
-                showMsg(verifyCodeMsg, `❌ ${err.message}`, 'error');
+                showMsg(verifyCodeMsg, `❌ ${err.text || err.message}`, 'error');
             }
         });
 
@@ -894,14 +860,12 @@
             setLoading(newPasswordBtn, true);
 
             try {
-                // تسجيل الدخول باستخدام البريد والكود المؤقت
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: resetEmailValue,
                     password: generatedCode
                 });
 
                 if (error) {
-                    // بديل: إرسال رابط إعادة تعيين
                     await supabaseClient.auth.resetPasswordForEmail(resetEmailValue, {
                         redirectTo: window.location.origin + '/reset-password.html',
                     });
@@ -939,10 +903,10 @@
         switchTab('login');
 
         console.log('✅ جميع البيانات جاهزة:');
-        console.log('📧 Public Key: TsvUDMH1BX');
-        console.log('📧 Service ID: service_ssw71oi');
-        console.log('📧 Template ID: template_sb1rcjr');
-        console.log('🔒 النظام آمن - يتم إرسال كود 6 أرقام إلى البريد الإلكتروني');
+        console.log('📧 Public Key:', EMAILJS_PUBLIC_KEY);
+        console.log('📧 Service ID:', EMAILJS_SERVICE_ID);
+        console.log('📧 Template ID:', EMAILJS_TEMPLATE_ID);
+        console.log('🔒 افتح وحدة التحكم (F12) لترى تفاصيل الإرسال');
     </script>
 
 </body>
