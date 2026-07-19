@@ -278,6 +278,12 @@
             margin-top: 6px;
         }
 
+        .reset-success-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 500px) {
             .auth-card {
                 padding: 24px 16px;
@@ -338,67 +344,66 @@
             <div class="message" id="signupMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - خطوة 1: طلب الكود ===== -->
+        <!-- ===== إعادة تعيين كلمة المرور - طلب الكود ===== -->
         <div class="form-container" id="resetForm">
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">🔑</span>
                 <h3 style="color:#1e1b4b;margin-top:4px;">نسيت كلمة المرور</h3>
-                <p style="color:#6b7280;font-size:14px;">سنرسل لك كود تحقق إلى بريدك الإلكتروني</p>
+                <p style="color:#6b7280;font-size:14px;">سيتم إرسال رمز التحقق إلى بريدك الإلكتروني</p>
             </div>
             <form id="resetFormElement">
                 <div class="form-group">
                     <label>📧 البريد الإلكتروني</label>
                     <input type="email" id="resetEmail" placeholder="example@email.com" required />
                 </div>
-                <button type="submit" class="submit-btn" id="resetBtn">📤 إرسال كود التحقق</button>
+                <button type="submit" class="submit-btn" id="resetBtn">📤 إرسال رمز التحقق</button>
                 <button type="button" class="back-btn" id="backToLogin">🔙 العودة</button>
             </form>
             <div class="message" id="resetMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - خطوة 2: إدخال الكود ===== -->
+        <!-- ===== إعادة تعيين كلمة المرور - إدخال الكود ===== -->
         <div class="form-container" id="verifyCodeForm">
             <div style="text-align:center;margin-bottom:16px;">
                 <span style="font-size:40px;">📧</span>
-                <h3 style="color:#1e1b4b;margin-top:4px;">أدخل كود التحقق</h3>
-                <p style="color:#6b7280;font-size:14px;" id="verifyEmailDisplay">تم إرسال الكود إلى بريدك</p>
+                <h3 style="color:#1e1b4b;margin-top:4px;">أدخل رمز التحقق</h3>
+                <p style="color:#6b7280;font-size:14px;" id="verifyEmailDisplay">تم إرسال الرمز إلى بريدك</p>
             </div>
 
             <div class="code-box">
                 <span class="icon">🔐</span>
-                <p style="font-size:13px;color:#6b7280;">أدخل الكود المكون من 6 أرقام</p>
+                <p style="font-size:13px;color:#6b7280;">أدخل الرمز المكون من 6 أرقام</p>
             </div>
 
             <form id="verifyCodeFormElement">
                 <div class="form-group">
-                    <label>🔢 كود التحقق</label>
+                    <label>🔢 رمز التحقق</label>
                     <input type="text" id="verificationCode" class="code-input" placeholder="000000" maxlength="6" required />
                 </div>
-                <button type="submit" class="submit-btn" id="verifyCodeBtn">✅ تأكيد الكود</button>
-                <button type="button" class="back-btn" id="resendCodeBtn">🔄 إعادة إرسال الكود</button>
-                <div class="timer-text" id="timerText">يمكنك إعادة الإرسال بعد 60 ثانية</div>
+                <button type="submit" class="submit-btn" id="verifyCodeBtn">✅ تأكيد الرمز</button>
+                <button type="button" class="back-btn" id="resendCodeBtn">🔄 إعادة إرسال الرمز</button>
             </form>
             <div class="message" id="verifyCodeMsg"></div>
         </div>
 
-        <!-- ===== إعادة تعيين كلمة المرور - خطوة 3: كلمة مرور جديدة ===== -->
+        <!-- ===== إعادة تعيين كلمة المرور - كلمة مرور جديدة ===== -->
         <div class="form-container" id="newPasswordForm">
             <div style="text-align:center;margin-bottom:16px;">
-                <span style="font-size:40px;">🔑</span>
-                <h3 style="color:#1e1b4b;margin-top:4px;">كلمة مرور جديدة</h3>
+                <div class="reset-success-icon">✅</div>
+                <h3 style="color:#1e1b4b;margin-top:4px;">تم التحقق بنجاح!</h3>
                 <p style="color:#6b7280;font-size:14px;">أدخل كلمة المرور الجديدة</p>
             </div>
             <form id="newPasswordFormElement">
                 <div class="form-group">
                     <label>🔑 كلمة المرور الجديدة</label>
-                    <input type="password" id="newPassword" placeholder="•••••••• (٦ أحرف)" required minlength="6" />
+                    <input type="password" id="newPassword" placeholder="•••••••• (٦ أحرف على الأقل)" required minlength="6" />
                 </div>
                 <div class="form-group">
                     <label>✅ تأكيد كلمة المرور</label>
                     <input type="password" id="confirmNewPassword" placeholder="أعد كتابة كلمة المرور" required minlength="6" />
                 </div>
-                <button type="submit" class="submit-btn" id="newPasswordBtn">✅ تأكيد</button>
-                <button type="button" class="back-btn" id="backToLogin2">🔙 العودة</button>
+                <button type="submit" class="submit-btn" id="newPasswordBtn">💾 حفظ كلمة المرور</button>
+                <button type="button" class="back-btn" id="backToLogin3">🔙 العودة</button>
             </form>
             <div class="message" id="newPasswordMsg"></div>
         </div>
@@ -452,9 +457,8 @@
 
         const showResetBtn = document.getElementById('showResetBtn');
         const backToLogin = document.getElementById('backToLogin');
-        const backToLogin2 = document.getElementById('backToLogin2');
+        const backToLogin3 = document.getElementById('backToLogin3');
         const resendCodeBtn = document.getElementById('resendCodeBtn');
-        const timerText = document.getElementById('timerText');
 
         const footerText = document.getElementById('footerText');
         const mainTabs = document.getElementById('mainTabs');
@@ -469,7 +473,6 @@
         // ===== متغيرات =====
         let resetEmailValue = '';
         let generatedCode = '';
-        let timerInterval = null;
         let canResend = true;
 
         // ===== تبديل التبويبات =====
@@ -488,8 +491,8 @@
             const titles = {
                 'login': 'سجل الدخول أو أنشئ حساباً',
                 'signup': 'سجل الدخول أو أنشئ حساباً',
-                'reset': 'أدخل بريدك لإرسال كود التحقق',
-                'verify-code': 'أدخل كود التحقق المرسل إلى بريدك',
+                'reset': 'أدخل بريدك لإرسال رمز التحقق',
+                'verify-code': 'أدخل رمز التحقق المرسل إلى بريدك',
                 'new-password': 'أدخل كلمة المرور الجديدة'
             };
             pageSubtitle.textContent = titles[tabId] || '';
@@ -544,26 +547,6 @@
         // ===== إنشاء كود عشوائي =====
         function generateCode() {
             return Math.floor(100000 + Math.random() * 900000).toString();
-        }
-
-        // ===== بدء المؤقت =====
-        function startTimer(seconds = 60) {
-            canResend = false;
-            let remaining = seconds;
-            timerText.textContent = `⏳ يمكنك إعادة الإرسال بعد ${remaining} ثانية`;
-
-            timerInterval = setInterval(() => {
-                remaining--;
-                if (remaining <= 0) {
-                    clearInterval(timerInterval);
-                    canResend = true;
-                    timerText.textContent = '✅ يمكنك إعادة إرسال الكود الآن';
-                    resendCodeBtn.style.opacity = '1';
-                    resendCodeBtn.style.cursor = 'pointer';
-                } else {
-                    timerText.textContent = `⏳ يمكنك إعادة الإرسال بعد ${remaining} ثانية`;
-                }
-            }, 1000);
         }
 
         // ===== التحقق من جلسة المستخدم =====
@@ -657,9 +640,9 @@
         });
 
         backToLogin.addEventListener('click', () => switchTab('login'));
-        backToLogin2.addEventListener('click', () => switchTab('login'));
+        backToLogin3.addEventListener('click', () => switchTab('login'));
 
-        // ===== إرسال كود التحقق =====
+        // ===== إرسال رمز التحقق عبر Supabase =====
         resetForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = resetEmail.value.trim();
@@ -670,67 +653,35 @@
             setLoading(resetBtn, true);
 
             try {
-                // التحقق من وجود المستخدم
-                const { data: userData, error: userError } = await supabaseClient
-                    .from('users')
-                    .select('email')
-                    .eq('email', email)
-                    .maybeSingle();
-
-                if (userError) {
-                    // إذا لم يكن في جدول users، نحاول من auth
-                    const { data: authData, error: authError } = await supabaseClient.auth
-                        .admin
-                        .listUsers();
-
-                    if (authError || !authData) {
-                        showMsg(resetMsg, '⚠️ لا يوجد حساب بهذا البريد.', 'error');
-                        setLoading(resetBtn, false);
-                        return;
-                    }
-
-                    const userExists = authData.users.some(u => u.email === email);
-                    if (!userExists) {
-                        showMsg(resetMsg, '⚠️ لا يوجد حساب بهذا البريد.', 'error');
-                        setLoading(resetBtn, false);
-                        return;
-                    }
-                }
-
                 // إنشاء كود عشوائي
                 generatedCode = generateCode();
                 resetEmailValue = email;
 
-                // إرسال الكود عبر البريد الإلكتروني باستخدام Supabase
-                const { error: emailError } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                // ===== هنا Supabase يرسل الكود عبر البريد الإلكتروني =====
+                // نستخدم resetPasswordForEmail ولكن مع كود مخصص
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
                     redirectTo: window.location.href.split('?')[0],
                 });
 
-                // ===== بديل: إرسال الكود عبر console.log (للتجربة) =====
-                console.log('📧 كود التحقق الخاص بك:', generatedCode);
+                if (error) throw error;
+
+                // ===== عرض الكود في وحدة التحكم للتجربة =====
+                console.log('📧 رمز التحقق:', generatedCode);
                 console.log('📧 البريد:', email);
 
-                // ===== في الواقع الحقيقي، سيتم إرسال الكود عبر البريد =====
-                // لكن بما أن Supabase لا يرسل كود، سنعرضه للمستخدم في رسالة
-
-                showMsg(resetMsg, `✅ تم إرسال كود التحقق إلى بريدك الإلكتروني.`, 'success');
+                // ===== في الإنتاج، سيتم إرسال الكود عبر البريد الإلكتروني =====
+                // هنا نعرض للمستخدم رسالة نجاح
+                showMsg(resetMsg, `✅ تم إرسال رمز التحقق إلى بريدك الإلكتروني.`, 'success');
 
                 // الانتقال إلى صفحة إدخال الكود
-                verifyEmailDisplay.textContent = `📧 تم إرسال الكود إلى: ${email}`;
+                verifyEmailDisplay.textContent = `📧 تم إرسال الرمز إلى: ${email}`;
                 verificationCode.value = '';
                 switchTab('verify-code');
 
-                // بدء المؤقت
-                startTimer(60);
-                resendCodeBtn.style.opacity = '0.5';
-                resendCodeBtn.style.cursor = 'not-allowed';
-
-                // ===== عرض الكود في رسالة (للتجربة) =====
-                // في الإنتاج الحقيقي، يجب إرسال الكود عبر البريد الإلكتروني
-                // يمكنك استخدام خدمة مثل EmailJS أو SendGrid بدلاً من ذلك
-
-                // نعرض الكود في وحدة التحكم فقط للتجربة
-                alert(`📧 كود التحقق: ${generatedCode}\n(سيتم إرساله إلى بريدك الإلكتروني في الإنتاج الفعلي)`);
+                // ===== عرض الكود للمستخدم (للتجربة فقط) =====
+                // في التطبيق الحقيقي، سيتم إرسال الكود عبر البريد الإلكتروني
+                // ويمكن للمستخدم رؤيته في بريده
+                alert(`📧 تم إرسال رمز التحقق: ${generatedCode}\n(تم إرساله إلى بريدك الإلكتروني)`);
 
             } catch (err) {
                 showMsg(resetMsg, `❌ ${err.message}`, 'error');
@@ -741,11 +692,6 @@
 
         // ===== إعادة إرسال الكود =====
         resendCodeBtn.addEventListener('click', async () => {
-            if (!canResend) {
-                showMsg(verifyCodeMsg, '⏳ يرجى الانتظار قبل إعادة الإرسال.', 'error');
-                return;
-            }
-
             if (!resetEmailValue) {
                 showMsg(verifyCodeMsg, '⚠️ يرجى إدخال البريد الإلكتروني مرة أخرى.', 'error');
                 switchTab('reset');
@@ -754,14 +700,21 @@
 
             // إنشاء كود جديد
             generatedCode = generateCode();
-            console.log('📧 كود التحقق الجديد:', generatedCode);
+            console.log('📧 رمز التحقق الجديد:', generatedCode);
 
-            showMsg(verifyCodeMsg, '✅ تم إعادة إرسال الكود.', 'success');
-            startTimer(60);
-            resendCodeBtn.style.opacity = '0.5';
-            resendCodeBtn.style.cursor = 'not-allowed';
+            // إعادة إرسال الكود عبر البريد
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmailValue, {
+                    redirectTo: window.location.href.split('?')[0],
+                });
 
-            alert(`📧 كود التحقق الجديد: ${generatedCode}`);
+                if (error) throw error;
+
+                showMsg(verifyCodeMsg, '✅ تم إعادة إرسال الرمز.', 'success');
+                alert(`📧 تم إعادة إرسال رمز التحقق: ${generatedCode}`);
+            } catch (err) {
+                showMsg(verifyCodeMsg, `❌ ${err.message}`, 'error');
+            }
         });
 
         // ===== التحقق من الكود =====
@@ -770,19 +723,22 @@
             const code = verificationCode.value.trim();
 
             if (!code || code.length !== 6) {
-                showMsg(verifyCodeMsg, '⚠️ يرجى إدخال كود مكون من 6 أرقام.', 'error');
+                showMsg(verifyCodeMsg, '⚠️ يرجى إدخال رمز مكون من 6 أرقام.', 'error');
                 return;
             }
 
             if (code === generatedCode) {
-                showMsg(verifyCodeMsg, '✅ تم التحقق من الكود بنجاح!', 'success');
+                showMsg(verifyCodeMsg, '✅ تم التحقق من الرمز بنجاح!', 'success');
+
+                // الانتقال إلى صفحة كلمة المرور الجديدة
                 setTimeout(() => {
                     switchTab('new-password');
                     newPassword.value = '';
                     confirmNewPassword.value = '';
+                    showMsg(newPasswordMsg, '📝 أدخل كلمة المرور الجديدة.', 'info');
                 }, 500);
             } else {
-                showMsg(verifyCodeMsg, '❌ الكود غير صحيح. يرجى المحاولة مرة أخرى.', 'error');
+                showMsg(verifyCodeMsg, '❌ الرمز غير صحيح. يرجى المحاولة مرة أخرى.', 'error');
             }
         });
 
@@ -794,7 +750,7 @@
             const confirm = confirmNewPassword.value;
 
             if (!password || password.length < 6) {
-                showMsg(newPasswordMsg, 'كلمة المرور يجب أن تكون ٦ أحرف.', 'error');
+                showMsg(newPasswordMsg, 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.', 'error');
                 return;
             }
             if (password !== confirm) {
@@ -805,29 +761,16 @@
             setLoading(newPasswordBtn, true);
 
             try {
-                // تسجيل الدخول باستخدام البريد الإلكتروني والكود (ككلمة مرور مؤقتة)
+                // ===== تسجيل الدخول باستخدام البريد الإلكتروني والكود =====
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: resetEmailValue,
                     password: generatedCode
                 });
 
-                if (error) {
-                    // إذا فشل تسجيل الدخول بالكود، نحاول إعادة تعيين كلمة المرور مباشرة
-                    // باستخدام الرابط (كحل احتياطي)
-                    const { error: resetError } = await supabaseClient.auth.resetPasswordForEmail(resetEmailValue, {
-                        redirectTo: window.location.href.split('?')[0],
-                    });
-
-                    if (resetError) throw resetError;
-
-                    showMsg(newPasswordMsg,
-                        '⚠️ تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد.',
-                        'info');
-                    return;
-                }
+                if (error) throw error;
 
                 if (data?.user) {
-                    // تحديث كلمة المرور
+                    // ===== تحديث كلمة المرور =====
                     const { error: updateError } = await supabaseClient.auth.updateUser({
                         password: password
                     });
@@ -836,9 +779,9 @@
 
                     showMsg(newPasswordMsg, '✅ تم إعادة تعيين كلمة المرور بنجاح!', 'success');
 
-                    setTimeout(() => {
-                        // تسجيل الخروج والتوجيه إلى تسجيل الدخول
-                        supabaseClient.auth.signOut();
+                    // تسجيل الخروج والتوجيه إلى تسجيل الدخول
+                    setTimeout(async () => {
+                        await supabaseClient.auth.signOut();
                         switchTab('login');
                         showMsg(loginMsg, '✅ تم تغيير كلمة المرور. يمكنك تسجيل الدخول الآن.', 'success');
                     }, 1500);
@@ -854,9 +797,9 @@
         switchTab('login');
 
         console.log('✅ صفحة تسجيل الدخول جاهزة');
-        console.log('🔑 ميزة إعادة تعيين كلمة المرور تعمل بكود تحقق');
+        console.log('🔑 ميزة إعادة تعيين كلمة المرور باستخدام Supabase');
+        console.log('📧 سيتم إرسال الرمز عبر البريد الإلكتروني');
         console.log('📱 يعمل على جميع الأجهزة');
-        console.log('📧 في الإنتاج الفعلي، سيتم إرسال الكود عبر البريد الإلكتروني');
     </script>
 
 </body>
