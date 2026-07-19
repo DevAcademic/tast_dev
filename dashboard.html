@@ -482,6 +482,17 @@
             background: var(--primary-dark);
         }
 
+        /* زر حذف الحساب */
+        .account-section .account-actions .btn-delete-account {
+            background: #7f1d1d;
+            color: #fff;
+            border: 1px solid #991b1b;
+        }
+        .account-section .account-actions .btn-delete-account:hover {
+            background: #991b1b;
+            transform: scale(1.02);
+        }
+
         .my-courses-section {
             padding: 1rem 1rem 80px;
             max-width: 700px;
@@ -957,6 +968,9 @@
                 </button>
                 <button class="btn-logout-account" id="logoutAccountBtn">
                     <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+                <button class="btn-delete-account" id="deleteAccountBtn">
+                    <i class="fas fa-user-slash"></i> حذف الحساب نهائياً
                 </button>
             </div>
         </div>

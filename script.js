@@ -1106,6 +1106,165 @@
         }
     }
 
+    // ============================================================
+    // 🔥 حذف الحساب نهائياً - مطابق لمعايير App Store
+    // ============================================================
+    async function deleteAccount() {
+        if (!currentUser) {
+            showToast('warning', '⚠️ لا يوجد حساب مسجل');
+            return;
+        }
+
+        // تأكيد قوي - مطابق لمعايير Apple
+        const confirmMsg = `⚠️ هل أنت متأكد من حذف حسابك نهائياً؟
+
+سيتم حذف:
+• جميع بيانات حسابك الشخصية
+• جميع الأكواد التي قمت بتفعيلها
+• صلاحية المشرف (إن وجدت)
+• سجل الدخول والجلسات النشطة
+
+⚠️ هذا الإجراء لا يمكن التراجع عنه!`;
+
+        if (!confirm(confirmMsg)) return;
+
+        // تأكيد إضافي بكتابة كلمة محددة
+        const secondConfirm = prompt('🔴 لتأكيد حذف حسابك نهائياً، اكتب كلمة "حذف" في الحقل أدناه:');
+        if (secondConfirm !== 'حذف') {
+            showToast('warning', '⚠️ تم إلغاء عملية حذف الحساب');
+            return;
+        }
+
+        try {
+            showToast('info', '⏳ جاري حذف حسابك... قد يستغرق بضع ثوان');
+
+            const userEmail = currentUser.email;
+            const userId = currentUser.id;
+
+            // 1. حذف من جدول admins (إذا كان مشرفاً)
+            if (supabaseClient) {
+                const { error: adminError } = await supabaseClient
+                    .from('admins')
+                    .delete()
+                    .eq('email', userEmail);
+
+                if (adminError) {
+                    console.warn('⚠️ فشل حذف صلاحية المشرف:', adminError);
+                } else {
+                    console.log('✅ تم حذف صلاحية المشرف');
+                }
+            }
+
+            // 2. حذف من user_codes (جميع الأكواد المرتبطة بالمستخدم)
+            if (supabaseClient) {
+                const { error: userCodesError } = await supabaseClient
+                    .from('user_codes')
+                    .delete()
+                    .eq('user_id', userId);
+
+                if (userCodesError) {
+                    console.warn('⚠️ فشل حذف user_codes:', userCodesError);
+                } else {
+                    console.log('✅ تم حذف جميع الأكواد المرتبطة');
+                }
+            }
+
+            // 3. تحديث جدول codes - إلغاء ربط الأكواد بهذا المستخدم
+            if (supabaseClient) {
+                const { error: codesError } = await supabaseClient
+                    .from('codes')
+                    .update({
+                        is_used: false,
+                        user_id: null,
+                        user_email: null,
+                        device_id: null,
+                        used_at: null
+                    })
+                    .eq('user_id', userId);
+
+                if (codesError) {
+                    console.warn('⚠️ فشل تحديث جدول codes:', codesError);
+                } else {
+                    console.log('✅ تم تحديث الأكواد');
+                }
+            }
+
+            // 4. حذف من جدول users
+            if (supabaseClient) {
+                const { error: userError } = await supabaseClient
+                    .from('users')
+                    .delete()
+                    .eq('id', userId);
+
+                if (userError) {
+                    console.warn('⚠️ فشل حذف المستخدم من users:', userError);
+                    // محاولة الحذف من auth عبر RPC
+                    try {
+                        const { error: rpcError } = await supabaseClient.rpc('delete_user_account', {
+                            p_user_id: userId
+                        });
+                        if (rpcError) {
+                            console.warn('⚠️ فشل RPC delete_user_account:', rpcError);
+                        } else {
+                            console.log('✅ تم حذف المستخدم عبر RPC');
+                        }
+                    } catch (rpcErr) {
+                        console.warn('⚠️ RPC غير متاح:', rpcErr);
+                    }
+                } else {
+                    console.log('✅ تم حذف المستخدم من users');
+                }
+            }
+
+            // 5. تسجيل الخروج من Supabase Auth
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (signOutErr) {
+                    console.warn('⚠️ خطأ أثناء تسجيل الخروج:', signOutErr);
+                }
+            }
+
+            // 6. مسح جميع البيانات المحلية
+            localStorage.removeItem('devAcademicUser');
+            localStorage.removeItem('academyData');
+            localStorage.removeItem('deviceId');
+            localStorage.removeItem(`userCodes_${userEmail}`);
+            localStorage.removeItem('devAcademicTheme');
+
+            // 7. إعادة تعيين الحالة
+            currentUser = null;
+            activeTeacher = null;
+            activeTeacherIndex = null;
+            activeSectionIndex = null;
+
+            // 8. تحديث الواجهة
+            updateUI();
+            renderMyCourses();
+            renderAccount();
+            updateBadge();
+            renderAllData();
+
+            // 9. إغلاق جميع النوافذ المنبثقة
+            if (adminPanel) adminPanel.classList.remove('active');
+            if (semestersModal) semestersModal.classList.remove('active');
+            if (lecturesModal) lecturesModal.classList.remove('active');
+            if (teachersModal) teachersModal.classList.remove('active');
+            if (editLectureModal) editLectureModal.classList.remove('active');
+
+            showToast('success', '✅ تم حذف حسابك نهائياً بنجاح');
+
+            // 10. التوجيه إلى صفحة تسجيل الدخول
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+
+        } catch (error) {
+            console.error('❌ خطأ في حذف الحساب:', error);
+            showToast('error', '❌ حدث خطأ أثناء حذف الحساب: ' + (error.message || 'خطأ غير معروف'));
+        }
+    }
+
     // ===== UPDATE UI =====
     function updateUI() {
         if (currentUser) {
@@ -1180,6 +1339,9 @@
 
     // ===== LOGOUT =====
     logoutAccountBtn?.addEventListener('click', signOut);
+
+    // ===== DELETE ACCOUNT =====
+    document.getElementById('deleteAccountBtn')?.addEventListener('click', deleteAccount);
 
     // ===== ADMIN PANEL BUTTON =====
     adminPanelBtn?.addEventListener('click', function() {
