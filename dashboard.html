@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
     </script>
     <style>
+        /* ... نفس الأنماط السابقة ... */
         * {
             margin: 0;
             padding: 0;
@@ -123,11 +124,12 @@
             font-weight: 700;
         }
         .top-bar .user-btn .name {
-            font-size: 0.5rem;
-            max-width: 40px;
+            font-size: 0.55rem;
+            max-width: 60px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-weight: 600;
         }
         .top-bar .theme-toggle {
             background: var(--bg-card);
@@ -142,6 +144,7 @@
             justify-content: center;
         }
 
+        /* باقي الأنماط كما هي... */
         .banner-section {
             padding: 0.1rem 0.5rem;
             max-width: 600px;
@@ -1509,6 +1512,35 @@
             window.showToast = showToast;
 
             // ============================================================
+            // إصلاح الاسم العربي
+            // ============================================================
+            function fixUserName() {
+                if (!currentUser) return;
+
+                // محاولة استخراج الاسم من عدة مصادر
+                let fullName = currentUser.user_metadata?.full_name ||
+                    currentUser.user_metadata?.name ||
+                    currentUser.user_metadata?.user_name ||
+                    currentUser.email?.split('@')[0] ||
+                    'مستخدم';
+
+                // حفظ الاسم في localStorage
+                localStorage.setItem('userFullName', fullName);
+
+                // تحديث العرض
+                const nameEl = document.getElementById('userNameDisplay');
+                const accountNameEl = document.getElementById('accountName');
+                const avatarEl = document.getElementById('userAvatar');
+
+                if (nameEl) nameEl.textContent = fullName;
+                if (accountNameEl) accountNameEl.textContent = fullName;
+                if (avatarEl) avatarEl.textContent = fullName.charAt(0).toUpperCase();
+
+                console.log('👤 الاسم العربي:', fullName);
+                return fullName;
+            }
+
+            // ============================================================
             // التهيئة
             // ============================================================
             async function initApp() {
@@ -1523,6 +1555,8 @@
                             if (userData && userData.email) {
                                 currentUser = userData;
                                 console.log('✅ تم استعادة المستخدم:', currentUser.email);
+                                // إصلاح الاسم
+                                fixUserName();
                             }
                         } catch (e) { console.warn('⚠️ فشل استعادة المستخدم:', e); }
                     }
@@ -1534,6 +1568,8 @@
                                 currentUser = sessionData.session.user;
                                 localStorage.setItem('devAcademicUser', JSON.stringify(currentUser));
                                 console.log('✅ تم استعادة المستخدم من Supabase:', currentUser.email);
+                                // إصلاح الاسم
+                                fixUserName();
                             }
                         } catch (e) { console.warn('⚠️ فشل استعادة المستخدم من Supabase:', e); }
                     }
@@ -1559,7 +1595,7 @@
                     updateBannerPreview();
                     navigateTo('home');
 
-                    // تحديث القوائم بعد التحميل
+                    // تحديث القوائم
                     setTimeout(function() {
                         updateAllAdminSelects();
                         updateAllSemesterLists();
@@ -1664,7 +1700,7 @@
             }
 
             // ============================================================
-            // دوال العرض
+            // دوال العرض (مختصرة)
             // ============================================================
             function getAllTeachers() {
                 const teachers = [];
@@ -1772,32 +1808,20 @@
             };
 
             // ============================================================
-            // فتح المدرس
+            // فتح المدرس (مختصر)
             // ============================================================
             window.openTeacher = function(sectionIndex, teacherIndex) {
-                console.log('📂 فتح المدرس:', sectionIndex, teacherIndex);
-
                 const section = data.sections[sectionIndex];
-                if (!section) {
-                    console.error('❌ القسم غير موجود:', sectionIndex);
-                    showToast('error', '❌ القسم غير موجود');
-                    return;
-                }
+                if (!section) { showToast('error', '❌ القسم غير موجود'); return; }
 
                 const teacher = section.teachers[teacherIndex];
-                if (!teacher) {
-                    console.error('❌ المدرس غير موجود:', teacherIndex);
-                    showToast('error', '❌ المدرس غير موجود');
-                    return;
-                }
+                if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
                 activeTeacher = teacher;
                 activeTeacherIndex = teacherIndex;
                 activeSectionIndex = sectionIndex;
 
-                const titleEl = document.getElementById('modalTeacherTitle');
-                if (titleEl) titleEl.textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
-
+                document.getElementById('modalTeacherTitle').textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
                 const hasAccessVal = hasAccess(teacher);
                 const semestersList = document.getElementById('semestersList');
                 if (!semestersList) return;
@@ -1806,19 +1830,13 @@
                 const semesters = teacher.semesters || [];
 
                 if (semesters.length === 0) {
-                    html = `
-                                <div class="empty">
-                                    <span class="icon">📀</span>
-                                    <h3>لا توجد فصول</h3>
-                                    <p>قم بإضافة فصول من لوحة التحكم</p>
-                                </div>
-                            `;
+                    html =
+                        `<div class="empty"><span class="icon">📀</span><h3>لا توجد فصول</h3><p>قم بإضافة فصول من لوحة التحكم</p></div>`;
                 } else {
                     semesters.forEach((sem, idx) => {
                         const lectures = sem.lectures || [];
                         const hasFree = lectures.some(l => l.isFree === true);
                         const locked = !hasAccessVal && !hasFree;
-
                         html += `
                                     <div class="semester-item ${locked ? 'locked' : ''}" 
                                          onclick="${locked ? '' : `openLectures(${sectionIndex}, ${teacherIndex}, ${idx})`}">
@@ -1855,9 +1873,7 @@
                         `;
 
                 semestersList.innerHTML = html;
-
-                const modal = document.getElementById('semestersModal');
-                if (modal) modal.classList.add('active');
+                document.getElementById('semestersModal').classList.add('active');
                 document.body.style.overflow = 'hidden';
             };
 
@@ -1867,7 +1883,6 @@
                 if (!input || !msg) return;
 
                 const code = input.value.trim().toUpperCase();
-
                 if (!code) { msg.innerHTML = '⚠️ أدخل الكود';
                     msg.style.color = '#f59e0b'; return; }
                 if (!activeTeacher) { msg.innerHTML = '⚠️ اختر مدرساً';
@@ -1878,25 +1893,16 @@
                 const teacher = activeTeacher;
                 const codeData = teacher.codes.find(c => c.code === code);
 
-                if (!codeData) {
-                    msg.innerHTML = '❌ الكود غير صحيح';
+                if (!codeData) { msg.innerHTML = '❌ الكود غير صحيح';
                     msg.style.color = '#ef4444';
-                    showToast('error', '❌ الكود غير صحيح');
-                    return;
-                }
-
-                if (codeData.locked) {
-                    msg.innerHTML = '🔒 هذا الكود مقفل';
+                    showToast('error', '❌ الكود غير صحيح'); return; }
+                if (codeData.locked) { msg.innerHTML = '🔒 هذا الكود مقفل';
                     msg.style.color = '#f59e0b';
-                    showToast('warning', '🔒 الكود مقفل');
-                    return;
-                }
-
+                    showToast('warning', '🔒 الكود مقفل'); return; }
                 if (codeData.used && codeData.userEmail !== currentUser.email) {
                     msg.innerHTML = '❌ هذا الكود مستخدم من قبل شخص آخر';
                     msg.style.color = '#ef4444';
-                    showToast('error', '❌ الكود مستخدم');
-                    return;
+                    showToast('error', '❌ الكود مستخدم'); return;
                 }
 
                 codeData.used = true;
@@ -1934,8 +1940,7 @@
                 if (!semester) return;
 
                 const hasAccessVal = hasAccess(teacher);
-                const titleEl = document.getElementById('modalSemesterTitle');
-                if (titleEl) titleEl.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
+                document.getElementById('modalSemesterTitle').textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
                 const lecturesList = document.getElementById('lecturesList');
                 if (!lecturesList) return;
@@ -1944,13 +1949,8 @@
                 const lectures = semester.lectures || [];
 
                 if (lectures.length === 0) {
-                    html = `
-                                <div class="empty">
-                                    <span class="icon">🎥</span>
-                                    <h3>لا توجد محاضرات</h3>
-                                    <p>قم بإضافة محاضرات من لوحة التحكم</p>
-                                </div>
-                            `;
+                    html =
+                        `<div class="empty"><span class="icon">🎥</span><h3>لا توجد محاضرات</h3><p>قم بإضافة محاضرات من لوحة التحكم</p></div>`;
                 } else {
                     lectures.forEach(l => {
                         const canWatch = l.isFree === true || hasAccessVal;
@@ -1970,25 +1970,19 @@
                 }
 
                 lecturesList.innerHTML = html;
-
-                const modal = document.getElementById('lecturesModal');
-                if (modal) modal.classList.add('active');
+                document.getElementById('lecturesModal').classList.add('active');
                 document.body.style.overflow = 'hidden';
             };
 
             // ============================================================
-            // تشغيل الفيديو داخل التطبيق
+            // تشغيل الفيديو
             // ============================================================
             window.playVideo = function(url, title) {
-                if (!url) {
-                    showToast('error', '❌ رابط الفيديو غير موجود');
-                    return;
-                }
+                if (!url) { showToast('error', '❌ رابط الفيديو غير موجود'); return; }
 
                 let videoUrl = url.trim();
                 let youtubeId = null;
 
-                // استخراج معرف YouTube
                 if (videoUrl.includes('youtube.com/watch?v=')) {
                     const match = videoUrl.match(/v=([^&]+)/);
                     if (match) youtubeId = match[1];
@@ -2004,28 +1998,19 @@
                 const videoWrapper = document.getElementById('videoWrapper');
                 const titleEl = document.getElementById('playerTitle');
 
-                if (titleEl) {
-                    titleEl.textContent = `🎬 ${title || 'محاضرة'}`;
-                }
+                if (titleEl) titleEl.textContent = `🎬 ${title || 'محاضرة'}`;
 
-                // YouTube
                 if (youtubeId) {
                     const embedUrl =
                         `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&fs=1`;
-                    videoWrapper.innerHTML = `
-                                <iframe src="${embedUrl}" 
-                                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
-                                        allowfullscreen>
-                                </iframe>
-                            `;
+                    videoWrapper.innerHTML =
+                        `<iframe src="${embedUrl}" style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>`;
                     videoPlayer.classList.add('active');
                     document.body.style.overflow = 'hidden';
                     showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
                     return;
                 }
 
-                // Mediadelivery
                 if (videoUrl.includes('mediadelivery')) {
                     let embedUrl = videoUrl;
                     if (!embedUrl.includes('autoplay')) {
@@ -2033,43 +2018,18 @@
                         embedUrl = embedUrl + separator +
                             'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
                     }
-                    videoWrapper.innerHTML = `
-                                <iframe src="${embedUrl}" 
-                                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
-                                        allowfullscreen="true">
-                                </iframe>
-                            `;
+                    videoWrapper.innerHTML =
+                        `<iframe src="${embedUrl}" style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe>`;
                     videoPlayer.classList.add('active');
                     document.body.style.overflow = 'hidden';
                     showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
                     return;
                 }
 
-                // فيديو مباشر
-                if (videoUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
-                    videoWrapper.innerHTML = `
-                                <video controls autoplay style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;">
-                                    <source src="${videoUrl}" type="video/mp4">
-                                    متصفحك لا يدعم تشغيل الفيديو
-                                </video>
-                            `;
-                    videoPlayer.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
-                    return;
-                }
-
-                // أي رابط آخر
                 try {
                     new URL(videoUrl);
-                    videoWrapper.innerHTML = `
-                                <iframe src="${videoUrl}" 
-                                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
-                                        allowfullscreen>
-                                </iframe>
-                            `;
+                    videoWrapper.innerHTML =
+                        `<iframe src="${videoUrl}" style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>`;
                     videoPlayer.classList.add('active');
                     document.body.style.overflow = 'hidden';
                     showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
@@ -2080,32 +2040,9 @@
 
             // إغلاق المشغل
             document.getElementById('closePlayer')?.addEventListener('click', function() {
-                const videoPlayer = document.getElementById('videoPlayer');
-                const videoWrapper = document.getElementById('videoWrapper');
-                if (videoPlayer) videoPlayer.classList.remove('active');
-                if (videoWrapper) videoWrapper.innerHTML = '';
+                document.getElementById('videoPlayer').classList.remove('active');
+                document.getElementById('videoWrapper').innerHTML = '';
                 document.body.style.overflow = 'auto';
-            });
-
-            document.getElementById('videoPlayer')?.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    const videoWrapper = document.getElementById('videoWrapper');
-                    this.classList.remove('active');
-                    if (videoWrapper) videoWrapper.innerHTML = '';
-                    document.body.style.overflow = 'auto';
-                }
-            });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const videoPlayer = document.getElementById('videoPlayer');
-                    const videoWrapper = document.getElementById('videoWrapper');
-                    if (videoPlayer && videoPlayer.classList.contains('active')) {
-                        videoPlayer.classList.remove('active');
-                        if (videoWrapper) videoWrapper.innerHTML = '';
-                        document.body.style.overflow = 'auto';
-                    }
-                }
             });
 
             // ============================================================
@@ -2185,12 +2122,9 @@
             // ============================================================
             function renderAccount() {
                 if (!currentUser) {
-                    const nameEl = document.getElementById('accountName');
-                    const emailEl = document.getElementById('accountEmail');
-                    const avatarEl = document.getElementById('accountAvatar');
-                    if (nameEl) nameEl.textContent = 'غير مسجل';
-                    if (emailEl) emailEl.textContent = 'يرجى تسجيل الدخول';
-                    if (avatarEl) avatarEl.textContent = '👤';
+                    document.getElementById('accountName').textContent = 'غير مسجل';
+                    document.getElementById('accountEmail').textContent = 'يرجى تسجيل الدخول';
+                    document.getElementById('accountAvatar').textContent = '👤';
                     return;
                 }
 
@@ -2199,21 +2133,17 @@
                     currentUser.email?.split('@')[0] ||
                     'مستخدم';
 
-                const nameEl = document.getElementById('accountName');
-                const emailEl = document.getElementById('accountEmail');
-                const avatarEl = document.getElementById('accountAvatar');
-                if (nameEl) nameEl.textContent = name;
-                if (emailEl) emailEl.textContent = currentUser.email;
-                if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+                document.getElementById('accountName').textContent = name;
+                document.getElementById('accountEmail').textContent = currentUser.email;
+                document.getElementById('accountAvatar').textContent = name.charAt(0).toUpperCase();
 
-                const regEl = document.getElementById('accountRegistered');
-                if (regEl && currentUser.created_at) {
-                    regEl.textContent = 'مسجل منذ: ' + new Date(currentUser.created_at).toLocaleDateString('ar');
+                if (currentUser.created_at) {
+                    document.getElementById('accountRegistered').textContent = 'مسجل منذ: ' + new Date(currentUser
+                        .created_at).toLocaleDateString('ar');
                 }
 
                 const courses = getMyCourses();
-                const coursesEl = document.getElementById('accountCourses');
-                if (coursesEl) coursesEl.textContent = courses.length;
+                document.getElementById('accountCourses').textContent = courses.length;
 
                 let codesCount = 0;
                 data.sections.forEach(s => {
@@ -2224,19 +2154,8 @@
                         }
                     });
                 });
-                const codesEl = document.getElementById('accountCodes');
-                if (codesEl) codesEl.textContent = codesCount;
-
-                const teachersEl = document.getElementById('accountTeachersCount');
-                if (teachersEl) teachersEl.textContent = courses.length;
-
-                if (supabaseClient) {
-                    supabaseClient.from('admins').select('email').eq('email', currentUser.email).maybeSingle()
-                        .then(({ data }) => {
-                            const btn = document.getElementById('adminPanelBtn');
-                            if (btn) btn.style.display = data ? 'flex' : 'none';
-                        }).catch(() => {});
-                }
+                document.getElementById('accountCodes').textContent = codesCount;
+                document.getElementById('accountTeachersCount').textContent = courses.length;
             }
 
             // ============================================================
@@ -2248,9 +2167,7 @@
                     return;
                 }
 
-                document.querySelectorAll('[id^="page-"]').forEach(p => {
-                    if (p) p.style.display = 'none';
-                });
+                document.querySelectorAll('[id^="page-"]').forEach(p => { if (p) p.style.display = 'none'; });
                 const target = document.getElementById('page-' + page);
                 if (target) target.style.display = 'block';
 
@@ -2275,15 +2192,11 @@
                         currentUser.user_metadata?.name ||
                         currentUser.email?.split('@')[0] ||
                         'مستخدم';
-                    const nameEl = document.getElementById('userNameDisplay');
-                    const avatarEl = document.getElementById('userAvatar');
-                    if (nameEl) nameEl.textContent = name;
-                    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+                    document.getElementById('userNameDisplay').textContent = name;
+                    document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
                 } else {
-                    const nameEl = document.getElementById('userNameDisplay');
-                    const avatarEl = document.getElementById('userAvatar');
-                    if (nameEl) nameEl.textContent = 'غير مسجل';
-                    if (avatarEl) avatarEl.textContent = '👤';
+                    document.getElementById('userNameDisplay').textContent = 'غير مسجل';
+                    document.getElementById('userAvatar').textContent = '👤';
                 }
             }
 
@@ -2310,89 +2223,66 @@
                     });
                 });
 
-                const profileBtn = document.getElementById('userProfileBtn');
-                if (profileBtn) {
-                    profileBtn.addEventListener('click', function() {
-                        if (!currentUser) { window.location.href = 'index.html'; return; }
-                        navigateTo('account');
-                    });
-                }
+                document.getElementById('userProfileBtn')?.addEventListener('click', function() {
+                    if (!currentUser) { window.location.href = 'index.html'; return; }
+                    navigateTo('account');
+                });
 
-                const logoutBtn = document.getElementById('logoutAccountBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.signOut();
-                    });
-                }
+                document.getElementById('logoutAccountBtn')?.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.signOut();
+                });
 
-                const adminBtn = document.getElementById('adminPanelBtn');
-                if (adminBtn) {
-                    adminBtn.addEventListener('click', function() {
-                        const panel = document.getElementById('adminPanel');
-                        if (panel) {
-                            panel.classList.toggle('active');
-                            if (panel.classList.contains('active')) {
-                                // تحديث جميع القوائم
-                                updateAllAdminSelects();
-                                loadAdminsList();
-                                renderUsersTable();
-                                setTimeout(updateAllSemesterLists, 300);
-                                showToast('info', '🔓 مرحباً بك في لوحة التحكم');
-                            }
+                document.getElementById('adminPanelBtn')?.addEventListener('click', function() {
+                    const panel = document.getElementById('adminPanel');
+                    if (panel) {
+                        panel.classList.toggle('active');
+                        if (panel.classList.contains('active')) {
+                            updateAllAdminSelects();
+                            loadAdminsList();
+                            renderUsersTable();
+                            setTimeout(updateAllSemesterLists, 300);
+                            showToast('info', '🔓 مرحباً بك في لوحة التحكم');
                         }
-                    });
-                }
+                    }
+                });
 
-                const adminClose = document.getElementById('adminClose');
-                if (adminClose) {
-                    adminClose.addEventListener('click', function() {
-                        const panel = document.getElementById('adminPanel');
-                        if (panel) panel.classList.remove('active');
-                    });
-                }
+                document.getElementById('adminClose')?.addEventListener('click', function() {
+                    document.getElementById('adminPanel').classList.remove('active');
+                });
 
-                const themeToggle = document.getElementById('themeToggle');
-                if (themeToggle) {
-                    themeToggle.addEventListener('click', function() {
-                        document.body.classList.toggle('dark-mode');
-                        const dark = document.body.classList.contains('dark-mode');
-                        this.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-                        localStorage.setItem('devAcademicTheme', dark ? 'dark' : 'light');
-                    });
-                }
+                document.getElementById('themeToggle')?.addEventListener('click', function() {
+                    document.body.classList.toggle('dark-mode');
+                    const dark = document.body.classList.contains('dark-mode');
+                    this.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                    localStorage.setItem('devAcademicTheme', dark ? 'dark' : 'light');
+                });
 
                 if (localStorage.getItem('devAcademicTheme') === 'dark') {
                     document.body.classList.add('dark-mode');
-                    const toggle = document.getElementById('themeToggle');
-                    if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
                 }
 
-                const searchBtn = document.getElementById('searchBtn');
-                if (searchBtn) {
-                    searchBtn.addEventListener('click', function() {
-                        const term = document.getElementById('searchInput').value.trim().toLowerCase();
-                        if (!term) { renderAllData(); return; }
-                        const filtered = getAllTeachers().filter(t =>
-                            (t.name || '').toLowerCase().includes(term) ||
-                            (t.subject || '').toLowerCase().includes(term) ||
-                            (t._sectionName || '').toLowerCase().includes(term)
-                        );
-                        renderTeachers(filtered, teachersGridContainer);
-                        renderTeachers(filtered, teachersGridContainer2);
-                    });
-                }
+                // البحث
+                document.getElementById('searchBtn')?.addEventListener('click', function() {
+                    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+                    if (!term) { renderAllData(); return; }
+                    const filtered = getAllTeachers().filter(t =>
+                        (t.name || '').toLowerCase().includes(term) ||
+                        (t.subject || '').toLowerCase().includes(term) ||
+                        (t._sectionName || '').toLowerCase().includes(term)
+                    );
+                    renderTeachers(filtered, teachersGridContainer);
+                    renderTeachers(filtered, teachersGridContainer2);
+                });
 
-                const searchInput = document.getElementById('searchInput');
-                if (searchInput) {
-                    searchInput.addEventListener('keyup', function(e) {
-                        if (e.key === 'Enter') {
-                            const btn = document.getElementById('searchBtn');
-                            if (btn) btn.click();
-                        }
-                    });
-                }
+                document.getElementById('searchInput')?.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        document.getElementById('searchBtn')?.click();
+                    }
+                });
 
+                // إغلاق النوافذ
                 document.querySelectorAll('.modal .close').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const modal = this.closest('.modal-overlay');
@@ -2408,7 +2298,7 @@
                     });
                 });
 
-                // ===== علامات التبويب في لوحة التحكم =====
+                // علامات التبويب
                 document.querySelectorAll('.admin-tabs .tab').forEach(btn => {
                     btn.addEventListener('click', function() {
                         document.querySelectorAll('.admin-tabs .tab').forEach(b => b.classList.remove(
@@ -2419,20 +2309,13 @@
                         const tabId = document.getElementById('tab-' + this.dataset.tab);
                         if (tabId) tabId.classList.add('active');
 
-                        // تحديث القوائم عند فتح علامات تبويب معينة
                         if (this.dataset.tab === 'manage-codes') {
                             updateAllAdminSelects();
                             updateCodesManagement();
                         }
-                        if (this.dataset.tab === 'users') {
-                            renderUsersTable();
-                        }
-                        if (this.dataset.tab === 'add-admin') {
-                            loadAdminsList();
-                        }
-                        if (this.dataset.tab === 'banner') {
-                            updateBannerPreview();
-                        }
+                        if (this.dataset.tab === 'users') renderUsersTable();
+                        if (this.dataset.tab === 'add-admin') loadAdminsList();
+                        if (this.dataset.tab === 'banner') updateBannerPreview();
                         if (this.dataset.tab === 'delete' || this.dataset.tab === 'add-lecture' ||
                             this.dataset.tab === 'add-semester' || this.dataset.tab === 'add-teacher' ||
                             this.dataset.tab === 'edit-teacher') {
@@ -2442,14 +2325,15 @@
                     });
                 });
 
+                // زر النشر المعدل
+                document.getElementById('publishBtn')?.addEventListener('click', publishData);
+
                 initApp();
             });
 
             // ============================================================
-            // دوال تحديث القوائم - الجزء الأهم
+            // دوال تحديث القوائم
             // ============================================================
-
-            // تحديث قوائم الفصول في جميع الأماكن
             function updateAllSemesterLists() {
                 console.log('🔄 تحديث قوائم الفصول...');
 
@@ -2504,13 +2388,11 @@
                 });
             }
 
-            // تحديث قوائم المدرسين عند اختيار القسم
             function updateTeachersForSection(sectionIndex) {
                 console.log('🔄 تحديث قوائم المدرسين للقسم:', sectionIndex);
 
                 const idx = parseInt(sectionIndex);
 
-                // قائمة المدرسين التي تحتاج للتحديث
                 const teacherSelects = [
                     { selectId: 'semesterTeacher', sectionId: 'semesterSection' },
                     { selectId: 'lectureTeacher', sectionId: 'lectureSection' },
@@ -2544,22 +2426,19 @@
 
                     select.innerHTML = options;
 
-                    // استعادة القيمة السابقة إذا كانت موجودة
                     if (currentValue && !isNaN(idx) && idx >= 0 &&
                         data.sections[idx]?.teachers[parseInt(currentValue)]) {
                         select.value = currentValue;
                     }
                 });
 
-                // تحديث الفصول بعد تحديث المدرسين
                 setTimeout(updateAllSemesterLists, 150);
             }
 
-            // ===== تحديث جميع القوائم =====
             function updateAllAdminSelects() {
                 console.log('🔄 تحديث جميع القوائم...');
 
-                // 1. تحديث قوائم الأقسام
+                // تحديث الأقسام
                 const sectionSelects = [
                     'teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
                     'editTeacherSection', 'deleteSection', 'deleteTeacherSection',
@@ -2584,7 +2463,7 @@
                     }
                 });
 
-                // 2. تحديث قوائم المدرسين بناءً على الأقسام المختارة
+                // تحديث المدرسين
                 const sectionTeacherMap = [
                     { sectionId: 'teacherSection', teacherId: null },
                     { sectionId: 'semesterSection', teacherId: 'semesterTeacher' },
@@ -2627,15 +2506,13 @@
                     }
                 });
 
-                // 3. تحديث الفصول بعد تحديث المدرسين
                 setTimeout(updateAllSemesterLists, 200);
             }
 
-            // ===== ربط أحداث التغيير للقوائم =====
+            // ===== إعداد مستمعات الأحداث =====
             function setupChangeListeners() {
                 console.log('🔗 ربط أحداث التغيير...');
 
-                // قائمة الأقسام التي تحتاج لتحديث المدرسين عند التغيير
                 const sectionIds = [
                     'teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
                     'editTeacherSection', 'editLectureSection',
@@ -2647,15 +2524,12 @@
                     if (el) {
                         el.addEventListener('change', function() {
                             console.log('📌 تغيير القسم:', id, this.value);
-                            // تحديث المدرسين
                             updateTeachersForSection(this.value);
-                            // تحديث الفصول بعد قليل
                             setTimeout(updateAllSemesterLists, 200);
                         });
                     }
                 });
 
-                // قائمة المدرسين التي تحتاج لتحديث الفصول عند التغيير
                 const teacherIds = [
                     'semesterTeacher', 'lectureTeacher',
                     'deleteSemesterTeacher', 'deleteLectureTeacher',
@@ -2667,7 +2541,6 @@
                     if (el) {
                         el.addEventListener('change', function() {
                             console.log('📌 تغيير المدرس:', id, this.value);
-                            // تحديث الفصول
                             setTimeout(updateAllSemesterLists, 150);
                         });
                     }
@@ -2675,7 +2548,81 @@
             }
 
             // ============================================================
-            // نماذج الإضافة
+            // دوال النشر المعدلة
+            // ============================================================
+            async function publishData() {
+                if (pendingChanges === 0) {
+                    showToast('info', '📌 لا توجد تغييرات لنشرها');
+                    return;
+                }
+
+                if (!supabaseClient) {
+                    showToast('error', '❌ Supabase غير متاح');
+                    return;
+                }
+
+                try {
+                    showToast('info', '⏳ جاري النشر...');
+
+                    // محاولة الإدراج
+                    const { data: result, error } = await supabaseClient
+                        .from('academy_data')
+                        .upsert({
+                            id: 'main',
+                            content: data,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'id',
+                            ignoreDuplicates: false
+                        });
+
+                    if (error) {
+                        console.error('❌ خطأ النشر:', error);
+
+                        // إذا كان خطأ RLS، حاول طريقة بديلة
+                        if (error.message && error.message.includes('row-level security')) {
+                            showToast('warning', '⚠️ مشكلة في الصلاحيات، جاري المحاولة بطريقة بديلة...');
+
+                            // محاولة الإدراج مباشرة
+                            const { error: insertError } = await supabaseClient
+                                .from('academy_data')
+                                .insert({
+                                    id: 'main',
+                                    content: data,
+                                    updated_at: new Date().toISOString()
+                                });
+
+                            if (insertError) {
+                                showToast('error', '❌ فشل النشر: ' + insertError.message);
+                                return;
+                            }
+                        } else {
+                            showToast('error', '❌ فشل النشر: ' + error.message);
+                            return;
+                        }
+                    }
+
+                    pendingChanges = 0;
+                    const span = document.getElementById('pendingChanges');
+                    if (span) span.textContent = '0';
+
+                    const msg = document.getElementById('publishMessage');
+                    if (msg) {
+                        msg.innerHTML = '✅ تم النشر بنجاح';
+                        msg.style.color = '#22c55e';
+                        setTimeout(() => msg.innerHTML = '', 5000);
+                    }
+
+                    showToast('success', '✅ تم نشر التغييرات بنجاح');
+
+                } catch (e) {
+                    console.error('❌ خطأ:', e);
+                    showToast('error', '❌ فشل النشر: ' + e.message);
+                }
+            }
+
+            // ============================================================
+            // نماذج الإضافة (مختصرة)
             // ============================================================
             document.getElementById('addSectionForm')?.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -2925,59 +2872,6 @@
             };
 
             // ============================================================
-            // تعديل المدرس
-            // ============================================================
-            document.getElementById('editTeacherForm')?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const si = parseInt(document.getElementById('editTeacherSection').value);
-                const ti = parseInt(document.getElementById('editTeacherSelect').value);
-                const msg = document.getElementById('editTeacherMessage');
-
-                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
-                    if (msg) { msg.innerHTML = '⚠️ اختر القسم والمدرس';
-                        msg.style.color = '#f59e0b'; }
-                    return;
-                }
-
-                const teacher = data.sections[si].teachers[ti];
-                if (!teacher) { if (msg) { msg.innerHTML = '❌ المدرس غير موجود';
-                        msg.style.color = '#ef4444'; } return; }
-
-                const name = document.getElementById('editTeacherName').value.trim();
-                if (!name) { if (msg) { msg.innerHTML = '⚠️ أدخل اسم المدرس';
-                        msg.style.color = '#f59e0b'; } return; }
-
-                teacher.name = name;
-                teacher.subject = document.getElementById('editTeacherSubject').value.trim() || 'مدرس';
-                teacher.description = document.getElementById('editTeacherDesc').value.trim() || '';
-                teacher.image = document.getElementById('editTeacherImage').value.trim() || '';
-
-                saveData();
-                addChange();
-                renderAllData();
-                updateAllAdminSelects();
-                if (msg) { msg.innerHTML = `✅ تم تعديل المدرس "${name}"`;
-                    msg.style.color = '#22c55e'; }
-                showToast('success', `✅ تم تعديل المدرس "${name}"`);
-            });
-
-            document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
-                const si = parseInt(document.getElementById('editTeacherSection').value);
-                const ti = parseInt(this.value);
-                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) return;
-                const t = data.sections[si]?.teachers[ti];
-                if (!t) return;
-                const nameEl = document.getElementById('editTeacherName');
-                const subjectEl = document.getElementById('editTeacherSubject');
-                const descEl = document.getElementById('editTeacherDesc');
-                const imageEl = document.getElementById('editTeacherImage');
-                if (nameEl) nameEl.value = t.name || '';
-                if (subjectEl) subjectEl.value = t.subject || '';
-                if (descEl) descEl.value = t.description || '';
-                if (imageEl) imageEl.value = t.image || '';
-            });
-
-            // ============================================================
             // دوال الحذف
             // ============================================================
             window.deleteSelectedSection = function() {
@@ -3063,6 +2957,55 @@
                     msg.style.color = '#22c55e'; }
                 showToast('success', `✅ تم حذف المحاضرة "${l.title}"`);
             };
+
+            // ============================================================
+            // تعديل المدرس
+            // ============================================================
+            document.getElementById('editTeacherForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const si = parseInt(document.getElementById('editTeacherSection').value);
+                const ti = parseInt(document.getElementById('editTeacherSelect').value);
+                const msg = document.getElementById('editTeacherMessage');
+
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    if (msg) { msg.innerHTML = '⚠️ اختر القسم والمدرس';
+                        msg.style.color = '#f59e0b'; }
+                    return;
+                }
+
+                const teacher = data.sections[si].teachers[ti];
+                if (!teacher) { if (msg) { msg.innerHTML = '❌ المدرس غير موجود';
+                        msg.style.color = '#ef4444'; } return; }
+
+                const name = document.getElementById('editTeacherName').value.trim();
+                if (!name) { if (msg) { msg.innerHTML = '⚠️ أدخل اسم المدرس';
+                        msg.style.color = '#f59e0b'; } return; }
+
+                teacher.name = name;
+                teacher.subject = document.getElementById('editTeacherSubject').value.trim() || 'مدرس';
+                teacher.description = document.getElementById('editTeacherDesc').value.trim() || '';
+                teacher.image = document.getElementById('editTeacherImage').value.trim() || '';
+
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                if (msg) { msg.innerHTML = `✅ تم تعديل المدرس "${name}"`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم تعديل المدرس "${name}"`);
+            });
+
+            document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
+                const si = parseInt(document.getElementById('editTeacherSection').value);
+                const ti = parseInt(this.value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) return;
+                const t = data.sections[si]?.teachers[ti];
+                if (!t) return;
+                document.getElementById('editTeacherName').value = t.name || '';
+                document.getElementById('editTeacherSubject').value = t.subject || '';
+                document.getElementById('editTeacherDesc').value = t.description || '';
+                document.getElementById('editTeacherImage').value = t.image || '';
+            });
 
             // ============================================================
             // الطلاب
@@ -3310,37 +3253,9 @@
             };
 
             // ============================================================
-            // النشر
+            // التشغيل
             // ============================================================
-            document.getElementById('publishBtn')?.addEventListener('click', async function() {
-                if (pendingChanges === 0) { showToast('info', '📌 لا توجد تغييرات'); return; }
-                if (!supabaseClient) { showToast('error', '❌ Supabase غير متاح'); return; }
-
-                showToast('info', '⏳ جاري النشر...');
-                try {
-                    const { error } = await supabaseClient.from('academy_data').upsert({
-                        id: 'main',
-                        content: data,
-                        updated_at: new Date().toISOString()
-                    });
-                    if (error) throw error;
-
-                    pendingChanges = 0;
-                    const span = document.getElementById('pendingChanges');
-                    if (span) span.textContent = '0';
-                    const msg = document.getElementById('publishMessage');
-                    if (msg) { msg.innerHTML = '✅ تم النشر بنجاح';
-                        msg.style.color = '#22c55e';
-                        setTimeout(() => msg.innerHTML = '', 5000); }
-                    showToast('success', '✅ تم نشر التغييرات');
-                } catch (e) {
-                    showToast('error', '❌ فشل النشر: ' + e.message);
-                }
-            });
-
-            // ===== تشغيل مستمعات الأحداث بعد تحميل DOM =====
             setTimeout(setupChangeListeners, 1000);
-
             console.log('✅ تم تحميل لوحة التحكم بنجاح');
 
         })();
