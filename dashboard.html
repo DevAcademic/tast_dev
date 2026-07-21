@@ -3040,7 +3040,3245 @@
                         content: data,
                         updated_at: new Date().toISOString()
                     });
+                    if (error) throw <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 ديف أكاديمي - لوحة التحكم</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #f1f5f9;
+            --bg-card: #ffffff;
+            --text: #0f172a;
+            --text-light: #64748b;
+            --primary: #0ea5e9;
+            --primary-gradient: linear-gradient(135deg, #0ea5e9, #38bdf8);
+            --border: #e2e8f0;
+            --radius: 10px;
+        }
+        body.dark-mode {
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --text: #f1f5f9;
+            --text-light: #94a3b8;
+            --border: #334155;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            transition: all 0.3s;
+        }
+
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 0.3rem 0.6rem;
+            border-bottom: 2px solid var(--border);
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .top-bar .logo {
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--primary);
+            cursor: pointer;
+        }
+        .top-bar .logo span {
+            color: var(--text);
+        }
+        .top-bar select {
+            padding: 0.2rem 0.4rem;
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.5rem;
+            outline: none;
+            cursor: pointer;
+            height: 28px;
+        }
+        .top-bar .search-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg);
+            border-radius: 50px;
+            border: 1.5px solid var(--border);
+            padding: 0 0.3rem;
+            flex: 1;
+            max-width: 150px;
+            height: 28px;
+        }
+        .top-bar .search-box input {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 0.55rem;
+            outline: none;
+            width: 100%;
+        }
+        .top-bar .search-box button {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 0 0.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.5rem;
+            height: 20px;
+        }
+        .top-bar .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            padding: 0.1rem 0.4rem 0.1rem 0.1rem;
+            cursor: pointer;
+            height: 30px;
+        }
+        .top-bar .user-btn .avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            font-weight: 700;
+        }
+        .top-bar .user-btn .name {
+            font-size: 0.5rem;
+            max-width: 40px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .top-bar .theme-toggle {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            color: var(--text);
+            border-radius: 50%;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .banner-section {
+            padding: 0.1rem 0.5rem;
+            max-width: 600px;
+            margin: 0 auto;
+            display: none;
+        }
+        .banner-container {
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+            height: 150px;
+            width: 100%;
+        }
+        .banner-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .banner-container .placeholder {
+            width: 100%;
+            height: 150px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .teachers-container {
+            padding: 0.3rem 0.6rem 70px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .teachers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.5rem;
+        }
+        .teacher-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            border: 1.5px solid var(--border);
+            padding: 0.5rem 0.3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .teacher-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+        .teacher-card .image {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 0.2rem;
+            border: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-size: 1.8rem;
+            background: var(--bg);
+        }
+        .teacher-card .image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .teacher-card .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #22c55e;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            border: 2px solid var(--bg-card);
+        }
+        .teacher-card .section-badge {
+            position: absolute;
+            top: 0.2rem;
+            right: 0.2rem;
+            background: var(--bg);
+            padding: 0.05rem 0.3rem;
+            border-radius: 20px;
+            font-size: 0.35rem;
+            color: var(--text-light);
+            border: 1px solid var(--border);
+        }
+        .teacher-card h3 {
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .teacher-card .subject {
+            font-size: 0.5rem;
+            color: var(--primary);
+        }
+        .teacher-card .stats {
+            font-size: 0.4rem;
+            color: var(--text-light);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.3rem 0;
+            z-index: 999;
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.05rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.45rem;
+            border: none;
+            background: none;
+            position: relative;
+        }
+        .bottom-nav .nav-item i {
+            font-size: 1rem;
+        }
+        .bottom-nav .nav-item.active {
+            color: var(--primary);
+        }
+        .bottom-nav .nav-item .badge {
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            padding: 0.05rem 0.3rem;
+            font-size: 0.4rem;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .account-section {
+            padding: 1rem 1rem 80px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .account-section .profile {
+            text-align: center;
+            padding: 1rem 0;
+        }
+        .account-section .profile .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            margin: 0 auto 0.5rem;
+            border: 3px solid var(--primary);
+        }
+        .account-section .profile .name {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .account-section .profile .email {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+        .account-section .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .account-section .stats .box {
+            background: var(--bg-card);
+            padding: 0.6rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .account-section .stats .box .num {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .account-section .stats .box .label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+        }
+        .account-section .stats .full {
+            grid-column: 1/-1;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+        }
+        .account-section .stats .full .num {
+            color: white;
+        }
+        .account-section .actions button {
+            width: 100%;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.4rem;
+        }
+        .account-section .actions .logout {
+            background: #ef4444;
+            color: white;
+        }
+        .account-section .actions .admin {
+            background: var(--primary);
+            color: white;
+        }
+
+        .my-courses-section {
+            padding: 1rem 1rem 80px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .my-courses-section .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1.5px solid var(--border);
+            padding-bottom: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .my-courses-section .header h2 {
+            font-size: 1rem;
+        }
+        .my-courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+        .course-card {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 0.5rem;
+            border: 1.5px solid var(--border);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .course-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+        }
+        .course-card .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 auto 0.2rem;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            overflow: hidden;
+        }
+        .course-card .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .course-card .name {
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+        .course-card .meta {
+            font-size: 0.5rem;
+            color: var(--text-light);
+        }
+        .course-card .badge {
+            background: #22c55e;
+            color: white;
+            padding: 0.05rem 0.4rem;
+            border-radius: 20px;
+            font-size: 0.5rem;
+            display: inline-block;
+            margin-top: 0.1rem;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 0.3rem;
+            overflow-x: auto;
+            padding: 0.2rem 0.6rem;
+            flex-wrap: nowrap;
+            scrollbar-width: none;
+        }
+        .filter-section::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 50px;
+            padding: 0.15rem 0.5rem;
+            font-size: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-light);
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .filter-btn:hover {
+            border-color: var(--primary);
+        }
+        .filter-btn.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: var(--primary);
+        }
+        .filter-btn .count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.05rem 0.2rem;
+            border-radius: 20px;
+            font-size: 0.4rem;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1rem;
+            max-width: 100%;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        .modal-large {
+            max-width: 520px;
+        }
+        .modal .close {
+            position: absolute;
+            top: 0.3rem;
+            right: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--text-light);
+            background: none;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal .close:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+        .modal h2 {
+            color: var(--primary);
+            font-size: 0.95rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .semester-item,
+        .lecture-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.3rem 0.5rem;
+            margin-bottom: 0.3rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .semester-item:hover,
+        .lecture-item:hover {
+            border-color: var(--primary);
+            transform: translateX(-4px);
+        }
+        .semester-item.locked,
+        .lecture-item.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .semester-item.locked:hover,
+        .lecture-item.locked:hover {
+            transform: none;
+            border-color: var(--border);
+        }
+        .semester-number,
+        .lecture-number {
+            font-weight: 700;
+            font-size: 0.65rem;
+            color: var(--primary);
+        }
+        .semester-desc,
+        .lecture-title {
+            font-size: 0.65rem;
+            color: var(--text-light);
+        }
+        .semester-status,
+        .lecture-status {
+            font-size: 0.55rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .free-badge {
+            background: #22c55e;
+            color: white;
+            padding: 0.05rem 0.3rem;
+            border-radius: 20px;
+            font-size: 0.45rem;
+        }
+        .access-status {
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 0.2rem;
+            border-radius: 6px;
+            margin-top: 0.3rem;
+        }
+        .access-status.active {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+        .access-status.inactive {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+        .code-box {
+            margin-top: 0.5rem;
+            background: var(--bg);
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+        .code-box input {
+            padding: 0.3rem 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: 0.8rem;
+            outline: none;
+            text-align: center;
+            letter-spacing: 2px;
+            font-family: monospace;
+            flex: 1;
+            min-width: 100px;
+        }
+        .code-box button {
+            padding: 0.3rem 0.8rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .code-box .msg {
+            margin-top: 0.2rem;
+            font-size: 0.8rem;
+        }
+
+        .admin-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            background: var(--bg-card);
+            z-index: 5000;
+            transition: right 0.3s;
+            overflow-y: auto;
+            border-left: 1px solid var(--border);
+        }
+        .admin-panel.active {
+            right: 0;
+        }
+        .admin-panel .content {
+            padding: 1rem;
+        }
+        .admin-panel .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .admin-panel .header h2 {
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        .admin-panel .header .close {
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 1.3rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-panel .header .close:hover {
+            background: var(--bg-hover);
+            color: var(--primary);
+        }
+
+        .admin-tabs {
+            display: flex;
+            gap: 0.2rem;
+            flex-wrap: wrap;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .admin-tabs .tab {
+            padding: 0.2rem 0.4rem;
+            background: none;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 0.6rem;
+            flex: 1;
+            min-width: 35px;
+            text-align: center;
+        }
+        .admin-tabs .tab:hover {
+            background: var(--bg-hover);
+        }
+        .admin-tabs .tab.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 0.5rem;
+        }
+        .form-group label {
+            display: block;
+            color: var(--text-light);
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 0.1rem;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.3rem 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.8rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.4rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.3);
+        }
+        .btn-delete {
+            width: 100%;
+            padding: 0.4rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+        }
+        .btn-delete:hover {
+            transform: translateY(-2px);
+        }
+        .btn-publish {
+            width: 100%;
+            padding: 0.4rem;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+        }
+
+        .codes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+        .codes-table th {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.2rem 0.4rem;
+            text-align: right;
+        }
+        .codes-table td {
+            padding: 0.15rem 0.4rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .codes-stats {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: var(--bg);
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            margin-bottom: 0.3rem;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+        }
+        .users-table th {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 0.2rem 0.4rem;
+            text-align: right;
+        }
+        .users-table td {
+            padding: 0.15rem 0.4rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 80px;
+            right: 1rem;
+            left: 1rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 0.3rem 0.7rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.65rem;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .toast.success {
+            background: #22c55e;
+        }
+        .toast.error {
+            background: #ef4444;
+        }
+        .toast.info {
+            background: var(--primary-gradient);
+        }
+        .toast.warning {
+            background: #f59e0b;
+            color: #1e293b;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%) scale(0.9);
+                opacity: 0;
+            }
+        }
+
+        .loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+        }
+        .loading-screen .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-light);
+        }
+        .empty .icon {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 0.3rem;
+            opacity: 0.4;
+        }
+        .empty h3 {
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        .empty p {
+            font-size: 0.7rem;
+        }
+
+        .banner-preview {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .banner-preview img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+        }
+        .banner-preview .no-image {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        .footer {
+            display: none;
+            text-align: center;
+            padding: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.6rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+            margin-bottom: 60px;
+        }
+
+        /* ===== مشغل الفيديو ===== */
+        .video-player-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
+        }
+        .video-player-container.active {
+            display: flex;
+        }
+        .video-player-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .player-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+        }
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .player-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+        .close-player {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-player:hover {
+            background: #DC2626;
+            transform: scale(1.1);
+        }
+        .player-title {
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .top-bar .logo {
+                font-size: 0.65rem;
+            }
+            .top-bar .search-box {
+                max-width: 70px;
+            }
+            .top-bar .user-btn .name {
+                max-width: 25px;
+                font-size: 0.4rem;
+            }
+            .teachers-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.3rem;
+            }
+            .teacher-card .image {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3rem;
+            }
+            .teacher-card h3 {
+                font-size: 0.6rem;
+            }
+            .bottom-nav .nav-item {
+                font-size: 0.4rem;
+                padding: 0.1rem 0.2rem;
+                min-width: 30px;
+            }
+            .bottom-nav .nav-item i {
+                font-size: 0.8rem;
+            }
+            .banner-container {
+                height: 100px;
+            }
+            .banner-container .placeholder {
+                height: 100px;
+                font-size: 0.6rem;
+            }
+            .close-player {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+                top: 0.3rem;
+                right: 0.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== شريط علوي ===== -->
+    <div class="top-bar" id="topBar" style="display:none;">
+        <span class="logo" onclick="navigateTo('home')">ديف <span>أكاديمي</span></span>
+        <select id="classFilterSelect" onchange="filterByClass()">
+            <option value="all">🎯 جميع الصفوف</option>
+        </select>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 بحث..." />
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="user-btn" id="userProfileBtn">
+            <span class="avatar" id="userAvatar">👤</span>
+            <span class="name" id="userNameDisplay">غير مسجل</span>
+        </div>
+        <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i></button>
+    </div>
+
+    <!-- ===== البانر ===== -->
+    <div class="banner-section" id="bannerSection">
+        <div class="banner-container" id="bannerContainer">
+            <img id="mainBannerImage" src="" style="display:none;width:100%;height:100%;object-fit:cover;" />
+            <div id="mainBannerPlaceholder" class="placeholder">📚 ديف أكاديمي - منصتك التعليمية</div>
+        </div>
+    </div>
+
+    <!-- ===== الفلتر ===== -->
+    <div class="filter-section" id="filterSection"></div>
+
+    <!-- ===== LOADING ===== -->
+    <div id="loadingScreen" class="loading-screen"><div class="spinner"></div></div>
+
+    <!-- ===== PAGE HOME ===== -->
+    <div id="page-home" style="display:none;">
+        <div class="teachers-container" id="teachersContainer">
+            <div id="teachersGridContainer"></div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE TEACHERS ===== -->
+    <div id="page-teachers" style="display:none;">
+        <div class="teachers-container">
+            <div style="text-align:center;padding:0.2rem 0;">
+                <h2 style="font-size:0.9rem;">👨‍🏫 جميع المدرسين</h2>
+                <p style="color:var(--text-light);font-size:0.6rem;">اختر الصف ثم المدرس</p>
+            </div>
+            <div id="teachersGridContainer2"></div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE MY COURSES ===== -->
+    <div id="page-my-courses" style="display:none;">
+        <div class="my-courses-section">
+            <div class="header">
+                <h2><i class="fas fa-book-open"></i> دوراتي</h2>
+                <span id="myCoursesCount" style="color:var(--text-light);font-size:0.8rem;font-weight:600;">0</span>
+            </div>
+            <div id="myCoursesContainer"></div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE ACCOUNT ===== -->
+    <div id="page-account" style="display:none;">
+        <div class="account-section">
+            <div class="profile">
+                <div class="avatar" id="accountAvatar">👤</div>
+                <div class="name" id="accountName">غير مسجل</div>
+                <div class="email" id="accountEmail">البريد الإلكتروني</div>
+                <div style="font-size:0.7rem;color:var(--text-light);" id="accountRegistered">مسجل منذ: --</div>
+            </div>
+            <div class="stats">
+                <div class="box"><div class="num" id="accountCourses">0</div><div class="label">📚 دوراتي</div></div>
+                <div class="box"><div class="num" id="accountCodes">0</div><div class="label">🔑 أكواد مفعلة</div></div>
+                <div class="box full"><div class="num" id="accountTeachersCount">0</div><div class="label">👨‍🏫 مدرسين مسجلين</div></div>
+            </div>
+            <div class="actions">
+                <button class="admin" id="adminPanelBtn" style="display:none;"><i class="fas fa-cog"></i> لوحة الإدارة</button>
+                <button class="logout" id="logoutAccountBtn"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <nav class="bottom-nav" id="bottomNav" style="display:none;">
+        <button class="nav-item active" data-page="home"><i class="fas fa-home"></i><span>الرئيسية</span></button>
+        <button class="nav-item" data-page="teachers"><i class="fas fa-chalkboard-teacher"></i><span>المدرسون</span></button>
+        <button class="nav-item" data-page="my-courses"><i class="fas fa-book-open"></i><span>دوراتي</span><span class="badge" id="coursesBadge" style="display:none;">0</span></button>
+        <button class="nav-item" data-page="account"><i class="fas fa-user"></i><span>حسابي</span></button>
+    </nav>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="footer" id="footer">
+        <p>© 2026 ديف أكاديمي - جميع الحقوق محفوظة</p>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+    <div class="modal-overlay" id="teachersModal">
+        <div class="modal modal-large"><button class="close" id="closeTeachersModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalDepartmentTitle">📚 المدرسون</h2>
+            <div id="teachersList"></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="semestersModal">
+        <div class="modal modal-large"><button class="close" id="closeSemestersModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalTeacherTitle">👨‍🏫 اسم المدرس</h2>
+            <div id="semestersList"></div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="lecturesModal">
+        <div class="modal modal-large"><button class="close" id="closeLecturesModal"><i class="fas fa-times"></i></button>
+            <h2 id="modalSemesterTitle">📖 الفصل</h2>
+            <div id="lecturesList"></div>
+        </div>
+    </div>
+
+    <!-- ===== مشغل الفيديو ===== -->
+    <div class="video-player-container" id="videoPlayer">
+        <div class="video-player-wrapper">
+            <button class="close-player" id="closePlayer"><i class="fas fa-times"></i></button>
+            <div class="player-title" id="playerTitle">🎬 تشغيل الفيديو</div>
+            <div class="player-container" id="playerContainer">
+                <div id="videoWrapper" style="position:relative;padding-top:56.25%;width:100%;height:0;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ============================================================
+    ADMIN PANEL
+    ============================================================ -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="content">
+            <div class="header">
+                <h2><i class="fas fa-cog"></i> لوحة التحكم</h2>
+                <button class="close" id="adminClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="admin-tabs">
+                <button class="tab active" data-tab="add-section">📚 قسم</button>
+                <button class="tab" data-tab="add-teacher">➕ مدرس</button>
+                <button class="tab" data-tab="add-semester">📀 فصل</button>
+                <button class="tab" data-tab="add-lecture">🎥 محاضرة</button>
+                <button class="tab" data-tab="manage-codes">🔑 أكواد</button>
+                <button class="tab" data-tab="edit-teacher">✏️ تعديل</button>
+                <button class="tab" data-tab="delete">🗑️ حذف</button>
+                <button class="tab" data-tab="users">🧑‍🎓 طلاب</button>
+                <button class="tab" data-tab="add-admin">👑 أدمن</button>
+                <button class="tab" data-tab="banner">🖼️ بانر</button>
+                <button class="tab" data-tab="publish">📤 نشر</button>
+            </div>
+
+            <!-- ADD SECTION -->
+            <div class="tab-content active" id="tab-add-section">
+                <form id="addSectionForm" class="admin-form">
+                    <h3 style="font-size:0.9rem;">📚 إضافة قسم</h3>
+                    <div class="form-group"><label>اسم القسم *</label><input type="text" id="sectionName" placeholder="أول متوسط" required /></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
+                </form>
+            </div>
+
+            <!-- ADD TEACHER -->
+            <div class="tab-content" id="tab-add-teacher">
+                <form id="addTeacherForm" class="admin-form">
+                    <h3 style="font-size:0.9rem;">👨‍🏫 إضافة مدرس</h3>
+                    <div class="form-group"><label>القسم *</label><select id="teacherSection" required></select></div>
+                    <div class="form-group"><label>اسم المدرس *</label><input type="text" id="teacherName" placeholder="اسم المدرس" required /></div>
+                    <div class="form-group"><label>رمز تعبيري</label><input type="text" id="teacherEmoji" value="🧑‍🏫" maxlength="2" /></div>
+                    <div class="form-group"><label>التخصص</label><input type="text" id="teacherSubject" placeholder="مدرس رياضيات" /></div>
+                    <div class="form-group"><label>وصف</label><textarea id="teacherDesc" rows="2" placeholder="وصف مختصر"></textarea></div>
+                    <div class="form-group"><label>رابط الصورة</label><input type="url" id="teacherImage" placeholder="https://..." /></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
+                </form>
+            </div>
+
+            <!-- ADD SEMESTER -->
+            <div class="tab-content" id="tab-add-semester">
+                <form id="addSemesterForm" class="admin-form">
+                    <h3 style="font-size:0.9rem;">📀 إضافة فصل</h3>
+                    <div class="form-group"><label>القسم *</label><select id="semesterSection" required></select></div>
+                    <div class="form-group"><label>المدرس *</label><select id="semesterTeacher" required></select></div>
+                    <div class="form-group"><label>رقم الفصل *</label><input type="number" id="semesterNumber" placeholder="1" min="1" required /></div>
+                    <div class="form-group"><label>وصف الفصل</label><input type="text" id="semesterDesc" placeholder="الفصل الأول" /></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
+                </form>
+            </div>
+
+            <!-- ADD LECTURE -->
+            <div class="tab-content" id="tab-add-lecture">
+                <form id="addLectureForm" class="admin-form">
+                    <h3 style="font-size:0.9rem;">🎥 إضافة محاضرة</h3>
+                    <div class="form-group"><label>القسم *</label><select id="lectureSection" required></select></div>
+                    <div class="form-group"><label>المدرس *</label><select id="lectureTeacher" required></select></div>
+                    <div class="form-group"><label>الفصل *</label><select id="lectureSemester" required></select></div>
+                    <div class="form-group"><label>رقم المحاضرة *</label><input type="number" id="lectureNumber" placeholder="1" min="1" required /></div>
+                    <div class="form-group"><label>العنوان *</label><input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" required /></div>
+                    <div class="form-group"><label>رابط الفيديو *</label><input type="url" id="lectureUrl" placeholder="https://player.mediadelivery.net/play/..." required /></div>
+                    <div class="form-group"><label>الحالة</label><select id="lectureFree"><option value="true">🆓 مجانية</option><option value="false">🔒 مقفلة</option></select></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
+                </form>
+            </div>
+
+            <!-- MANAGE CODES -->
+            <div class="tab-content" id="tab-manage-codes">
+                <h3 style="font-size:0.9rem;">🔑 إدارة الأكواد</h3>
+                <div class="form-group"><label>القسم</label><select id="codeSection" required></select></div>
+                <div class="form-group"><label>المدرس</label><select id="codeTeacherSelect" required></select></div>
+                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.3rem;">
+                    <input type="text" id="manualCodeInput" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:80px;padding:0.3rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.8rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                    <button onclick="addManualCode()" style="padding:0.2rem 0.6rem;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">➕ إضافة</button>
+                </div>
+                <div style="display:flex;gap:0.3rem;margin-bottom:0.3rem;">
+                    <button onclick="generateCodes(5)" class="btn-submit" style="background:#22c55e;flex:1;padding:0.2rem;font-size:0.7rem;"><i class="fas fa-plus"></i> 5</button>
+                    <button onclick="generateCodes(10)" class="btn-submit" style="background:var(--primary);flex:1;padding:0.2rem;font-size:0.7rem;"><i class="fas fa-plus"></i> 10</button>
+                </div>
+                <div id="codesListContainer"><p style="color:var(--text-light);text-align:center;font-size:0.8rem;">اختر مدرساً لعرض الأكواد</p></div>
+            </div>
+
+            <!-- EDIT TEACHER -->
+            <div class="tab-content" id="tab-edit-teacher">
+                <h3 style="font-size:0.9rem;">✏️ تعديل مدرس</h3>
+                <form id="editTeacherForm" class="admin-form">
+                    <div class="form-group"><label>القسم *</label><select id="editTeacherSection" required></select></div>
+                    <div class="form-group"><label>المدرس *</label><select id="editTeacherSelect" required><option value="">اختر...</option></select></div>
+                    <div class="form-group"><label>الاسم *</label><input type="text" id="editTeacherName" placeholder="اسم المدرس" required /></div>
+                    <div class="form-group"><label>التخصص</label><input type="text" id="editTeacherSubject" placeholder="مدرس رياضيات" /></div>
+                    <div class="form-group"><label>الوصف</label><textarea id="editTeacherDesc" rows="2" placeholder="وصف مختصر"></textarea></div>
+                    <div class="form-group"><label>رابط الصورة</label><input type="url" id="editTeacherImage" placeholder="https://..." /></div>
+                    <button type="submit" class="btn-submit"><i class="fas fa-save"></i> حفظ</button>
+                    <div id="editTeacherMessage" style="text-align:center;font-weight:600;margin-top:0.2rem;font-size:0.8rem;"></div>
+                </form>
+            </div>
+
+            <!-- DELETE -->
+            <div class="tab-content" id="tab-delete">
+                <h3 style="font-size:0.9rem;">🗑️ حذف قسم</h3>
+                <div class="form-group"><label>القسم</label><select id="deleteSection" required><option value="">اختر...</option></select></div>
+                <button onclick="deleteSelectedSection()" class="btn-delete"><i class="fas fa-trash"></i> حذف</button>
+                <div id="deleteSectionMessage"></div>
+                <hr style="margin:0.5rem 0;border-color:var(--border);">
+                <h3 style="font-size:0.9rem;">🗑️ حذف مدرس</h3>
+                <div class="form-group"><label>القسم</label><select id="deleteTeacherSection" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>المدرس</label><select id="deleteTeacherSelect" required><option value="">اختر...</option></select></div>
+                <button onclick="deleteSelectedTeacherFromTab()" class="btn-delete"><i class="fas fa-trash"></i> حذف</button>
+                <div id="deleteTeacherMessage"></div>
+                <hr style="margin:0.5rem 0;border-color:var(--border);">
+                <h3 style="font-size:0.9rem;">🗑️ حذف فصل</h3>
+                <div class="form-group"><label>القسم</label><select id="deleteSemesterSection" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>المدرس</label><select id="deleteSemesterTeacher" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>الفصل</label><select id="deleteSemesterSelect" required><option value="">اختر...</option></select></div>
+                <button onclick="deleteSelectedSemesterFromTab()" class="btn-delete"><i class="fas fa-trash"></i> حذف</button>
+                <div id="deleteSemesterMessage"></div>
+                <hr style="margin:0.5rem 0;border-color:var(--border);">
+                <h3 style="font-size:0.9rem;">🗑️ حذف محاضرة</h3>
+                <div class="form-group"><label>القسم</label><select id="deleteLectureSection" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>المدرس</label><select id="deleteLectureTeacher" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>الفصل</label><select id="deleteLectureSemester" required><option value="">اختر...</option></select></div>
+                <div class="form-group"><label>المحاضرة</label><select id="deleteLectureSelect" required><option value="">اختر...</option></select></div>
+                <button onclick="deleteSelectedLectureFromTab()" class="btn-delete"><i class="fas fa-trash"></i> حذف</button>
+                <div id="deleteLectureMessage"></div>
+            </div>
+
+            <!-- USERS -->
+            <div class="tab-content" id="tab-users">
+                <h3 style="font-size:0.9rem;">🧑‍🎓 الطلاب المسجلين</h3>
+                <div style="overflow-x:auto;">
+                    <table class="users-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>👤 الاسم</th>
+                                <th>📧 البريد</th>
+                                <th>📱 الهاتف</th>
+                                <th>📚 الصف</th>
+                                <th>👨‍🏫 المدرسون</th>
+                                <th>📅 وقت التسجيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align:center;color:var(--text-light);padding:1rem 0;">🧑‍🎓 لا يوجد طلاب</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADD ADMIN -->
+            <div class="tab-content" id="tab-add-admin">
+                <h3 style="font-size:0.9rem;">👑 إضافة مشرف</h3>
+                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="adminEmailInput" placeholder="example@gmail.com" /></div>
+                <button onclick="addNewAdmin()" class="btn-submit"><i class="fas fa-user-plus"></i> إضافة</button>
+                <div id="addAdminMessage" style="text-align:center;font-weight:600;margin-top:0.2rem;font-size:0.8rem;"></div>
+                <hr style="margin:0.5rem 0;border-color:var(--border);">
+                <h3 style="font-size:0.9rem;">👑 المشرفين الحاليين</h3>
+                <div id="adminsListContainer"><p style="color:var(--text-light);text-align:center;font-size:0.8rem;">جاري التحميل...</p></div>
+            </div>
+
+            <!-- BANNER -->
+            <div class="tab-content" id="tab-banner">
+                <h3 style="font-size:0.9rem;">🖼️ إدارة البانر</h3>
+                <div style="display:flex;gap:0.3rem;margin-bottom:0.3rem;">
+                    <input type="url" id="bannerImageInput" placeholder="https://example.com/image.jpg" style="flex:1;padding:0.3rem;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:0.8rem;outline:none;" />
+                    <button onclick="updateBannerImage()" style="padding:0.3rem 0.6rem;background:var(--primary-gradient);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">حفظ</button>
+                </div>
+                <div id="bannerMessage" style="text-align:center;font-weight:600;font-size:0.8rem;"></div>
+                <hr style="margin:0.5rem 0;border-color:var(--border);">
+                <h3 style="font-size:0.9rem;">📋 معاينة</h3>
+                <div class="banner-preview" id="bannerPreviewBox">
+                    <img id="adminBannerImage" src="" style="display:none;" />
+                    <span class="no-image" id="adminBannerPlaceholder">لا توجد صورة</span>
+                </div>
+                <button onclick="removeBannerImage()" style="margin-top:0.3rem;padding:0.2rem 0.6rem;background:#ef4444;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.65rem;"><i class="fas fa-trash"></i> حذف</button>
+            </div>
+
+            <!-- PUBLISH -->
+            <div class="tab-content" id="tab-publish">
+                <h3 style="font-size:0.9rem;">📤 نشر التحديثات</h3>
+                <p style="color:var(--text-light);font-size:0.75rem;">انشر جميع التغييرات إلى قاعدة البيانات</p>
+                <div style="margin:0.3rem 0;"><span>📊 التغييرات: <span id="pendingChanges">0</span></span></div>
+                <button id="publishBtn" class="btn-publish"><i class="fas fa-upload"></i> نشر</button>
+                <div id="publishMessage" style="text-align:center;font-weight:600;margin-top:0.2rem;font-size:0.8rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    JAVASCRIPT - الكود الكامل
+    ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            console.log('🚀 بدء تشغيل لوحة التحكم...');
+
+            // ===== Supabase =====
+            const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
+            let supabaseClient = null;
+            try {
+                if (window.supabase) {
+                    if (!window._supabaseClient) {
+                        window._supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    }
+                    supabaseClient = window._supabaseClient;
+                    console.log('✅ Supabase initialized');
+                }
+            } catch (e) {
+                console.warn('⚠️ Supabase failed:', e);
+            }
+
+            let currentUser = null;
+            let data = { sections: [] };
+            let pendingChanges = 0;
+            let currentFilter = 'all';
+            let activeTeacher = null;
+            let activeTeacherIndex = null;
+            let activeSectionIndex = null;
+
+            // ===== الأقسام الافتراضية =====
+            const defaultSections = [
+                { id: 'first-intermediate', name: 'أول متوسط', teachers: [] },
+                { id: 'second-intermediate', name: 'ثاني متوسط', teachers: [] },
+                { id: 'third-intermediate', name: 'ثالث متوسط', teachers: [] },
+                { id: 'fourth-scientific', name: 'رابع علمي', teachers: [] },
+                { id: 'fourth-literary', name: 'رابع أدبي', teachers: [] },
+                { id: 'fifth-scientific', name: 'خامس علمي', teachers: [] },
+                { id: 'fifth-literary', name: 'خامس أدبي', teachers: [] },
+                { id: 'sixth-scientific', name: 'سادس علمي', teachers: [] },
+                { id: 'sixth-literary', name: 'سادس أدبي', teachers: [] }
+            ];
+
+            // ===== DOM =====
+            const loadingScreen = document.getElementById('loadingScreen');
+            const topBar = document.getElementById('topBar');
+            const bottomNav = document.getElementById('bottomNav');
+            const footer = document.getElementById('footer');
+            const teachersGridContainer = document.getElementById('teachersGridContainer');
+            const teachersGridContainer2 = document.getElementById('teachersGridContainer2');
+            const toastContainer = document.getElementById('toastContainer');
+
+            // ===== TOAST =====
+            function showToast(type, message, duration = 3000) {
+                if (!toastContainer) return;
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+                toast.textContent = `${icons[type] || ''} ${message}`;
+                toastContainer.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            window.showToast = showToast;
+
+            // ============================================================
+            // التهيئة
+            // ============================================================
+            async function initApp() {
+                try {
+                    if (loadingScreen) loadingScreen.style.display = 'flex';
+                    console.log('🚀 جاري التحميل...');
+
+                    const savedUser = localStorage.getItem('devAcademicUser');
+                    if (savedUser) {
+                        try {
+                            const userData = JSON.parse(savedUser);
+                            if (userData && userData.email) {
+                                currentUser = userData;
+                                console.log('✅ تم استعادة المستخدم:', currentUser.email);
+                            }
+                        } catch (e) { console.warn('⚠️ فشل استعادة المستخدم:', e); }
+                    }
+
+                    if (!currentUser && supabaseClient) {
+                        try {
+                            const { data: sessionData } = await supabaseClient.auth.getSession();
+                            if (sessionData?.session?.user) {
+                                currentUser = sessionData.session.user;
+                                localStorage.setItem('devAcademicUser', JSON.stringify(currentUser));
+                                console.log('✅ تم استعادة المستخدم من Supabase:', currentUser.email);
+                            }
+                        } catch (e) { console.warn('⚠️ فشل استعادة المستخدم من Supabase:', e); }
+                    }
+
+                    if (!currentUser) {
+                        console.log('❌ لا يوجد مستخدم - التوجيه إلى التسجيل');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+
+                    await loadData();
+
+                    if (loadingScreen) loadingScreen.style.display = 'none';
+                    if (topBar) topBar.style.display = 'flex';
+                    if (bottomNav) bottomNav.style.display = 'flex';
+                    if (footer) footer.style.display = 'block';
+
+                    updateUI();
+                    renderAllData();
+                    renderMyCourses();
+                    renderAccount();
+                    updateBadge();
+                    updateBannerPreview();
+                    navigateTo('home');
+
+                    setTimeout(updateAllSemesterLists, 500);
+                    console.log('✅ تم التحميل بنجاح');
+
+                } catch (error) {
+                    console.error('❌ خطأ:', error);
+                    if (loadingScreen) loadingScreen.style.display = 'none';
+                    showToast('error', '❌ حدث خطأ في التحميل');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+                }
+            }
+
+            // ============================================================
+            // البيانات
+            // ============================================================
+            async function loadData() {
+                try {
+                    const saved = localStorage.getItem('academyData');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
+                                data = parsed;
+                                normalizeData(data);
+                                console.log('✅ تم تحميل البيانات من localStorage');
+                                return;
+                            }
+                        } catch (e) { console.warn('⚠️ بيانات localStorage فاسدة'); }
+                    }
+
+                    if (supabaseClient) {
+                        try {
+                            const { data: remote, error } = await supabaseClient
+                                .from('academy_data')
+                                .select('content')
+                                .eq('id', 'main')
+                                .maybeSingle();
+
+                            if (!error && remote?.content) {
+                                data = remote.content;
+                                normalizeData(data);
+                                localStorage.setItem('academyData', JSON.stringify(data));
+                                console.log('✅ تم تحميل البيانات من Supabase');
+                                return;
+                            }
+                        } catch (e) { console.warn('⚠️ فشل تحميل من Supabase:', e); }
+                    }
+
+                    data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
+                    normalizeData(data);
+                    localStorage.setItem('academyData', JSON.stringify(data));
+                    console.log('✅ تم استخدام البيانات الافتراضية');
+
+                } catch (e) {
+                    console.warn('⚠️ فشل تحميل البيانات:', e);
+                    data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
+                    normalizeData(data);
+                }
+            }
+
+            function normalizeData(d) {
+                if (!d || !Array.isArray(d.sections)) d.sections = [];
+                d.sections.forEach(s => {
+                    if (!Array.isArray(s.teachers)) s.teachers = [];
+                    s.teachers.forEach(t => {
+                        if (!Array.isArray(t.codes)) t.codes = [];
+                        if (!Array.isArray(t.semesters)) t.semesters = [];
+                        t.codes.forEach(c => {
+                            if (c.used === undefined) c.used = false;
+                            if (c.locked === undefined) c.locked = false;
+                            if (!c.userEmail) c.userEmail = null;
+                            if (!c.userName) c.userName = null;
+                            if (!c.usedAt) c.usedAt = null;
+                            if (!c.sectionName) c.sectionName = s.name;
+                        });
+                        t.semesters.forEach(sem => {
+                            if (!Array.isArray(sem.lectures)) sem.lectures = [];
+                            sem.lectures.forEach(l => {
+                                if (l.isFree === undefined) l.isFree = false;
+                                if (!l.youtubeUrl) l.youtubeUrl = '';
+                                if (!l.title) l.title = '';
+                                if (!l.number) l.number = 0;
+                            });
+                        });
+                    });
+                });
+            }
+
+            function saveData() {
+                try {
+                    localStorage.setItem('academyData', JSON.stringify(data));
+                } catch (e) {}
+            }
+
+            function addChange() {
+                pendingChanges++;
+                const span = document.getElementById('pendingChanges');
+                if (span) span.textContent = pendingChanges;
+            }
+
+            // ============================================================
+            // دوال العرض
+            // ============================================================
+            function getAllTeachers() {
+                const teachers = [];
+                data.sections.forEach((s, si) => {
+                    s.teachers.forEach((t, ti) => {
+                        teachers.push({
+                            ...t,
+                            _sectionIndex: si,
+                            _teacherIndex: ti,
+                            _sectionName: s.name,
+                            _sectionId: s.id
+                        });
+                    });
+                });
+                return teachers;
+            }
+
+            function getFilteredTeachers() {
+                if (currentFilter === 'all') return getAllTeachers();
+                return getAllTeachers().filter(t => t._sectionId === currentFilter);
+            }
+
+            function hasAccess(t) {
+                if (!t || !t.codes || !currentUser) return false;
+                return t.codes.some(c => c.used && c.userEmail === currentUser.email && !c.locked);
+            }
+
+            function renderTeachers(teachers, container) {
+                if (!container) return;
+                if (!teachers || teachers.length === 0) {
+                    container.innerHTML = `
+                            <div class="empty">
+                                <span class="icon">👨‍🏫</span>
+                                <h3>لا يوجد مدرسون</h3>
+                                <p>قم بإضافة مدرسين من لوحة التحكم</p>
+                            </div>
+                        `;
+                    return;
+                }
+                let html = '<div class="teachers-grid">';
+                teachers.forEach(t => {
+                    const access = hasAccess(t);
+                    html += `
+                            <div class="teacher-card" onclick="openTeacher(${t._sectionIndex}, ${t._teacherIndex})">
+                                <div class="section-badge">${t._sectionName}</div>
+                                <div class="image">
+                                    ${t.image ? `<img src="${t.image}" onerror="this.style.display='none';this.parentElement.textContent='${t.emoji||'👨‍🏫'}';">` : (t.emoji || '👨‍🏫')}
+                                </div>
+                                ${access ? '<div class="badge">✅</div>' : ''}
+                                <h3>${t.name || 'مدرس'}</h3>
+                                ${t.subject ? `<div class="subject">${t.subject}</div>` : ''}
+                                <div class="stats">📚 ${t.semesters ? t.semesters.length : 0} فصول</div>
+                            </div>
+                        `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+            function renderAllData() {
+                const filtered = getFilteredTeachers();
+                renderTeachers(filtered, teachersGridContainer);
+                renderTeachers(filtered, teachersGridContainer2);
+                updateClassFilter();
+                buildFilterButtons();
+            }
+
+            function updateClassFilter() {
+                const select = document.getElementById('classFilterSelect');
+                if (!select) return;
+                const val = select.value;
+                let opts = '<option value="all">🎯 جميع الصفوف</option>';
+                data.sections.forEach(s => {
+                    opts += `<option value="${s.id}">📚 ${s.name} (${s.teachers.length})</option>`;
+                });
+                select.innerHTML = opts;
+                if (data.sections.find(s => s.id === val)) select.value = val;
+            }
+
+            function buildFilterButtons() {
+                const container = document.getElementById('filterSection');
+                if (!container) return;
+                let html =
+                    `<button class="filter-btn active" onclick="setFilter('all')">🏫 الكل <span class="count">${getAllTeachers().length}</span></button>`;
+                data.sections.forEach(s => {
+                    const active = currentFilter === s.id ? 'active' : '';
+                    html +=
+                        `<button class="filter-btn ${active}" onclick="setFilter('${s.id}')">📚 ${s.name} <span class="count">${s.teachers.length}</span></button>`;
+                });
+                container.innerHTML = html;
+                container.style.display = 'flex';
+            }
+
+            window.setFilter = function(id) {
+                currentFilter = id;
+                renderAllData();
+                const select = document.getElementById('classFilterSelect');
+                if (select) select.value = id;
+            };
+
+            window.filterByClass = function() {
+                const select = document.getElementById('classFilterSelect');
+                if (select) { currentFilter = select.value;
+                    renderAllData(); }
+            };
+
+            // ============================================================
+            // فتح المدرس - الإصدار الثابت
+            // ============================================================
+            window.openTeacher = function(sectionIndex, teacherIndex) {
+                console.log('📂 فتح المدرس:', sectionIndex, teacherIndex);
+
+                const section = data.sections[sectionIndex];
+                if (!section) {
+                    console.error('❌ القسم غير موجود:', sectionIndex);
+                    showToast('error', '❌ القسم غير موجود');
+                    return;
+                }
+
+                const teacher = section.teachers[teacherIndex];
+                if (!teacher) {
+                    console.error('❌ المدرس غير موجود:', teacherIndex);
+                    showToast('error', '❌ المدرس غير موجود');
+                    return;
+                }
+
+                activeTeacher = teacher;
+                activeTeacherIndex = teacherIndex;
+                activeSectionIndex = sectionIndex;
+
+                const titleEl = document.getElementById('modalTeacherTitle');
+                if (titleEl) titleEl.textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
+
+                const hasAccessVal = hasAccess(teacher);
+                const semestersList = document.getElementById('semestersList');
+                if (!semestersList) return;
+
+                let html = '';
+                const semesters = teacher.semesters || [];
+
+                if (semesters.length === 0) {
+                    html = `
+                            <div class="empty">
+                                <span class="icon">📀</span>
+                                <h3>لا توجد فصول</h3>
+                                <p>قم بإضافة فصول من لوحة التحكم</p>
+                            </div>
+                        `;
+                } else {
+                    semesters.forEach((sem, idx) => {
+                        const lectures = sem.lectures || [];
+                        const hasFree = lectures.some(l => l.isFree === true);
+                        const locked = !hasAccessVal && !hasFree;
+
+                        html += `
+                                <div class="semester-item ${locked ? 'locked' : ''}" 
+                                     onclick="${locked ? '' : `openLectures(${sectionIndex}, ${teacherIndex}, ${idx})`}">
+                                    <div>
+                                        <div class="semester-number">📖 الفصل ${sem.number}</div>
+                                        <div class="semester-desc">${sem.description || ''} (${lectures.length} محاضرة)</div>
+                                    </div>
+                                    <div class="semester-status">
+                                        ${locked ? '🔒 مغلق' : (hasAccessVal ? '✅ مفتوح' : '🆓 جزئياً')}
+                                        <i class="fas fa-chevron-left"></i>
+                                    </div>
+                                </div>
+                            `;
+                    });
+                }
+
+                const activated = hasAccess(teacher);
+                html += `
+                        <div class="codes-info" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);">
+                            <div class="access-status ${activated ? 'active' : 'inactive'}">
+                                ${activated ? '✅ تم التفعيل - جميع المحاضرات مفتوحة' : '🔒 بعض المحاضرات مقفلة - أدخل كود التفعيل'}
+                            </div>
+                            ${!activated ? `
+                                <div class="code-box">
+                                    <p style="font-size:0.8rem;margin-bottom:0.2rem;">🔑 أدخل كود التفعيل</p>
+                                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                                        <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" />
+                                        <button onclick="activateCodeFromTeacher()">تفعيل</button>
+                                    </div>
+                                    <div class="msg" id="codeMessageTeacher"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+
+                semestersList.innerHTML = html;
+
+                const modal = document.getElementById('semestersModal');
+                if (modal) modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            };
+
+            window.activateCodeFromTeacher = function() {
+                const input = document.getElementById('codeInputTeacher');
+                const msg = document.getElementById('codeMessageTeacher');
+                if (!input || !msg) return;
+
+                const code = input.value.trim().toUpperCase();
+
+                if (!code) { msg.innerHTML = '⚠️ أدخل الكود';
+                    msg.style.color = '#f59e0b'; return; }
+                if (!activeTeacher) { msg.innerHTML = '⚠️ اختر مدرساً';
+                    msg.style.color = '#f59e0b'; return; }
+                if (!currentUser) { msg.innerHTML = '⚠️ سجل الدخول أولاً';
+                    msg.style.color = '#ef4444'; return; }
+
+                const teacher = activeTeacher;
+                const codeData = teacher.codes.find(c => c.code === code);
+
+                if (!codeData) {
+                    msg.innerHTML = '❌ الكود غير صحيح';
+                    msg.style.color = '#ef4444';
+                    showToast('error', '❌ الكود غير صحيح');
+                    return;
+                }
+
+                if (codeData.locked) {
+                    msg.innerHTML = '🔒 هذا الكود مقفل';
+                    msg.style.color = '#f59e0b';
+                    showToast('warning', '🔒 الكود مقفل');
+                    return;
+                }
+
+                if (codeData.used && codeData.userEmail !== currentUser.email) {
+                    msg.innerHTML = '❌ هذا الكود مستخدم من قبل شخص آخر';
+                    msg.style.color = '#ef4444';
+                    showToast('error', '❌ الكود مستخدم');
+                    return;
+                }
+
+                codeData.used = true;
+                codeData.userEmail = currentUser.email;
+                codeData.userName = currentUser.user_metadata?.full_name ||
+                    currentUser.user_metadata?.name ||
+                    currentUser.email;
+                codeData.usedAt = new Date().toISOString();
+                codeData.sectionName = data.sections[activeSectionIndex]?.name || '';
+
+                saveData();
+                addChange();
+                renderAllData();
+                renderMyCourses();
+                renderAccount();
+                updateBadge();
+
+                msg.innerHTML = '✅ تم التفعيل بنجاح!';
+                msg.style.color = '#22c55e';
+                showToast('success', '✅ تم التفعيل بنجاح!');
+
+                setTimeout(() => {
+                    if (activeSectionIndex !== null && activeTeacherIndex !== null) {
+                        openTeacher(activeSectionIndex, activeTeacherIndex);
+                    }
+                }, 1500);
+            };
+
+            window.openLectures = function(sectionIndex, teacherIndex, semesterIndex) {
+                const section = data.sections[sectionIndex];
+                if (!section) return;
+                const teacher = section.teachers[teacherIndex];
+                if (!teacher) return;
+                const semester = teacher.semesters[semesterIndex];
+                if (!semester) return;
+
+                const hasAccessVal = hasAccess(teacher);
+                const titleEl = document.getElementById('modalSemesterTitle');
+                if (titleEl) titleEl.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
+
+                const lecturesList = document.getElementById('lecturesList');
+                if (!lecturesList) return;
+
+                let html = '';
+                const lectures = semester.lectures || [];
+
+                if (lectures.length === 0) {
+                    html = `
+                            <div class="empty">
+                                <span class="icon">🎥</span>
+                                <h3>لا توجد محاضرات</h3>
+                                <p>قم بإضافة محاضرات من لوحة التحكم</p>
+                            </div>
+                        `;
+                } else {
+                    lectures.forEach(l => {
+                        const canWatch = l.isFree === true || hasAccessVal;
+                        const url = l.youtubeUrl || '';
+                        html += `
+                                <div class="lecture-item ${canWatch ? '' : 'locked'}" 
+                                     onclick="${canWatch ? `playVideo('${url}', '${l.title}')` : ''}">
+                                    <div class="lecture-number">#${l.number}</div>
+                                    <div class="lecture-title">${l.title}</div>
+                                    <div class="lecture-status">
+                                        ${l.isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
+                                        ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
+                                    </div>
+                                </div>
+                            `;
+                    });
+                }
+
+                lecturesList.innerHTML = html;
+
+                const modal = document.getElementById('lecturesModal');
+                if (modal) modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            };
+
+            // ============================================================
+            // تشغيل الفيديو داخل التطبيق
+            // ============================================================
+            window.playVideo = function(url, title) {
+                if (!url) {
+                    showToast('error', '❌ رابط الفيديو غير موجود');
+                    return;
+                }
+
+                let videoUrl = url.trim();
+                let youtubeId = null;
+
+                // استخراج معرف YouTube
+                if (videoUrl.includes('youtube.com/watch?v=')) {
+                    const match = videoUrl.match(/v=([^&]+)/);
+                    if (match) youtubeId = match[1];
+                } else if (videoUrl.includes('youtu.be/')) {
+                    const match = videoUrl.match(/youtu\.be\/([^?]+)/);
+                    if (match) youtubeId = match[1];
+                } else if (videoUrl.includes('youtube.com/embed/')) {
+                    const match = videoUrl.match(/embed\/([^?]+)/);
+                    if (match) youtubeId = match[1];
+                }
+
+                const videoPlayer = document.getElementById('videoPlayer');
+                const videoWrapper = document.getElementById('videoWrapper');
+                const titleEl = document.getElementById('playerTitle');
+
+                if (titleEl) {
+                    titleEl.textContent = `🎬 ${title || 'محاضرة'}`;
+                }
+
+                // YouTube
+                if (youtubeId) {
+                    const embedUrl =
+                        `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&controls=1&fs=1`;
+                    videoWrapper.innerHTML = `
+                            <iframe src="${embedUrl}" 
+                                    style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                                    allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                                    allowfullscreen>
+                            </iframe>
+                        `;
+                    videoPlayer.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+                    return;
+                }
+
+                // Mediadelivery
+                if (videoUrl.includes('mediadelivery')) {
+                    let embedUrl = videoUrl;
+                    if (!embedUrl.includes('autoplay')) {
+                        const separator = embedUrl.includes('?') ? '&' : '?';
+                        embedUrl = embedUrl + separator +
+                            'autoplay=true&loop=false&muted=false&preload=true&responsive=true&controls=true';
+                    }
+                    videoWrapper.innerHTML = `
+                            <iframe src="${embedUrl}" 
+                                    style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+                                    allowfullscreen="true">
+                            </iframe>
+                        `;
+                    videoPlayer.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+                    return;
+                }
+
+                // فيديو مباشر
+                if (videoUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
+                    videoWrapper.innerHTML = `
+                            <video controls autoplay style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;">
+                                <source src="${videoUrl}" type="video/mp4">
+                                متصفحك لا يدعم تشغيل الفيديو
+                            </video>
+                        `;
+                    videoPlayer.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+                    return;
+                }
+
+                // أي رابط آخر
+                try {
+                    new URL(videoUrl);
+                    videoWrapper.innerHTML = `
+                            <iframe src="${videoUrl}" 
+                                    style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                                    allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                                    allowfullscreen>
+                            </iframe>
+                        `;
+                    videoPlayer.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
+                } catch (e) {
+                    showToast('error', '❌ رابط الفيديو غير صحيح');
+                }
+            };
+
+            // إغلاق المشغل
+            document.getElementById('closePlayer')?.addEventListener('click', function() {
+                const videoPlayer = document.getElementById('videoPlayer');
+                const videoWrapper = document.getElementById('videoWrapper');
+                if (videoPlayer) videoPlayer.classList.remove('active');
+                if (videoWrapper) videoWrapper.innerHTML = '';
+                document.body.style.overflow = 'auto';
+            });
+
+            document.getElementById('videoPlayer')?.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    const videoWrapper = document.getElementById('videoWrapper');
+                    this.classList.remove('active');
+                    if (videoWrapper) videoWrapper.innerHTML = '';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const videoPlayer = document.getElementById('videoPlayer');
+                    const videoWrapper = document.getElementById('videoWrapper');
+                    if (videoPlayer && videoPlayer.classList.contains('active')) {
+                        videoPlayer.classList.remove('active');
+                        if (videoWrapper) videoWrapper.innerHTML = '';
+                        document.body.style.overflow = 'auto';
+                    }
+                }
+            });
+
+            // ============================================================
+            // دوراتي
+            // ============================================================
+            function getMyCourses() {
+                if (!currentUser) return [];
+                const courses = [];
+                data.sections.forEach(s => {
+                    s.teachers.forEach((t, ti) => {
+                        if (t.codes && t.codes.some(c => c.used && c.userEmail === currentUser.email && !c
+                            .locked)) {
+                            courses.push({
+                                teacherName: t.name,
+                                teacherEmoji: t.emoji || '👨‍🏫',
+                                teacherImage: t.image || '',
+                                sectionName: s.name,
+                                sectionIndex: data.sections.indexOf(s),
+                                teacherIndex: ti
+                            });
+                        }
+                    });
+                });
+                return courses;
+            }
+
+            function renderMyCourses() {
+                const container = document.getElementById('myCoursesContainer');
+                const countSpan = document.getElementById('myCoursesCount');
+                if (!container) return;
+
+                const courses = getMyCourses();
+                if (countSpan) countSpan.textContent = courses.length + ' دورة';
+
+                if (courses.length === 0) {
+                    container.innerHTML = `
+                            <div class="empty">
+                                <span class="icon">📚</span>
+                                <h3>لم تشترك في أي دورة</h3>
+                                <p>استخدم كود التفعيل للاشتراك</p>
+                                <button class="btn-submit" style="width:auto;padding:0.3rem 1.5rem;font-size:0.8rem;margin:0 auto;" onclick="navigateTo('teachers')"><i class="fas fa-search"></i> استعراض المدرسين</button>
+                            </div>
+                        `;
+                    return;
+                }
+
+                let html = '<div class="my-courses-grid">';
+                courses.forEach(c => {
+                    html += `
+                            <div class="course-card" onclick="openTeacher(${c.sectionIndex}, ${c.teacherIndex})">
+                                <div class="avatar">${c.teacherImage ? `<img src="${c.teacherImage}" />` : c.teacherEmoji}</div>
+                                <div class="name">${c.teacherName}</div>
+                                <div class="meta">${c.sectionName}</div>
+                                <div class="badge">✅ مشترك</div>
+                            </div>
+                        `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+            function updateBadge() {
+                const courses = getMyCourses();
+                const badge = document.getElementById('coursesBadge');
+                if (badge) {
+                    if (courses.length > 0) {
+                        badge.style.display = 'inline';
+                        badge.textContent = courses.length;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+
+            // ============================================================
+            // الحساب
+            // ============================================================
+            function renderAccount() {
+                if (!currentUser) {
+                    const nameEl = document.getElementById('accountName');
+                    const emailEl = document.getElementById('accountEmail');
+                    const avatarEl = document.getElementById('accountAvatar');
+                    if (nameEl) nameEl.textContent = 'غير مسجل';
+                    if (emailEl) emailEl.textContent = 'يرجى تسجيل الدخول';
+                    if (avatarEl) avatarEl.textContent = '👤';
+                    return;
+                }
+
+                const name = currentUser.user_metadata?.full_name ||
+                    currentUser.user_metadata?.name ||
+                    currentUser.email?.split('@')[0] ||
+                    'مستخدم';
+
+                const nameEl = document.getElementById('accountName');
+                const emailEl = document.getElementById('accountEmail');
+                const avatarEl = document.getElementById('accountAvatar');
+                if (nameEl) nameEl.textContent = name;
+                if (emailEl) emailEl.textContent = currentUser.email;
+                if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+
+                const regEl = document.getElementById('accountRegistered');
+                if (regEl && currentUser.created_at) {
+                    regEl.textContent = 'مسجل منذ: ' + new Date(currentUser.created_at).toLocaleDateString('ar');
+                }
+
+                const courses = getMyCourses();
+                const coursesEl = document.getElementById('accountCourses');
+                if (coursesEl) coursesEl.textContent = courses.length;
+
+                let codesCount = 0;
+                data.sections.forEach(s => {
+                    s.teachers.forEach(t => {
+                        if (t.codes) {
+                            codesCount += t.codes.filter(c => c.used && c.userEmail === currentUser.email)
+                                .length;
+                        }
+                    });
+                });
+                const codesEl = document.getElementById('accountCodes');
+                if (codesEl) codesEl.textContent = codesCount;
+
+                const teachersEl = document.getElementById('accountTeachersCount');
+                if (teachersEl) teachersEl.textContent = courses.length;
+
+                if (supabaseClient) {
+                    supabaseClient.from('admins').select('email').eq('email', currentUser.email).maybeSingle()
+                        .then(({ data }) => {
+                            const btn = document.getElementById('adminPanelBtn');
+                            if (btn) btn.style.display = data ? 'flex' : 'none';
+                        }).catch(() => {});
+                }
+            }
+
+            // ============================================================
+            // التنقل
+            // ============================================================
+            window.navigateTo = function(page) {
+                if (!currentUser) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                document.querySelectorAll('[id^="page-"]').forEach(p => {
+                    if (p) p.style.display = 'none';
+                });
+                const target = document.getElementById('page-' + page);
+                if (target) target.style.display = 'block';
+
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                    if (item) item.classList.toggle('active', item.dataset.page === page);
+                });
+
+                if (page === 'my-courses') { renderMyCourses();
+                    updateBadge(); }
+                if (page === 'account') { renderAccount(); }
+                if (page === 'teachers' || page === 'home') { renderAllData(); }
+
+                window.scrollTo({ top: 0 });
+
+                const banner = document.getElementById('bannerSection');
+                if (banner) banner.style.display = page === 'home' ? 'block' : 'none';
+            };
+
+            function updateUI() {
+                if (currentUser) {
+                    const name = currentUser.user_metadata?.full_name ||
+                        currentUser.user_metadata?.name ||
+                        currentUser.email?.split('@')[0] ||
+                        'مستخدم';
+                    const nameEl = document.getElementById('userNameDisplay');
+                    const avatarEl = document.getElementById('userAvatar');
+                    if (nameEl) nameEl.textContent = name;
+                    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+                } else {
+                    const nameEl = document.getElementById('userNameDisplay');
+                    const avatarEl = document.getElementById('userAvatar');
+                    if (nameEl) nameEl.textContent = 'غير مسجل';
+                    if (avatarEl) avatarEl.textContent = '👤';
+                }
+            }
+
+            // ============================================================
+            // تسجيل الخروج
+            // ============================================================
+            window.signOut = function() {
+                localStorage.removeItem('devAcademicUser');
+                localStorage.removeItem('academyData');
+                if (supabaseClient) supabaseClient.auth.signOut().catch(() => {});
+                showToast('success', '✅ تم تسجيل الخروج');
+                setTimeout(() => window.location.href = 'index.html', 500);
+            };
+
+            // ============================================================
+            // ربط الأحداث
+            // ============================================================
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('📄 DOM loaded');
+
+                document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        window.navigateTo(this.dataset.page);
+                    });
+                });
+
+                const profileBtn = document.getElementById('userProfileBtn');
+                if (profileBtn) {
+                    profileBtn.addEventListener('click', function() {
+                        if (!currentUser) { window.location.href = 'index.html'; return; }
+                        navigateTo('account');
+                    });
+                }
+
+                const logoutBtn = document.getElementById('logoutAccountBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        window.signOut();
+                    });
+                }
+
+                const adminBtn = document.getElementById('adminPanelBtn');
+                if (adminBtn) {
+                    adminBtn.addEventListener('click', function() {
+                        const panel = document.getElementById('adminPanel');
+                        if (panel) {
+                            panel.classList.toggle('active');
+                            if (panel.classList.contains('active')) {
+                                updateAllAdminSelects();
+                                loadAdminsList();
+                                renderUsersTable();
+                                setTimeout(updateAllSemesterLists, 300);
+                                showToast('info', '🔓 مرحباً بك في لوحة التحكم');
+                            }
+                        }
+                    });
+                }
+
+                const adminClose = document.getElementById('adminClose');
+                if (adminClose) {
+                    adminClose.addEventListener('click', function() {
+                        const panel = document.getElementById('adminPanel');
+                        if (panel) panel.classList.remove('active');
+                    });
+                }
+
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', function() {
+                        document.body.classList.toggle('dark-mode');
+                        const dark = document.body.classList.contains('dark-mode');
+                        this.innerHTML = dark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+                        localStorage.setItem('devAcademicTheme', dark ? 'dark' : 'light');
+                    });
+                }
+
+                if (localStorage.getItem('devAcademicTheme') === 'dark') {
+                    document.body.classList.add('dark-mode');
+                    const toggle = document.getElementById('themeToggle');
+                    if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
+                }
+
+                const searchBtn = document.getElementById('searchBtn');
+                if (searchBtn) {
+                    searchBtn.addEventListener('click', function() {
+                        const term = document.getElementById('searchInput').value.trim().toLowerCase();
+                        if (!term) { renderAllData(); return; }
+                        const filtered = getAllTeachers().filter(t =>
+                            (t.name || '').toLowerCase().includes(term) ||
+                            (t.subject || '').toLowerCase().includes(term) ||
+                            (t._sectionName || '').toLowerCase().includes(term)
+                        );
+                        renderTeachers(filtered, teachersGridContainer);
+                        renderTeachers(filtered, teachersGridContainer2);
+                    });
+                }
+
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', function(e) {
+                        if (e.key === 'Enter') {
+                            const btn = document.getElementById('searchBtn');
+                            if (btn) btn.click();
+                        }
+                    });
+                }
+
+                document.querySelectorAll('.modal .close').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const modal = this.closest('.modal-overlay');
+                        if (modal) { modal.classList.remove('active');
+                            document.body.style.overflow = 'auto'; }
+                    });
+                });
+
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === this) { this.classList.remove('active');
+                            document.body.style.overflow = 'auto'; }
+                    });
+                });
+
+                document.querySelectorAll('.admin-tabs .tab').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        document.querySelectorAll('.admin-tabs .tab').forEach(b => b.classList.remove(
+                        'active'));
+                        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove(
+                        'active'));
+                        this.classList.add('active');
+                        const tabId = document.getElementById('tab-' + this.dataset.tab);
+                        if (tabId) tabId.classList.add('active');
+
+                        if (this.dataset.tab === 'manage-codes') updateCodesManagement();
+                        if (this.dataset.tab === 'users') renderUsersTable();
+                        if (this.dataset.tab === 'add-admin') loadAdminsList();
+                        if (this.dataset.tab === 'banner') updateBannerPreview();
+                        if (this.dataset.tab === 'delete') {
+                            updateAllAdminSelects();
+                            setTimeout(updateAllSemesterLists, 300);
+                        }
+                        if (this.dataset.tab === 'add-lecture') {
+                            updateAllAdminSelects();
+                            setTimeout(updateAllSemesterLists, 300);
+                        }
+                        if (this.dataset.tab === 'edit-teacher') {
+                            updateAllAdminSelects();
+                        }
+                    });
+                });
+
+                initApp();
+            });
+
+            // ============================================================
+            // دوال لوحة التحكم
+            // ============================================================
+            function updateAllSemesterLists() {
+                console.log('🔄 تحديث قوائم الفصول...');
+
+                const semesterSelects = [
+                    { selectId: 'lectureSemester', sectionId: 'lectureSection', teacherId: 'lectureTeacher' },
+                    { selectId: 'deleteSemesterSelect', sectionId: 'deleteSemesterSection',
+                    teacherId: 'deleteSemesterTeacher' },
+                    { selectId: 'deleteLectureSemester', sectionId: 'deleteLectureSection',
+                    teacherId: 'deleteLectureTeacher' },
+                    { selectId: 'editLectureSemester', sectionId: 'editLectureSection',
+                    teacherId: 'editLectureTeacher' }
+                ];
+
+                semesterSelects.forEach(({ selectId, sectionId, teacherId }) => {
+                    const select = document.getElementById(selectId);
+                    const sectionSelect = document.getElementById(sectionId);
+                    const teacherSelect = document.getElementById(teacherId);
+
+                    if (!select || !sectionSelect || !teacherSelect) return;
+
+                    const sectionIndex = parseInt(sectionSelect.value);
+                    const teacherIndex = parseInt(teacherSelect.value);
+                    const currentValue = select.value;
+
+                    let options = '<option value="">اختر الفصل...</option>';
+
+                    if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                        !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                        data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters) {
+
+                        const semesters = data.sections[sectionIndex].teachers[teacherIndex].semesters;
+                        if (semesters.length === 0) {
+                            options += '<option value="" disabled>⚠️ لا توجد فصول لهذا المدرس</option>';
+                        } else {
+                            semesters.forEach((sem, i) => {
+                                const desc = sem.description ? ` - ${sem.description}` : '';
+                                options +=
+                                    `<option value="${i}">📀 الفصل ${sem.number}${desc} (${sem.lectures.length} محاضرة)</option>`;
+                            });
+                        }
+                    } else {
+                        options += '<option value="" disabled>⚠️ اختر القسم والمدرس أولاً</option>';
+                    }
+
+                    select.innerHTML = options;
+
+                    if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                        !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                        data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[parseInt(currentValue)]) {
+                        select.value = currentValue;
+                    }
+                });
+            }
+
+            const triggerIds = [
+                'lectureSection', 'lectureTeacher',
+                'deleteSemesterSection', 'deleteSemesterTeacher',
+                'deleteLectureSection', 'deleteLectureTeacher',
+                'editLectureSection', 'editLectureTeacher'
+            ];
+
+            triggerIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', function() {
+                        if (id.includes('Section')) {
+                            updateTeachersForSection(this.value);
+                        }
+                        setTimeout(updateAllSemesterLists, 200);
+                    });
+                }
+            });
+
+            function updateTeachersForSection(sectionIndex) {
+                const idx = parseInt(sectionIndex);
+                const teacherSelects = [
+                    'semesterTeacher', 'lectureTeacher', 'editTeacherSelect',
+                    'editLectureTeacher', 'deleteTeacherSelect', 'deleteSemesterTeacher',
+                    'deleteLectureTeacher', 'codeTeacherSelect'
+                ];
+
+                teacherSelects.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (!select) return;
+                    const currentValue = select.value;
+                    let options = '<option value="">اختر المدرس...</option>';
+                    if (!isNaN(idx) && idx >= 0 && data.sections[idx]) {
+                        data.sections[idx].teachers.forEach((t, i) => {
+                            options += `<option value="${i}">${t.name}</option>`;
+                        });
+                    }
+                    select.innerHTML = options;
+                    if (currentValue && !isNaN(idx) && idx >= 0 &&
+                        data.sections[idx]?.teachers[parseInt(currentValue)]) {
+                        select.value = currentValue;
+                    }
+                });
+            }
+
+            function updateAllAdminSelects() {
+                const ids = ['teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
+                    'editTeacherSection', 'deleteSection', 'deleteTeacherSection', 'deleteSemesterSection',
+                    'deleteLectureSection'
+                ];
+                ids.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (!select) return;
+                    const val = select.value;
+                    let opts = '<option value="">اختر القسم...</option>';
+                    data.sections.forEach((s, i) => {
+                        opts += `<option value="${i}">${s.name}</option>`;
+                    });
+                    select.innerHTML = opts;
+                    if (val && data.sections[parseInt(val)]) select.value = val;
+                });
+
+                const sectionSelects = ['teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
+                    'editTeacherSection', 'deleteTeacherSection', 'deleteSemesterSection',
+                    'deleteLectureSection'
+                ];
+                sectionSelects.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (select) {
+                        updateTeachersForSection(select.value);
+                    }
+                });
+
+                setTimeout(updateAllSemesterLists, 300);
+            }
+
+            // ============================================================
+            // نماذج الإضافة
+            // ============================================================
+            document.getElementById('addSectionForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const name = document.getElementById('sectionName').value.trim();
+                if (!name) { showToast('warning', '⚠️ أدخل اسم القسم'); return; }
+                data.sections.push({ id: 'sec-' + Date.now(), name: name, teachers: [] });
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                this.reset();
+                showToast('success', `✅ تم إضافة القسم "${name}"`);
+            });
+
+            document.getElementById('addTeacherForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const si = parseInt(document.getElementById('teacherSection').value);
+                const name = document.getElementById('teacherName').value.trim();
+                if (isNaN(si) || si < 0) { showToast('warning', '⚠️ اختر القسم'); return; }
+                if (!name) { showToast('warning', '⚠️ أدخل اسم المدرس'); return; }
+
+                data.sections[si].teachers.push({
+                    name: name,
+                    emoji: document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫',
+                    subject: document.getElementById('teacherSubject').value.trim() || 'مدرس',
+                    description: document.getElementById('teacherDesc').value.trim() || '',
+                    image: document.getElementById('teacherImage').value.trim() || '',
+                    codes: [],
+                    semesters: []
+                });
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                this.reset();
+                showToast('success', `✅ تم إضافة المدرس "${name}"`);
+            });
+
+            document.getElementById('addSemesterForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const si = parseInt(document.getElementById('semesterSection').value);
+                const ti = parseInt(document.getElementById('semesterTeacher').value);
+                const num = parseInt(document.getElementById('semesterNumber').value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0 || !num) {
+                    showToast('warning', '⚠️ املأ جميع الحقول');
+                    return;
+                }
+                data.sections[si].teachers[ti].semesters.push({
+                    number: num,
+                    description: document.getElementById('semesterDesc').value.trim() || `الفصل ${num}`,
+                    lectures: []
+                });
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                this.reset();
+                showToast('success', `✅ تم إضافة الفصل ${num}`);
+            });
+
+            document.getElementById('addLectureForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const si = parseInt(document.getElementById('lectureSection').value);
+                const ti = parseInt(document.getElementById('lectureTeacher').value);
+                const semi = parseInt(document.getElementById('lectureSemester').value);
+                const num = parseInt(document.getElementById('lectureNumber').value);
+                const title = document.getElementById('lectureTitle').value.trim();
+                const url = document.getElementById('lectureUrl').value.trim();
+
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0 || isNaN(semi) || semi < 0 || !num || !title ||
+                    !url) {
+                    showToast('warning', '⚠️ املأ جميع الحقول');
+                    return;
+                }
+
+                const isValid = url.includes('mediadelivery') || url.includes('youtube') || url.includes('youtu.be') ||
+                    url.match(/\.(mp4|webm|ogg)(\?.*)?$/i);
+                if (!isValid) {
+                    showToast('warning', '⚠️ رابط الفيديو غير صحيح (يدعم mediadelivery و YouTube)');
+                    return;
+                }
+
+                data.sections[si].teachers[ti].semesters[semi].lectures.push({
+                    number: num,
+                    title: title,
+                    youtubeUrl: url,
+                    isFree: document.getElementById('lectureFree').value === 'true'
+                });
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                this.reset();
+                showToast('success', `✅ تم إضافة المحاضرة "${title}"`);
+            });
+
+            // ============================================================
+            // الأكواد
+            // ============================================================
+            window.addManualCode = function() {
+                const si = parseInt(document.getElementById('codeSection').value);
+                const ti = parseInt(document.getElementById('codeTeacherSelect').value);
+                const code = document.getElementById('manualCodeInput').value.trim().toUpperCase();
+
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    showToast('warning', '⚠️ اختر القسم والمدرس');
+                    return;
+                }
+                if (!code || code.length < 4) {
+                    showToast('warning', '⚠️ أدخل كود صحيح (4 أحرف على الأقل)');
+                    return;
+                }
+
+                const teacher = data.sections[si].teachers[ti];
+                if (teacher.codes.some(c => c.code === code)) {
+                    showToast('warning', '⚠️ الكود موجود مسبقاً');
+                    return;
+                }
+
+                teacher.codes.push({ code, used: false, locked: false, userEmail: null, userName: null,
+                    usedAt: null, sectionName: data.sections[si].name });
+                saveData();
+                addChange();
+                updateCodesManagement();
+                document.getElementById('manualCodeInput').value = '';
+                showToast('success', `✅ تم إضافة الكود: ${code}`);
+            };
+
+            window.generateCodes = function(count) {
+                const si = parseInt(document.getElementById('codeSection').value);
+                const ti = parseInt(document.getElementById('codeTeacherSelect').value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    showToast('warning', '⚠️ اختر القسم والمدرس');
+                    return;
+                }
+
+                const teacher = data.sections[si].teachers[ti];
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let gen = 0;
+                for (let i = 0; i < count * 2 && gen < count; i++) {
+                    let code = '';
+                    for (let j = 0; j < 8; j++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+                    if (!teacher.codes.some(c => c.code === code)) {
+                        teacher.codes.push({ code, used: false, locked: false, userEmail: null, userName: null,
+                            usedAt: null, sectionName: data.sections[si].name });
+                        gen++;
+                    }
+                }
+                saveData();
+                addChange();
+                updateCodesManagement();
+                showToast('success', `✅ تم إنشاء ${gen} كود جديد`);
+            };
+
+            function updateCodesManagement() {
+                const si = parseInt(document.getElementById('codeSection').value);
+                const ti = parseInt(document.getElementById('codeTeacherSelect').value);
+                const container = document.getElementById('codesListContainer');
+
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    if (container) container.innerHTML =
+                        '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">اختر المدرس أولاً</p>';
+                    return;
+                }
+
+                const teacher = data.sections[si]?.teachers[ti];
+                if (!teacher) {
+                    if (container) container.innerHTML =
+                        '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">المدرس غير موجود</p>';
+                    return;
+                }
+
+                const used = teacher.codes.filter(c => c.used).length;
+                const available = teacher.codes.filter(c => !c.used && !c.locked).length;
+                const locked = teacher.codes.filter(c => c.locked).length;
+
+                let html = `
+                        <div class="codes-stats">
+                            <span>📊 المجموع: ${teacher.codes.length}</span>
+                            <span>✅ المستخدمة: ${used}</span>
+                            <span>🟢 المتاحة: ${available}</span>
+                            <span>🔒 المقفلة: ${locked}</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="codes-table">
+                                <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>المستخدم</th><th>إجراء</th></tr></thead>
+                                <tbody>
+                    `;
+
+                if (teacher.codes.length === 0) {
+                    html += `<tr><td colspan="5" style="text-align:center;padding:0.5rem 0;">لا توجد أكواد</td></tr>`;
+                } else {
+                    teacher.codes.forEach((c, i) => {
+                        let status = '🟢 متاح';
+                        let color = '#22c55e';
+                        let user = '—';
+                        if (c.locked) { status = '🔒 مقفل';
+                            color = '#f59e0b'; }
+                        if (c.used) { status = '✅ مستخدم';
+                            color = '#22c55e';
+                            user = c.userName || c.userEmail || 'غير معروف'; }
+                        html += `
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><code style="font-weight:700;color:${color};">${c.code}</code></td>
+                                    <td><span style="color:${color};">${status}</span></td>
+                                    <td style="font-size:0.65rem;color:var(--text-light);">${user}</td>
+                                    <td>
+                                        <button onclick="toggleCodeLock(${si}, ${ti}, '${c.code}')" style="background:${c.locked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
+                                            ${c.locked ? '🔓 فتح' : '🔒 قفل'}
+                                        </button>
+                                        ${!c.used && !c.locked ? `<button onclick="deleteCode(${si}, ${ti}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">🗑️</button>` : ''}
+                                    </td>
+                                </tr>
+                            `;
+                    });
+                }
+
+                html += `</tbody></table></div>`;
+                if (container) container.innerHTML = html;
+            }
+
+            window.toggleCodeLock = function(si, ti, code) {
+                const teacher = data.sections[si]?.teachers[ti];
+                if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+                const c = teacher.codes.find(c => c.code === code);
+                if (!c) { showToast('error', '❌ الكود غير موجود'); return; }
+                c.locked = !c.locked;
+                saveData();
+                addChange();
+                updateCodesManagement();
+                showToast('success', `✅ تم ${c.locked ? 'قفل' : 'فتح'} الكود ${code}`);
+            };
+
+            window.deleteCode = function(si, ti, code) {
+                if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
+                const teacher = data.sections[si]?.teachers[ti];
+                if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
+                const idx = teacher.codes.findIndex(c => c.code === code);
+                if (idx === -1) { showToast('error', '❌ الكود غير موجود'); return; }
+                if (teacher.codes[idx].used) { showToast('warning', '⚠️ لا يمكن حذف كود مستخدم'); return; }
+                teacher.codes.splice(idx, 1);
+                saveData();
+                addChange();
+                updateCodesManagement();
+                showToast('success', `✅ تم حذف الكود: ${code}`);
+            };
+
+            // ============================================================
+            // تعديل المدرس
+            // ============================================================
+            document.getElementById('editTeacherForm')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const si = parseInt(document.getElementById('editTeacherSection').value);
+                const ti = parseInt(document.getElementById('editTeacherSelect').value);
+                const msg = document.getElementById('editTeacherMessage');
+
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    if (msg) { msg.innerHTML = '⚠️ اختر القسم والمدرس';
+                        msg.style.color = '#f59e0b'; }
+                    return;
+                }
+
+                const teacher = data.sections[si].teachers[ti];
+                if (!teacher) { if (msg) { msg.innerHTML = '❌ المدرس غير موجود';
+                        msg.style.color = '#ef4444'; } return; }
+
+                const name = document.getElementById('editTeacherName').value.trim();
+                if (!name) { if (msg) { msg.innerHTML = '⚠️ أدخل اسم المدرس';
+                        msg.style.color = '#f59e0b'; } return; }
+
+                teacher.name = name;
+                teacher.subject = document.getElementById('editTeacherSubject').value.trim() || 'مدرس';
+                teacher.description = document.getElementById('editTeacherDesc').value.trim() || '';
+                teacher.image = document.getElementById('editTeacherImage').value.trim() || '';
+
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                if (msg) { msg.innerHTML = `✅ تم تعديل المدرس "${name}"`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم تعديل المدرس "${name}"`);
+            });
+
+            document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
+                const si = parseInt(document.getElementById('editTeacherSection').value);
+                const ti = parseInt(this.value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) return;
+                const t = data.sections[si]?.teachers[ti];
+                if (!t) return;
+                const nameEl = document.getElementById('editTeacherName');
+                const subjectEl = document.getElementById('editTeacherSubject');
+                const descEl = document.getElementById('editTeacherDesc');
+                const imageEl = document.getElementById('editTeacherImage');
+                if (nameEl) nameEl.value = t.name || '';
+                if (subjectEl) subjectEl.value = t.subject || '';
+                if (descEl) descEl.value = t.description || '';
+                if (imageEl) imageEl.value = t.image || '';
+            });
+
+            // ============================================================
+            // دوال الحذف
+            // ============================================================
+            window.deleteSelectedSection = function() {
+                const si = parseInt(document.getElementById('deleteSection').value);
+                if (isNaN(si) || si < 0) { showToast('warning', '⚠️ اختر القسم'); return; }
+                const s = data.sections[si];
+                if (!s) return;
+                if (!confirm(`⚠️ حذف القسم "${s.name}" وجميع محتوياته؟`)) return;
+                data.sections.splice(si, 1);
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                const msg = document.getElementById('deleteSectionMessage');
+                if (msg) { msg.innerHTML = `✅ تم حذف القسم "${s.name}"`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم حذف القسم "${s.name}"`);
+            };
+
+            window.deleteSelectedTeacherFromTab = function() {
+                const si = parseInt(document.getElementById('deleteTeacherSection').value);
+                const ti = parseInt(document.getElementById('deleteTeacherSelect').value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                    showToast('warning', '⚠️ اختر القسم والمدرس');
+                    return;
+                }
+                const t = data.sections[si].teachers[ti];
+                if (!t) return;
+                if (!confirm(`⚠️ حذف المدرس "${t.name}"؟`)) return;
+                data.sections[si].teachers.splice(ti, 1);
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                const msg = document.getElementById('deleteTeacherMessage');
+                if (msg) { msg.innerHTML = `✅ تم حذف المدرس "${t.name}"`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم حذف المدرس "${t.name}"`);
+            };
+
+            window.deleteSelectedSemesterFromTab = function() {
+                const si = parseInt(document.getElementById('deleteSemesterSection').value);
+                const ti = parseInt(document.getElementById('deleteSemesterTeacher').value);
+                const semi = parseInt(document.getElementById('deleteSemesterSelect').value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0 || isNaN(semi) || semi < 0) {
+                    showToast('warning', '⚠️ اختر القسم والمدرس والفصل');
+                    return;
+                }
+                const sem = data.sections[si].teachers[ti]?.semesters[semi];
+                if (!sem) return;
+                if (!confirm(`⚠️ حذف الفصل ${sem.number}؟`)) return;
+                data.sections[si].teachers[ti].semesters.splice(semi, 1);
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                setTimeout(updateAllSemesterLists, 200);
+                const msg = document.getElementById('deleteSemesterMessage');
+                if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${sem.number}`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم حذف الفصل ${sem.number}`);
+            };
+
+            window.deleteSelectedLectureFromTab = function() {
+                const si = parseInt(document.getElementById('deleteLectureSection').value);
+                const ti = parseInt(document.getElementById('deleteLectureTeacher').value);
+                const semi = parseInt(document.getElementById('deleteLectureSemester').value);
+                const li = parseInt(document.getElementById('deleteLectureSelect').value);
+                if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0 || isNaN(semi) || semi < 0 || isNaN(li) || li < 0) {
+                    showToast('warning', '⚠️ اختر جميع الحقول');
+                    return;
+                }
+                const l = data.sections[si]?.teachers[ti]?.semesters[semi]?.lectures[li];
+                if (!l) return;
+                if (!confirm(`⚠️ حذف المحاضرة "${l.title}"؟`)) return;
+                data.sections[si].teachers[ti].semesters[semi].lectures.splice(li, 1);
+                saveData();
+                addChange();
+                renderAllData();
+                updateAllAdminSelects();
+                const msg = document.getElementById('deleteLectureMessage');
+                if (msg) { msg.innerHTML = `✅ تم حذف المحاضرة "${l.title}"`;
+                    msg.style.color = '#22c55e'; }
+                showToast('success', `✅ تم حذف المحاضرة "${l.title}"`);
+            };
+
+            // ============================================================
+            // الطلاب
+            // ============================================================
+            function renderUsersTable() {
+                const tbody = document.getElementById('usersTableBody');
+                if (!tbody) return;
+
+                const studentsMap = new Map();
+
+                data.sections.forEach(section => {
+                    section.teachers.forEach(teacher => {
+                        if (teacher.codes) {
+                            teacher.codes.forEach(c => {
+                                if (c.used && c.userEmail) {
+                                    if (!studentsMap.has(c.userEmail)) {
+                                        studentsMap.set(c.userEmail, {
+                                            email: c.userEmail,
+                                            name: c.userName || c.userEmail.split('@')[0],
+                                            phone: c.userPhone || 'غير مسجل',
+                                            section: c.sectionName || section.name,
+                                            teachers: [],
+                                            registeredAt: c.usedAt || new Date()
+                                                .toISOString()
+                                        });
+                                    }
+                                    if (!studentsMap.get(c.userEmail).teachers.includes(teacher
+                                        .name)) {
+                                        studentsMap.get(c.userEmail).teachers.push(teacher
+                                        .name);
+                                    }
+                                    if (c.sectionName && !studentsMap.get(c.userEmail).section) {
+                                        studentsMap.get(c.userEmail).section = c.sectionName;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+                if (studentsMap.size === 0) {
+                    tbody.innerHTML =
+                        `<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:1rem 0;">🧑‍🎓 لا يوجد طلاب مسجلين</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                let index = 1;
+
+                studentsMap.forEach((student) => {
+                    const date = student.registeredAt ? new Date(student.registeredAt).toLocaleString('ar') :
+                        'غير معروف';
+                    const teachersList = student.teachers.join('، ') || 'لا يوجد';
+
+                    html += `
+                            <tr>
+                                <td>${index++}</td>
+                                <td><strong>${student.name}</strong></td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.email}</td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.phone}</td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.section || 'غير محدد'}</td>
+                                <td style="font-size:0.7rem;color:var(--primary);">${teachersList}</td>
+                                <td style="font-size:0.6rem;color:var(--text-light);">${date}</td>
+                            </tr>
+                        `;
+                });
+
+                tbody.innerHTML = html;
+            }
+
+            // ============================================================
+            // المشرفين
+            // ============================================================
+            async function loadAdminsList() {
+                const container = document.getElementById('adminsListContainer');
+                if (!container) return;
+                if (!supabaseClient) {
+                    container.innerHTML =
+                        '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">⚠️ Supabase غير متاح</p>';
+                    return;
+                }
+
+                try {
+                    const { data: admins, error } = await supabaseClient
+                        .from('admins')
+                        .select('email, created_at')
+                        .order('created_at', { ascending: true });
+
                     if (error) throw error;
+
+                    if (!admins || admins.length === 0) {
+                        container.innerHTML =
+                            '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">👑 لا يوجد مشرفين</p>';
+                        return;
+                    }
+
+                    let html =
+                        '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.75rem;">';
+                    html +=
+                        `<thead><tr style="background:var(--primary-gradient);color:white;"><th style="padding:0.2rem 0.4rem;">#</th><th style="padding:0.2rem 0.4rem;">البريد</th><th style="padding:0.2rem 0.4rem;">التاريخ</th></tr></thead><tbody>`;
+
+                    admins.forEach((a, i) => {
+                        const isCurrent = a.email === currentUser?.email;
+                        const date = a.created_at ? new Date(a.created_at).toLocaleDateString('ar') :
+                        'غير معروف';
+                        html += `<tr style="border-bottom:1px solid var(--border);">
+                                <td style="padding:0.15rem 0.3rem;">${i + 1}</td>
+                                <td style="padding:0.15rem 0.3rem;">${a.email} ${isCurrent ? '👑' : ''}</td>
+                                <td style="padding:0.15rem 0.3rem;color:var(--text-light);font-size:0.65rem;">${date}</td>
+                            </tr>`;
+                    });
+
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } catch (e) {
+                    container.innerHTML =
+                        '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">❌ فشل التحميل</p>';
+                }
+            }
+
+            window.addNewAdmin = async function() {
+                const email = document.getElementById('adminEmailInput').value.trim();
+                const msg = document.getElementById('addAdminMessage');
+
+                if (!email) { if (msg) { msg.innerHTML = '⚠️ أدخل البريد';
+                        msg.style.color = '#f59e0b'; } return; }
+                if (!email.includes('@') || !email.includes('.')) { if (msg) { msg.innerHTML = '⚠️ البريد غير صحيح';
+                        msg.style.color = '#f59e0b'; } return; }
+                if (!supabaseClient) { if (msg) { msg.innerHTML = '❌ Supabase غير متاح';
+                        msg.style.color = '#ef4444'; } return; }
+
+                try {
+                    const { data: userData, error: userError } = await supabaseClient
+                        .from('users')
+                        .select('id, email')
+                        .eq('email', email)
+                        .maybeSingle();
+
+                    if (userError) throw userError;
+
+                    if (!userData) {
+                        if (msg) {
+                            msg.innerHTML =
+                                `⚠️ المستخدم غير موجود. <button onclick="fixUserAndAddAdmin('${email}')" style="background:var(--primary);color:white;border:none;padding:0.15rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.7rem;">إصلاح</button>`;
+                            msg.style.color = '#f59e0b';
+                        }
+                        return;
+                    }
+
+                    const { data: existing } = await supabaseClient.from('admins').select('email').eq('email', email)
+                        .maybeSingle();
+                    if (existing) { if (msg) { msg.innerHTML = '⚠️ هذا المستخدم مشرف بالفعل';
+                            msg.style.color = '#f59e0b'; } return; }
+
+                    const { error: insertError } = await supabaseClient.from('admins').insert({ uid: userData.id,
+                        email: email, role: 'admin' });
+                    if (insertError) throw insertError;
+
+                    if (msg) { msg.innerHTML = `✅ تم إضافة المشرف: ${email}`;
+                        msg.style.color = '#22c55e'; }
+                    document.getElementById('adminEmailInput').value = '';
+                    showToast('success', `✅ تم إضافة المشرف: ${email}`);
+                    loadAdminsList();
+
+                } catch (e) {
+                    if (msg) { msg.innerHTML = '❌ فشل: ' + e.message;
+                        msg.style.color = '#ef4444'; }
+                }
+            };
+
+            window.fixUserAndAddAdmin = async function(email) {
+                const msg = document.getElementById('addAdminMessage');
+                if (!supabaseClient) { if (msg) { msg.innerHTML = '❌ Supabase غير متاح';
+                        msg.style.color = '#ef4444'; } return; }
+
+                try {
+                    const { data: result, error: rpcError } = await supabaseClient.rpc('add_user_and_admin', {
+                        p_email: email });
+                    if (rpcError) throw rpcError;
+
+                    if (result && result.success) {
+                        if (msg) { msg.innerHTML = `✅ تم إضافة المشرف: ${email}`;
+                            msg.style.color = '#22c55e'; }
+                        showToast('success', `✅ تم إضافة المشرف: ${email}`);
+                        loadAdminsList();
+                    } else {
+                        if (msg) { msg.innerHTML = '❌ ' + (result?.message || 'حدث خطأ');
+                            msg.style.color = '#ef4444'; }
+                    }
+                } catch (e) {
+                    if (msg) { msg.innerHTML = '❌ فشل: ' + e.message;
+                        msg.style.color = '#ef4444'; }
+                }
+            };
+
+            // ============================================================
+            // البانر
+            // ============================================================
+            function updateBannerPreview() {
+                const saved = localStorage.getItem('bannerImage');
+                const mainImg = document.getElementById('mainBannerImage');
+                const mainPlaceholder = document.getElementById('mainBannerPlaceholder');
+                const adminImg = document.getElementById('adminBannerImage');
+                const adminPlaceholder = document.getElementById('adminBannerPlaceholder');
+
+                if (saved) {
+                    if (mainImg) { mainImg.src = saved;
+                        mainImg.style.display = 'block'; }
+                    if (mainPlaceholder) mainPlaceholder.style.display = 'none';
+                    if (adminImg) { adminImg.src = saved;
+                        adminImg.style.display = 'block'; }
+                    if (adminPlaceholder) adminPlaceholder.style.display = 'none';
+                } else {
+                    if (mainImg) mainImg.style.display = 'none';
+                    if (mainPlaceholder) mainPlaceholder.style.display = 'flex';
+                    if (adminImg) adminImg.style.display = 'none';
+                    if (adminPlaceholder) adminPlaceholder.style.display = 'block';
+                }
+            }
+
+            window.updateBannerImage = function() {
+                const url = document.getElementById('bannerImageInput').value.trim();
+                const msg = document.getElementById('bannerMessage');
+
+                if (!url) { if (msg) { msg.innerHTML = '⚠️ أدخل رابط الصورة';
+                        msg.style.color = '#f59e0b'; } return; }
+                try { new URL(url); } catch (e) { if (msg) { msg.innerHTML = '⚠️ الرابط غير صحيح';
+                        msg.style.color = '#f59e0b'; } return; }
+
+                localStorage.setItem('bannerImage', url);
+                updateBannerPreview();
+                if (msg) { msg.innerHTML = '✅ تم تحديث البانر';
+                    msg.style.color = '#22c55e'; }
+                document.getElementById('bannerImageInput').value = '';
+                showToast('success', '✅ تم تحديث البانر');
+                addChange();
+            };
+
+            window.removeBannerImage = function() {
+                if (!confirm('⚠️ حذف صورة البانر؟')) return;
+                localStorage.removeItem('bannerImage');
+                updateBannerPreview();
+                showToast('success', '✅ تم حذف البانر');
+                addChange();
+            };
+
+            // ============================================================
+            // النشر
+            // ============================================================
+            document.getElementById('publishBtn')?.addEventListener('click', async function() {
+                if (pendingChanges === 0) { showToast('info', '📌 لا توجد تغييرات'); return; }
+                if (!supabaseClient) { showToast('error', '❌ Supabase غير متاح'); return; }
+
+                showToast('info', '⏳ جاري النشر...');
+                try {
+                    const { error } = await supabaseClient.from('academy_data').upsert({
+                        id: 'main',
+                        content: data,
+                        updated_at: new Date().toISOString()
+                    });
+                    if (error) throw error;
+
+                    pendingChanges = 0;
+                    const span = document.getElementById('pendingChanges');
+                    if (span) span.textContent = '0';
+                    const msg = document.getElementById('publishMessage');
+                    if (msg) { msg.innerHTML = '✅ تم النشر بنجاح';
+                        msg.style.color = '#22c55e';
+                        setTimeout(() => msg.innerHTML = '', 5000); }
+                    showToast('success', '✅ تم نشر التغييرات');
+                } catch (e) {
+                    showToast('error', '❌ فشل النشر: ' + e.message);
+                }
+            });
+
+            console.log('✅ تم تحميل لوحة التحكم بنجاح');
+
+        })();
+    </script>
+
+</body>
+</html>;
 
                     pendingChanges = 0;
                     const span = document.getElementById('pendingChanges');
