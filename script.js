@@ -270,7 +270,7 @@
     }
 
     // ============================================================
-    // DATA
+    // DATA - تحميل من Supabase أولاً
     // ============================================================
     function normalizeDataStructure(courseData) {
         if (!courseData || !Array.isArray(courseData.sections)) {
@@ -306,35 +306,69 @@
 
     async function loadData() {
         try {
+            let loadedFromSupabase = false;
+
+            // 1️⃣ محاولة جلب البيانات من Supabase أولاً
             if (supabaseClient) {
                 const remoteData = await getSupabaseAcademyData();
-                if (remoteData && remoteData.sections && Array.isArray(remoteData.sections)) {
+                if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
                     data = remoteData;
                     normalizeDataStructure(data);
                     localStorage.setItem('academyData', JSON.stringify(data));
-                    return;
+                    loadedFromSupabase = true;
+                    console.log('✅ تم تحميل البيانات من Supabase:', data.sections.length, 'أقسام');
+                    showToast('success', '✅ تم تحميل البيانات من قاعدة البيانات');
                 }
             }
-            const savedData = localStorage.getItem('academyData');
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
-                        data = parsed;
-                        normalizeDataStructure(data);
-                        return;
+
+            // 2️⃣ إذا ما جابت من Supabase، حاول من localStorage
+            if (!loadedFromSupabase) {
+                const savedData = localStorage.getItem('academyData');
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (parsed && parsed.sections && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+                            data = parsed;
+                            normalizeDataStructure(data);
+                            console.log('✅ تم تحميل البيانات من localStorage:', data.sections.length, 'أقسام');
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ بيانات localStorage فاسدة');
                     }
-                } catch (e) {}
+                }
+
+                // 3️⃣ إذا مافي بيانات، استخدم الافتراضية
+                console.log('📚 لا توجد بيانات، جاري إنشاء الأقسام الافتراضية...');
+                data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
+                normalizeDataStructure(data);
+                localStorage.setItem('academyData', JSON.stringify(data));
+
+                // 4️⃣ محاولة حفظ في Supabase
+                if (supabaseClient) {
+                    await saveSupabaseAcademyData();
+                }
             }
+
+        } catch (error) {
+            console.error('❌ خطأ في تحميل البيانات:', error);
             data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
             normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
-        } catch (error) {}
+        }
     }
 
     function saveData() {
         try {
             localStorage.setItem('academyData', JSON.stringify(data));
+            // محاولة حفظ في Supabase تلقائياً
+            if (supabaseClient) {
+                saveSupabaseAcademyData().then(result => {
+                    if (result.success) {
+                        console.log('✅ تم حفظ البيانات في Supabase');
+                    }
+                });
+            }
         } catch (error) {
             showToast('error', '⚠️ فشل حفظ البيانات');
         }
@@ -344,21 +378,41 @@
         if (!supabaseClient) return null;
         try {
             const { data, error } = await supabaseClient
-                .from('academy_data').select('content').eq('id', 'main').maybeSingle();
-            if (error) return null;
+                .from('academy_data')
+                .select('content')
+                .eq('id', 'main')
+                .maybeSingle();
+            if (error) {
+                console.warn('⚠️ فشل جلب البيانات من Supabase:', error);
+                return null;
+            }
             return data?.content || null;
-        } catch (error) { return null; }
+        } catch (error) {
+            console.warn('⚠️ خطأ في جلب البيانات:', error);
+            return null;
+        }
     }
 
     async function saveSupabaseAcademyData() {
         if (!supabaseClient) return { success: false };
         try {
-            const record = { id: 'main', content: data, updated_at: new Date().toISOString() };
-            const { error } = await supabaseClient.from('academy_data').upsert(record, { onConflict: 'id' });
-            if (error) return { success: false };
-            localStorage.setItem('academyData', JSON.stringify(data));
+            const record = {
+                id: 'main',
+                content: data,
+                updated_at: new Date().toISOString()
+            };
+            const { error } = await supabaseClient
+                .from('academy_data')
+                .upsert(record, { onConflict: 'id' });
+            if (error) {
+                console.warn('⚠️ فشل حفظ البيانات في Supabase:', error);
+                return { success: false };
+            }
             return { success: true };
-        } catch (error) { return { success: false }; }
+        } catch (error) {
+            console.warn('⚠️ خطأ في حفظ البيانات:', error);
+            return { success: false };
+        }
     }
 
     // ============================================================
@@ -420,7 +474,6 @@
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.section === sectionId);
         });
-        // تحديث الـ select
         const select = document.getElementById('classFilterSelect');
         if (select) select.value = sectionId;
     };
@@ -452,6 +505,7 @@
                     <div class="teacher-card-image">
                         ${imageUrl ? `<img src="${imageUrl}" alt="${name}" onerror="this.style.display='none'; this.parentElement.querySelector('.teacher-emoji').style.display='block';">` : ''}
                         <span class="teacher-emoji" style="${imageUrl ? 'display:none;' : 'display:block;'}">${emoji}</span>
+                        ${hasAccess ? '<div class="teacher-badge">✅</div>' : ''}
                     </div>
                     <div class="teacher-card-info">
                         <h3>${name}</h3>
@@ -1182,17 +1236,7 @@
     // ADMIN FUNCTIONS
     // ============================================================
     function updateAllAdminSelects() {
-        updateBasicSelects();
-        updateTeacherSelects();
-        updateSemesterSelects();
-        updateLectureSelects();
-        updateDeleteSelects();
-        updateEditSelects();
-        updateCodeSelects();
-        updateCodesManagement();
-    }
-
-    function updateBasicSelects() {
+        // تحديث جميع القوائم المنسدلة
         const selectIds = [
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
@@ -1212,6 +1256,12 @@
                 select.value = currentValue;
             }
         });
+
+        // تحديث قوائم المدرسين
+        updateTeacherSelects();
+        updateSemesterSelects();
+        updateLectureSelects();
+        updateCodesManagement();
     }
 
     function updateTeacherSelects() {
@@ -1222,7 +1272,8 @@
             { selectId: 'editLectureTeacher', sectionId: 'editLectureSection' },
             { selectId: 'deleteTeacherSelect', sectionId: 'deleteTeacherSection' },
             { selectId: 'deleteSemesterTeacher', sectionId: 'deleteSemesterSection' },
-            { selectId: 'deleteLectureTeacher', sectionId: 'deleteLectureSection' }
+            { selectId: 'deleteLectureTeacher', sectionId: 'deleteLectureSection' },
+            { selectId: 'codeTeacherSelect', sectionId: 'codeSection' }
         ];
         teacherSelects.forEach(({ selectId, sectionId }) => {
             const select = document.getElementById(selectId);
@@ -1312,275 +1363,6 @@
                 select.value = currentValue;
             }
         });
-    }
-
-    function updateDeleteSelects() {
-        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
-        const deleteTeacherSection = document.getElementById('deleteTeacherSection');
-        if (deleteTeacherSelect && deleteTeacherSection) {
-            const sectionIndex = parseInt(deleteTeacherSection.value);
-            const currentValue = deleteTeacherSelect.value;
-            let options = '<option value="">اختر المدرس...</option>';
-            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                data.sections[sectionIndex].teachers.forEach((t, i) => {
-                    options += `<option value="${i}">${t.name}</option>`;
-                });
-            }
-            deleteTeacherSelect.innerHTML = options;
-            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-                deleteTeacherSelect.value = currentValue;
-            }
-        }
-    }
-
-    function updateEditSelects() {
-        const editTeacherSelect = document.getElementById('editTeacherSelect');
-        const editTeacherSection = document.getElementById('editTeacherSection');
-        if (editTeacherSelect && editTeacherSection) {
-            const sectionIndex = parseInt(editTeacherSection.value);
-            const currentValue = editTeacherSelect.value;
-            let options = '<option value="">اختر المدرس...</option>';
-            if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-                data.sections[sectionIndex].teachers.forEach((t, i) => {
-                    options += `<option value="${i}">${t.name}</option>`;
-                });
-            }
-            editTeacherSelect.innerHTML = options;
-            if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-                data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-                editTeacherSelect.value = currentValue;
-            }
-            updateEditTeacherData();
-        }
-    }
-
-    function updateCodeSelects() {
-        const sectionSelect = document.getElementById('codeSection');
-        const teacherSelect = document.getElementById('codeTeacherSelect');
-        if (!sectionSelect || !teacherSelect) return;
-        const sectionIndex = parseInt(sectionSelect.value);
-        const currentValue = teacherSelect.value;
-        let options = '<option value="">اختر المدرس...</option>';
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-            data.sections[sectionIndex].teachers.forEach((t, i) => {
-                options += `<option value="${i}">${t.name}</option>`;
-            });
-        }
-        teacherSelect.innerHTML = options;
-        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-            teacherSelect.value = currentValue;
-        }
-    }
-
-    function updateEditTeacherData() {
-        const sectionSelect = document.getElementById('editTeacherSection');
-        const teacherSelect = document.getElementById('editTeacherSelect');
-        if (!sectionSelect || !teacherSelect) return;
-        const sectionIndex = parseInt(sectionSelect.value);
-        const teacherIndex = parseInt(teacherSelect.value);
-        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
-            !data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            document.getElementById('editTeacherName').value = '';
-            document.getElementById('editTeacherSubject').value = '';
-            document.getElementById('editTeacherDesc').value = '';
-            document.getElementById('editTeacherImage').value = '';
-            return;
-        }
-        const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        document.getElementById('editTeacherName').value = teacher.name || '';
-        document.getElementById('editTeacherSubject').value = teacher.subject || '';
-        document.getElementById('editTeacherDesc').value = teacher.description || '';
-        document.getElementById('editTeacherImage').value = teacher.image || '';
-        document.getElementById('editTeacherMessage').innerHTML = '';
-    }
-
-    function updatePendingChanges() {
-        if (pendingChangesSpan) pendingChangesSpan.textContent = pendingChanges;
-    }
-
-    function addChange() {
-        pendingChanges++;
-        updatePendingChanges();
-    }
-
-    // ============================================================
-    // ADD SECTION
-    // ============================================================
-    addSectionForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = document.getElementById('sectionName').value.trim();
-        if (!name) {
-            showToast('warning', '⚠️ يرجى إدخال اسم القسم');
-            return;
-        }
-        const newSection = {
-            id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-            name: name,
-            teachers: []
-        };
-        data.sections.push(newSection);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addSectionForm.reset();
-        showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
-    });
-
-    // ============================================================
-    // ADD TEACHER
-    // ============================================================
-    addTeacherForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('teacherSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار القسم');
-            return;
-        }
-        const name = document.getElementById('teacherName').value.trim();
-        const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
-        const subject = document.getElementById('teacherSubject').value.trim();
-        const description = document.getElementById('teacherDesc').value.trim();
-        const image = document.getElementById('teacherImage').value.trim();
-        if (!name) {
-            showToast('warning', '⚠️ يرجى إدخال اسم المدرس');
-            return;
-        }
-        const newTeacher = {
-            name,
-            emoji,
-            subject: subject || 'مدرس',
-            description: description || '',
-            image: image || '',
-            codes: [],
-            semesters: []
-        };
-        data.sections[sectionIndex].teachers.push(newTeacher);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addTeacherForm.reset();
-        showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
-    });
-
-    // ============================================================
-    // ADD SEMESTER
-    // ============================================================
-    addSemesterForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('semesterSection');
-        const teacherSelect = document.getElementById('semesterTeacher');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const number = parseInt(document.getElementById('semesterNumber').value);
-        const description = document.getElementById('semesterDesc').value.trim();
-        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
-            showToast('warning', '⚠️ يرجى اختيار القسم والمدرس وإدخال رقم الفصل');
-            return;
-        }
-        const newSemester = {
-            number: number,
-            description: description || `الفصل ${number}`,
-            lectures: []
-        };
-        data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addSemesterForm.reset();
-        showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
-    });
-
-    // ============================================================
-    // ADD LECTURE
-    // ============================================================
-    addLectureForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('lectureSection');
-        const teacherSelect = document.getElementById('lectureTeacher');
-        const semesterSelect = document.getElementById('lectureSemester');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const semesterIndex = parseInt(semesterSelect?.value);
-        const number = parseInt(document.getElementById('lectureNumber').value);
-        const title = document.getElementById('lectureTitle').value.trim();
-        const youtubeUrl = document.getElementById('lectureUrl').value.trim();
-        const isFree = document.getElementById('lectureFree').value === 'true';
-        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
-            isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
-            showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
-            return;
-        }
-        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
-            youtubeUrl.includes('youtube') ||
-            youtubeUrl.includes('youtu.be') ||
-            youtubeUrl.includes('player.') ||
-            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
-        if (!isValidUrl) {
-            showToast('warning', '⚠️ رابط الفيديو غير صحيح');
-            return;
-        }
-        const newLecture = { number, title, youtubeUrl, isFree };
-        data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addLectureForm.reset();
-        showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
-
-        // ===== إشعار للمدرسين المسجلين =====
-        sendNotificationToStudents(teacherIndex, sectionIndex, title);
-    });
-
-    // ===== دالة إرسال الإشعارات =====
-    function sendNotificationToStudents(teacherIndex, sectionIndex, lectureTitle) {
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) return;
-
-        // جلب الطلاب المسجلين عند هذا المدرس
-        const students = [];
-        teacher.codes.forEach(c => {
-            if (c.used && c.userEmail) {
-                students.push({
-                    email: c.userEmail,
-                    name: c.userName || 'طالب',
-                    phone: c.userPhone || ''
-                });
-            }
-        });
-
-        if (students.length === 0) return;
-
-        // إشعار لكل طالب
-        students.forEach(student => {
-            // تخزين الإشعار في localStorage مؤقتاً
-            const notifications = JSON.parse(localStorage.getItem('notifications_' + student.email) || '[]');
-            notifications.push({
-                id: Date.now(),
-                teacherName: teacher.name,
-                lectureTitle: lectureTitle,
-                sectionName: data.sections[sectionIndex]?.name || '',
-                date: new Date().toLocaleString('ar'),
-                read: false
-            });
-            localStorage.setItem('notifications_' + student.email, JSON.stringify(notifications));
-        });
-
-        showToast('info', `📢 تم إرسال إشعار لـ ${students.length} طالب مسجل`);
-        console.log(`✅ تم إرسال إشعار لـ ${students.length} طالب: ${teacher.name} - ${lectureTitle}`);
-    }
-
-    // ===== دالة جلب الإشعارات للمستخدم الحالي =====
-    function getUserNotifications() {
-        if (!currentUser) return [];
-        const notifications = JSON.parse(localStorage.getItem('notifications_' + currentUser.email) || '[]');
-        return notifications;
     }
 
     // ============================================================
@@ -2441,6 +2223,7 @@
                         phone: currentUser.user_metadata?.phone || ''
                     }));
                     updateUI();
+                    await loadData();
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
@@ -2495,7 +2278,7 @@
         loadAdminsList();
         updateBannerPreview();
 
-        console.log('📚 ديف أكاديمي - النظام جاهز');
+        console.log('📚 ديف أكاديمي - النظام جاهز مع Supabase');
         console.log('📢 نظام الإشعارات مفعل');
         console.log('📱 يتم حفظ بيانات الطلاب مع رقم الهاتف');
     }
