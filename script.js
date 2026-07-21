@@ -19,6 +19,11 @@
         if (form) {
             const event = new Event('submit', { bubbles: true, cancelable: true });
             form.dispatchEvent(event);
+            console.log('✅ تم إرسال النموذج:', formId);
+            return true;
+        } else {
+            console.warn('⚠️ النموذج غير موجود:', formId);
+            return false;
         }
     };
 
@@ -385,11 +390,7 @@
                         data = parsed;
                         normalizeDataStructure(data);
                         console.log('✅ تم تحميل البيانات من localStorage:', data.sections.length, 'أقسام');
-                        
-                        // حذف المدرسين الافتراضيين
                         clearDefaultTeachers();
-                        
-                        // جلب من Supabase في الخلفية
                         if (supabaseClient) {
                             loadFromSupabase();
                         }
@@ -400,7 +401,6 @@
                 }
             }
 
-            // محاولة جلب من Supabase
             await loadFromSupabase();
 
         } catch (error) {
@@ -421,9 +421,7 @@
                 normalizeDataStructure(data);
                 localStorage.setItem('academyData', JSON.stringify(data));
                 console.log('✅ تم تحميل البيانات من Supabase:', data.sections.length, 'أقسام');
-                
                 clearDefaultTeachers();
-                
                 renderAllData();
                 renderMyCourses();
                 renderAccount();
@@ -438,6 +436,7 @@
     function saveData() {
         try {
             localStorage.setItem('academyData', JSON.stringify(data));
+            console.log('✅ تم حفظ البيانات في localStorage');
         } catch (error) {
             console.warn('⚠️ فشل حفظ البيانات محلياً');
         }
@@ -1789,7 +1788,7 @@
     });
 
     // ============================================================
-    // ADD SECTION
+    // ADD SECTION - مع addChange
     // ============================================================
     addSectionForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1812,10 +1811,11 @@
         addChange();
         addSectionForm.reset();
         showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
+        console.log('✅ pendingChanges:', pendingChanges);
     });
 
     // ============================================================
-    // ADD TEACHER
+    // ADD TEACHER - مع addChange
     // ============================================================
     addTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1852,10 +1852,11 @@
         addChange();
         addTeacherForm.reset();
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+        console.log('✅ pendingChanges:', pendingChanges);
     });
 
     // ============================================================
-    // ADD SEMESTER
+    // ADD SEMESTER - مع addChange
     // ============================================================
     addSemesterForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1883,10 +1884,11 @@
         addChange();
         addSemesterForm.reset();
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+        console.log('✅ pendingChanges:', pendingChanges);
     });
 
     // ============================================================
-    // ADD LECTURE
+    // ADD LECTURE - مع addChange
     // ============================================================
     addLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1924,6 +1926,7 @@
         addChange();
         addLectureForm.reset();
         showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+        console.log('✅ pendingChanges:', pendingChanges);
 
         // ===== إشعار للطلاب المسجلين =====
         sendNotificationToStudents(teacherIndex, sectionIndex, title);
@@ -2522,148 +2525,3 @@
             const { error } = await supabaseClient
                 .from('academy_data')
                 .upsert({
-                    id: 'banner',
-                    content: { image_url: url, updated_at: new Date().toISOString() },
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'id' });
-            if (error) {
-                console.warn('⚠️ فشل حفظ البانر في Supabase:', error);
-            }
-        } catch (error) {
-            console.warn('⚠️ خطأ في حفظ البانر:', error);
-        }
-    }
-
-    async function loadBannerFromSupabase() {
-        if (!supabaseClient) return;
-        try {
-            const { data, error } = await supabaseClient
-                .from('academy_data')
-                .select('content')
-                .eq('id', 'banner')
-                .maybeSingle();
-            if (error) return;
-            if (data?.content?.image_url) {
-                localStorage.setItem('bannerImage', data.content.image_url);
-                updateBannerPreview();
-            }
-        } catch (error) {}
-    }
-
-    window.removeBannerImage = function() {
-        if (!confirm('⚠️ هل أنت متأكد من حذف صورة البانر؟')) return;
-        localStorage.removeItem('bannerImage');
-        updateBannerPreview();
-        showToast('success', '✅ تم حذف صورة البانر');
-    };
-
-    // ============================================================
-    // SCROLL
-    // ============================================================
-    window.addEventListener('scroll', function() {});
-
-    // ============================================================
-    // INIT
-    // ============================================================
-    const savedTheme = localStorage.getItem('devAcademicTheme');
-    if (savedTheme === 'dark') {
-        isDarkMode = true;
-        document.body.classList.add('dark-mode');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-    }
-
-    async function init() {
-        try {
-            if (supabaseClient) {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session?.user) {
-                    currentUser = session.user;
-                    localStorage.setItem('devAcademicUser', JSON.stringify({
-                        email: currentUser.email,
-                        name: currentUser.user_metadata?.full_name || '',
-                        phone: currentUser.user_metadata?.phone || ''
-                    }));
-                    updateUI();
-                    await loadBannerFromSupabase();
-                    await loadData();
-                    clearDefaultTeachers();
-                    renderAllData();
-                    renderMyCourses();
-                    renderAccount();
-                    updateBadge();
-
-                    loadingScreen.style.display = 'none';
-                    topBar.style.display = 'flex';
-                    bottomNav.style.display = 'flex';
-                    footer.style.display = 'block';
-
-                    navigateTo('home');
-                    showToast('success', '✅ مرحباً بعودتك');
-                    console.log('👤 المستخدم:', currentUser.email);
-                } else {
-                    window.location.href = 'index.html';
-                }
-            } else {
-                window.location.href = 'index.html';
-            }
-        } catch (error) {
-            console.error('Init error:', error);
-            window.location.href = 'index.html';
-        }
-
-        if (supabaseClient && currentUser) {
-            try {
-                const channel = supabaseClient
-                    .channel('public:academy_data')
-                    .on('postgres_changes', { 
-                        event: 'UPDATE', 
-                        schema: 'public', 
-                        table: 'academy_data',
-                        filter: 'id=eq.main' 
-                    }, (payload) => {
-                        if (!payload?.new?.content) return;
-                        try {
-                            const remoteData = payload.new.content;
-                            if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
-                                data = remoteData;
-                                normalizeDataStructure(data);
-                                saveData();
-                                renderAllData();
-                                renderMyCourses();
-                                renderAccount();
-                                updateBadge();
-                                showToast('info', '🔄 تم تحديث البيانات تلقائياً');
-                            }
-                        } catch (err) { 
-                            console.warn('Realtime parse error:', err); 
-                        }
-                    })
-                    .subscribe();
-                console.log('✅ مشترك في تحديثات Supabase');
-            } catch (error) {
-                console.warn('Supabase realtime error:', error);
-            }
-        }
-
-        renderUsersTable();
-        updateAllAdminSelects();
-        loadAdminsList();
-        updateBannerPreview();
-
-        console.log('📚 ديف أكاديمي - النظام جاهز');
-        console.log('📢 نظام الإشعارات مفعل');
-        console.log('📱 يتم حفظ بيانات الطلاب مع رقم الهاتف');
-        console.log('🖼️ البانر محفوظ في قاعدة البيانات');
-        console.log('✅ علامة التفعيل تظهر فوق صورة المدرس');
-        console.log('🗑️ تم حذف المدرسين الافتراضيين');
-        console.log('🔒 منع إعادة تحميل الصفحة عند الإضافة');
-    }
-
-    loadData().then(init).catch((error) => {
-        console.error('Initialization failed:', error);
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 1000);
-    });
-
-})();
