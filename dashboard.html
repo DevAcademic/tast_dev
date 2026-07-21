@@ -36,7 +36,6 @@
             transition: all 0.3s;
         }
 
-        /* شريط علوي */
         .top-bar {
             position: sticky;
             top: 0;
@@ -142,7 +141,6 @@
             justify-content: center;
         }
 
-        /* البانر */
         .banner-section {
             padding: 0.1rem 0.5rem;
             max-width: 600px;
@@ -172,7 +170,6 @@
             font-weight: 700;
         }
 
-        /* المدرسين */
         .teachers-container {
             padding: 0.3rem 0.6rem 70px;
             max-width: 1200px;
@@ -254,7 +251,6 @@
             color: var(--text-light);
         }
 
-        /* القائمة السفلية */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -300,7 +296,6 @@
             text-align: center;
         }
 
-        /* الحساب */
         .account-section {
             padding: 1rem 1rem 80px;
             max-width: 500px;
@@ -380,7 +375,6 @@
             color: white;
         }
 
-        /* دوراتي */
         .my-courses-section {
             padding: 1rem 1rem 80px;
             max-width: 700px;
@@ -451,7 +445,6 @@
             margin-top: 0.1rem;
         }
 
-        /* الفلتر */
         .filter-section {
             display: flex;
             gap: 0.3rem;
@@ -490,7 +483,6 @@
             font-size: 0.4rem;
         }
 
-        /* النوافذ المنبثقة */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -653,7 +645,6 @@
             font-size: 0.8rem;
         }
 
-        /* لوحة التحكم */
         .admin-panel {
             position: fixed;
             top: 0;
@@ -1476,6 +1467,9 @@
                     updateBannerPreview();
                     navigateTo('home');
 
+                    // تحديث قوائم الفصول بعد التحميل
+                    setTimeout(updateAllSemesterLists, 500);
+
                     console.log('✅ تم التحميل بنجاح');
 
                 } catch (error) {
@@ -1607,29 +1601,29 @@
                 if (!container) return;
                 if (!teachers || teachers.length === 0) {
                     container.innerHTML = `
-                        <div class="empty">
-                            <span class="icon">👨‍🏫</span>
-                            <h3>لا يوجد مدرسون</h3>
-                            <p>قم بإضافة مدرسين من لوحة التحكم</p>
-                        </div>
-                    `;
+                            <div class="empty">
+                                <span class="icon">👨‍🏫</span>
+                                <h3>لا يوجد مدرسون</h3>
+                                <p>قم بإضافة مدرسين من لوحة التحكم</p>
+                            </div>
+                        `;
                     return;
                 }
                 let html = '<div class="teachers-grid">';
                 teachers.forEach(t => {
                     const access = hasAccess(t);
                     html += `
-                        <div class="teacher-card" onclick="openTeacher(${t._sectionIndex}, ${t._teacherIndex})">
-                            <div class="section-badge">${t._sectionName}</div>
-                            <div class="image">
-                                ${t.image ? `<img src="${t.image}" onerror="this.style.display='none';this.parentElement.textContent='${t.emoji||'👨‍🏫'}';">` : (t.emoji || '👨‍🏫')}
+                            <div class="teacher-card" onclick="openTeacher(${t._sectionIndex}, ${t._teacherIndex})">
+                                <div class="section-badge">${t._sectionName}</div>
+                                <div class="image">
+                                    ${t.image ? `<img src="${t.image}" onerror="this.style.display='none';this.parentElement.textContent='${t.emoji||'👨‍🏫'}';">` : (t.emoji || '👨‍🏫')}
+                                </div>
+                                ${access ? '<div class="badge">✅</div>' : ''}
+                                <h3>${t.name || 'مدرس'}</h3>
+                                ${t.subject ? `<div class="subject">${t.subject}</div>` : ''}
+                                <div class="stats">📚 ${t.semesters ? t.semesters.length : 0} فصول</div>
                             </div>
-                            ${access ? '<div class="badge">✅</div>' : ''}
-                            <h3>${t.name || 'مدرس'}</h3>
-                            ${t.subject ? `<div class="subject">${t.subject}</div>` : ''}
-                            <div class="stats">📚 ${t.semesters ? t.semesters.length : 0} فصول</div>
-                        </div>
-                    `;
+                        `;
                 });
                 html += '</div>';
                 container.innerHTML = html;
@@ -1683,7 +1677,7 @@
             };
 
             // ============================================================
-            // فتح المدرس - الإصدار المحسن
+            // فتح المدرس
             // ============================================================
             window.openTeacher = function(sectionIndex, teacherIndex) {
                 console.log('📂 فتح المدرس:', sectionIndex, teacherIndex);
@@ -1711,7 +1705,6 @@
 
                 const hasAccessVal = hasAccess(teacher);
 
-                // عرض الفصول
                 const semestersList = document.getElementById('semestersList');
                 if (!semestersList) {
                     console.error('❌ عنصر semestersList غير موجود');
@@ -1719,18 +1712,16 @@
                 }
 
                 let html = '';
-
-                // التحقق من وجود فصول
                 const semesters = teacher.semesters || [];
 
                 if (semesters.length === 0) {
                     html = `
-                        <div class="empty">
-                            <span class="icon">📀</span>
-                            <h3>لا توجد فصول</h3>
-                            <p>قم بإضافة فصول من لوحة التحكم</p>
-                        </div>
-                    `;
+                            <div class="empty">
+                                <span class="icon">📀</span>
+                                <h3>لا توجد فصول</h3>
+                                <p>قم بإضافة فصول من لوحة التحكم</p>
+                            </div>
+                        `;
                 } else {
                     semesters.forEach((sem, idx) => {
                         const lectures = sem.lectures || [];
@@ -1738,44 +1729,42 @@
                         const locked = !hasAccessVal && !hasFree;
 
                         html += `
-                            <div class="semester-item ${locked ? 'locked' : ''}" 
-                                 onclick="${locked ? '' : `openLectures(${sectionIndex}, ${teacherIndex}, ${idx})`}">
-                                <div>
-                                    <div class="semester-number">📖 الفصل ${sem.number}</div>
-                                    <div class="semester-desc">${sem.description || ''} (${lectures.length} محاضرة)</div>
+                                <div class="semester-item ${locked ? 'locked' : ''}" 
+                                     onclick="${locked ? '' : `openLectures(${sectionIndex}, ${teacherIndex}, ${idx})`}">
+                                    <div>
+                                        <div class="semester-number">📖 الفصل ${sem.number}</div>
+                                        <div class="semester-desc">${sem.description || ''} (${lectures.length} محاضرة)</div>
+                                    </div>
+                                    <div class="semester-status">
+                                        ${locked ? '🔒 مغلق' : (hasAccessVal ? '✅ مفتوح' : '🆓 جزئياً')}
+                                        <i class="fas fa-chevron-left"></i>
+                                    </div>
                                 </div>
-                                <div class="semester-status">
-                                    ${locked ? '🔒 مغلق' : (hasAccessVal ? '✅ مفتوح' : '🆓 جزئياً')}
-                                    <i class="fas fa-chevron-left"></i>
-                                </div>
-                            </div>
-                        `;
+                            `;
                     });
                 }
 
-                // إضافة قسم الكود
                 const activated = hasAccess(teacher);
                 html += `
-                    <div class="codes-info" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);">
-                        <div class="access-status ${activated ? 'active' : 'inactive'}">
-                            ${activated ? '✅ تم التفعيل - جميع المحاضرات مفتوحة' : '🔒 بعض المحاضرات مقفلة - أدخل كود التفعيل'}
-                        </div>
-                        ${!activated ? `
-                            <div class="code-box">
-                                <p style="font-size:0.8rem;margin-bottom:0.2rem;">🔑 أدخل كود التفعيل</p>
-                                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
-                                    <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" />
-                                    <button onclick="activateCodeFromTeacher()">تفعيل</button>
-                                </div>
-                                <div class="msg" id="codeMessageTeacher"></div>
+                        <div class="codes-info" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);">
+                            <div class="access-status ${activated ? 'active' : 'inactive'}">
+                                ${activated ? '✅ تم التفعيل - جميع المحاضرات مفتوحة' : '🔒 بعض المحاضرات مقفلة - أدخل كود التفعيل'}
                             </div>
-                        ` : ''}
-                    </div>
-                `;
+                            ${!activated ? `
+                                <div class="code-box">
+                                    <p style="font-size:0.8rem;margin-bottom:0.2rem;">🔑 أدخل كود التفعيل</p>
+                                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+                                        <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" />
+                                        <button onclick="activateCodeFromTeacher()">تفعيل</button>
+                                    </div>
+                                    <div class="msg" id="codeMessageTeacher"></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
 
                 semestersList.innerHTML = html;
 
-                // عرض النافذة
                 const modal = document.getElementById('semestersModal');
                 if (modal) modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
@@ -1865,27 +1854,27 @@
 
                 if (lectures.length === 0) {
                     html = `
-                        <div class="empty">
-                            <span class="icon">🎥</span>
-                            <h3>لا توجد محاضرات</h3>
-                            <p>قم بإضافة محاضرات من لوحة التحكم</p>
-                        </div>
-                    `;
+                            <div class="empty">
+                                <span class="icon">🎥</span>
+                                <h3>لا توجد محاضرات</h3>
+                                <p>قم بإضافة محاضرات من لوحة التحكم</p>
+                            </div>
+                        `;
                 } else {
                     lectures.forEach(l => {
                         const canWatch = l.isFree === true || hasAccessVal;
                         const url = l.youtubeUrl || '';
                         html += `
-                            <div class="lecture-item ${canWatch ? '' : 'locked'}" 
-                                 onclick="${canWatch ? `playVideo('${url}', '${l.title}')` : ''}">
-                                <div class="lecture-number">#${l.number}</div>
-                                <div class="lecture-title">${l.title}</div>
-                                <div class="lecture-status">
-                                    ${l.isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
-                                    ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
+                                <div class="lecture-item ${canWatch ? '' : 'locked'}" 
+                                     onclick="${canWatch ? `playVideo('${url}', '${l.title}')` : ''}">
+                                    <div class="lecture-number">#${l.number}</div>
+                                    <div class="lecture-title">${l.title}</div>
+                                    <div class="lecture-status">
+                                        ${l.isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
+                                        ${canWatch ? '<i class="fas fa-play-circle" style="color:var(--primary);"></i>' : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
                     });
                 }
 
@@ -1941,26 +1930,26 @@
 
                 if (courses.length === 0) {
                     container.innerHTML = `
-                        <div class="empty">
-                            <span class="icon">📚</span>
-                            <h3>لم تشترك في أي دورة</h3>
-                            <p>استخدم كود التفعيل للاشتراك</p>
-                            <button class="btn-submit" style="width:auto;padding:0.3rem 1.5rem;font-size:0.8rem;margin:0 auto;" onclick="navigateTo('teachers')"><i class="fas fa-search"></i> استعراض المدرسين</button>
-                        </div>
-                    `;
+                            <div class="empty">
+                                <span class="icon">📚</span>
+                                <h3>لم تشترك في أي دورة</h3>
+                                <p>استخدم كود التفعيل للاشتراك</p>
+                                <button class="btn-submit" style="width:auto;padding:0.3rem 1.5rem;font-size:0.8rem;margin:0 auto;" onclick="navigateTo('teachers')"><i class="fas fa-search"></i> استعراض المدرسين</button>
+                            </div>
+                        `;
                     return;
                 }
 
                 let html = '<div class="my-courses-grid">';
                 courses.forEach(c => {
                     html += `
-                        <div class="course-card" onclick="openTeacher(${c.sectionIndex}, ${c.teacherIndex})">
-                            <div class="avatar">${c.teacherImage ? `<img src="${c.teacherImage}" />` : c.teacherEmoji}</div>
-                            <div class="name">${c.teacherName}</div>
-                            <div class="meta">${c.sectionName}</div>
-                            <div class="badge">✅ مشترك</div>
-                        </div>
-                    `;
+                            <div class="course-card" onclick="openTeacher(${c.sectionIndex}, ${c.teacherIndex})">
+                                <div class="avatar">${c.teacherImage ? `<img src="${c.teacherImage}" />` : c.teacherEmoji}</div>
+                                <div class="name">${c.teacherName}</div>
+                                <div class="meta">${c.sectionName}</div>
+                                <div class="badge">✅ مشترك</div>
+                            </div>
+                        `;
                 });
                 html += '</div>';
                 container.innerHTML = html;
@@ -2139,6 +2128,7 @@
                                 updateAllAdminSelects();
                                 loadAdminsList();
                                 renderUsersTable();
+                                setTimeout(updateAllSemesterLists, 300);
                                 showToast('info', '🔓 مرحباً بك في لوحة التحكم');
                             }
                         }
@@ -2228,7 +2218,17 @@
                         if (this.dataset.tab === 'users') renderUsersTable();
                         if (this.dataset.tab === 'add-admin') loadAdminsList();
                         if (this.dataset.tab === 'banner') updateBannerPreview();
-                        if (this.dataset.tab === 'delete') updateAllAdminSelects();
+                        if (this.dataset.tab === 'delete') {
+                            updateAllAdminSelects();
+                            setTimeout(updateAllSemesterLists, 300);
+                        }
+                        if (this.dataset.tab === 'add-lecture') {
+                            updateAllAdminSelects();
+                            setTimeout(updateAllSemesterLists, 300);
+                        }
+                        if (this.dataset.tab === 'edit-teacher') {
+                            updateAllAdminSelects();
+                        }
                     });
                 });
 
@@ -2237,8 +2237,127 @@
             });
 
             // ============================================================
+            // إصلاح الفصول - تحديث قوائم الفصول تلقائياً
+            // ============================================================
+
+            function updateAllSemesterLists() {
+                console.log('🔄 تحديث قوائم الفصول...');
+
+                const semesterSelects = [
+                    { selectId: 'lectureSemester', sectionId: 'lectureSection', teacherId: 'lectureTeacher' },
+                    { selectId: 'deleteSemesterSelect', sectionId: 'deleteSemesterSection',
+                    teacherId: 'deleteSemesterTeacher' },
+                    { selectId: 'deleteLectureSemester', sectionId: 'deleteLectureSection',
+                    teacherId: 'deleteLectureTeacher' },
+                    { selectId: 'editLectureSemester', sectionId: 'editLectureSection',
+                    teacherId: 'editLectureTeacher' }
+                ];
+
+                semesterSelects.forEach(({ selectId, sectionId, teacherId }) => {
+                    const select = document.getElementById(selectId);
+                    const sectionSelect = document.getElementById(sectionId);
+                    const teacherSelect = document.getElementById(teacherId);
+
+                    if (!select || !sectionSelect || !teacherSelect) return;
+
+                    const sectionIndex = parseInt(sectionSelect.value);
+                    const teacherIndex = parseInt(teacherSelect.value);
+                    const currentValue = select.value;
+
+                    let options = '<option value="">اختر الفصل...</option>';
+
+                    if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                        !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                        data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters) {
+
+                        const semesters = data.sections[sectionIndex].teachers[teacherIndex].semesters;
+                        if (semesters.length === 0) {
+                            options += '<option value="" disabled>⚠️ لا توجد فصول لهذا المدرس</option>';
+                        } else {
+                            semesters.forEach((sem, i) => {
+                                const desc = sem.description ? ` - ${sem.description}` : '';
+                                options +=
+                                    `<option value="${i}">📀 الفصل ${sem.number}${desc} (${sem.lectures.length} محاضرة)</option>`;
+                            });
+                        }
+                    } else {
+                        options += '<option value="" disabled>⚠️ اختر القسم والمدرس أولاً</option>';
+                    }
+
+                    select.innerHTML = options;
+
+                    if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                        !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                        data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[parseInt(currentValue)]) {
+                        select.value = currentValue;
+                    }
+                });
+            }
+
+            // ============================================================
+            // ربط الأحداث لتحديث الفصول تلقائياً
+            // ============================================================
+
+            // تحديث عند تغيير القسم أو المدرس في أي مكان
+            const triggerIds = [
+                'lectureSection', 'lectureTeacher',
+                'deleteSemesterSection', 'deleteSemesterTeacher',
+                'deleteLectureSection', 'deleteLectureTeacher',
+                'editLectureSection', 'editLectureTeacher'
+            ];
+
+            triggerIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', function() {
+                        // تحديث المدرسين أولاً
+                        if (id.includes('Section')) {
+                            updateTeachersForSection(this.value);
+                        }
+                        // ثم تحديث الفصول
+                        setTimeout(updateAllSemesterLists, 200);
+                    });
+                }
+            });
+
+            // تحديث عند الضغط على زر "فتح التعديل" في تعديل محاضرة
+            const editLectureBtn = document.querySelector('#tab-edit-lecture .btn-submit');
+            if (editLectureBtn) {
+                editLectureBtn.addEventListener('click', function() {
+                    setTimeout(updateAllSemesterLists, 300);
+                });
+            }
+
+            // ============================================================
             // دوال لوحة التحكم
             // ============================================================
+
+            function updateTeachersForSection(sectionIndex) {
+                const idx = parseInt(sectionIndex);
+                const teacherSelects = [
+                    'semesterTeacher', 'lectureTeacher', 'editTeacherSelect',
+                    'editLectureTeacher', 'deleteTeacherSelect', 'deleteSemesterTeacher',
+                    'deleteLectureTeacher', 'codeTeacherSelect'
+                ];
+
+                teacherSelects.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (!select) return;
+                    const currentValue = select.value;
+                    let options = '<option value="">اختر المدرس...</option>';
+                    if (!isNaN(idx) && idx >= 0 && data.sections[idx]) {
+                        data.sections[idx].teachers.forEach((t, i) => {
+                            options += `<option value="${i}">${t.name}</option>`;
+                        });
+                    }
+                    select.innerHTML = options;
+                    if (currentValue && !isNaN(idx) && idx >= 0 &&
+                        data.sections[idx]?.teachers[parseInt(currentValue)]) {
+                        select.value = currentValue;
+                    }
+                });
+            }
+
             function updateAllAdminSelects() {
                 const ids = ['teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
                     'editTeacherSection', 'deleteSection', 'deleteTeacherSection', 'deleteSemesterSection',
@@ -2256,104 +2375,21 @@
                     if (val && data.sections[parseInt(val)]) select.value = val;
                 });
 
-                updateTeachersForAll();
-            }
-
-            function updateTeachersForAll() {
-                const mappings = [
-                    { sectionId: 'teacherSection', teacherId: null },
-                    { sectionId: 'semesterSection', teacherId: 'semesterTeacher' },
-                    { sectionId: 'lectureSection', teacherId: 'lectureTeacher' },
-                    { sectionId: 'codeSection', teacherId: 'codeTeacherSelect' },
-                    { sectionId: 'editTeacherSection', teacherId: 'editTeacherSelect' },
-                    { sectionId: 'deleteTeacherSection', teacherId: 'deleteTeacherSelect' },
-                    { sectionId: 'deleteSemesterSection', teacherId: 'deleteSemesterTeacher' },
-                    { sectionId: 'deleteLectureSection', teacherId: 'deleteLectureTeacher' }
+                // تحديث المدرسين
+                const sectionSelects = ['teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
+                    'editTeacherSection', 'deleteTeacherSection', 'deleteSemesterSection',
+                    'deleteLectureSection'
                 ];
-
-                mappings.forEach(({ sectionId, teacherId }) => {
-                    const sectionSelect = document.getElementById(sectionId);
-                    if (!sectionSelect) return;
-                    const idx = parseInt(sectionSelect.value);
-                    const teacherSelect = document.getElementById(teacherId);
-                    if (!teacherSelect) return;
-                    const val = teacherSelect.value;
-                    let opts = '<option value="">اختر المدرس...</option>';
-                    if (!isNaN(idx) && idx >= 0 && data.sections[idx]) {
-                        data.sections[idx].teachers.forEach((t, i) => {
-                            opts += `<option value="${i}">${t.name}</option>`;
-                        });
-                    }
-                    teacherSelect.innerHTML = opts;
-                    if (val && !isNaN(idx) && idx >= 0 && data.sections[idx]?.teachers[parseInt(val)]) {
-                        teacherSelect.value = val;
+                sectionSelects.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (select) {
+                        updateTeachersForSection(select.value);
                     }
                 });
 
-                updateSemesterSelects();
-                updateLectureSelects();
+                // تحديث الفصول
+                setTimeout(updateAllSemesterLists, 300);
             }
-
-            function updateSemesterSelects() {
-                const sectionSelect = document.getElementById('semesterSection');
-                const teacherSelect = document.getElementById('semesterTeacher');
-                if (sectionSelect && teacherSelect) {
-                    const si = parseInt(sectionSelect.value);
-                    const ti = parseInt(teacherSelect.value);
-                    const semSelect = document.getElementById('lectureSemester');
-                    if (semSelect) {
-                        const val = semSelect.value;
-                        let opts = '<option value="">اختر الفصل...</option>';
-                        if (!isNaN(si) && si >= 0 && !isNaN(ti) && ti >= 0 && data.sections[si]?.teachers[ti]
-                            ?.semesters) {
-                            data.sections[si].teachers[ti].semesters.forEach((s, i) => {
-                                opts += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
-                            });
-                        }
-                        semSelect.innerHTML = opts;
-                        if (val && data.sections[si]?.teachers[ti]?.semesters[parseInt(val)]) semSelect.value =
-                        val;
-                    }
-                }
-            }
-
-            function updateLectureSelects() {
-                const si = parseInt(document.getElementById('editLectureSection')?.value);
-                const ti = parseInt(document.getElementById('editLectureTeacher')?.value);
-                const semi = parseInt(document.getElementById('editLectureSemester')?.value);
-                const lecSelect = document.getElementById('editLectureSelect');
-                if (lecSelect) {
-                    const val = lecSelect.value;
-                    let opts = '<option value="">اختر المحاضرة...</option>';
-                    if (!isNaN(si) && si >= 0 && !isNaN(ti) && ti >= 0 && !isNaN(semi) && semi >= 0 &&
-                        data.sections[si]?.teachers[ti]?.semesters[semi]?.lectures) {
-                        data.sections[si].teachers[ti].semesters[semi].lectures.forEach((l, i) => {
-                            opts += `<option value="${i}">#${l.number} - ${l.title}</option>`;
-                        });
-                    }
-                    lecSelect.innerHTML = opts;
-                    if (val && data.sections[si]?.teachers[ti]?.semesters[semi]?.lectures[parseInt(val)]) lecSelect
-                        .value = val;
-                }
-            }
-
-            // ربط التغييرات في القوائم
-            document.addEventListener('change', function(e) {
-                const id = e.target.id;
-                if (['teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
-                        'editTeacherSection', 'deleteSection', 'deleteTeacherSection',
-                        'deleteSemesterSection', 'deleteLectureSection'
-                    ].includes(id)) {
-                    updateTeachersForAll();
-                }
-                if (id === 'semesterTeacher' || id === 'lectureTeacher') {
-                    updateSemesterSelects();
-                    updateLectureSelects();
-                }
-                if (id === 'editLectureTeacher') {
-                    updateLectureSelects();
-                }
-            });
 
             // ============================================================
             // نماذج الإضافة
@@ -2534,17 +2570,17 @@
                 const locked = teacher.codes.filter(c => c.locked).length;
 
                 let html = `
-                    <div class="codes-stats">
-                        <span>📊 المجموع: ${teacher.codes.length}</span>
-                        <span>✅ المستخدمة: ${used}</span>
-                        <span>🟢 المتاحة: ${available}</span>
-                        <span>🔒 المقفلة: ${locked}</span>
-                    </div>
-                    <div style="overflow-x:auto;">
-                        <table class="codes-table">
-                            <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>المستخدم</th><th>إجراء</th></tr></thead>
-                            <tbody>
-                `;
+                        <div class="codes-stats">
+                            <span>📊 المجموع: ${teacher.codes.length}</span>
+                            <span>✅ المستخدمة: ${used}</span>
+                            <span>🟢 المتاحة: ${available}</span>
+                            <span>🔒 المقفلة: ${locked}</span>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="codes-table">
+                                <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>المستخدم</th><th>إجراء</th></tr></thead>
+                                <tbody>
+                    `;
 
                 if (teacher.codes.length === 0) {
                     html += `<tr><td colspan="5" style="text-align:center;padding:0.5rem 0;">لا توجد أكواد</td></tr>`;
@@ -2559,19 +2595,19 @@
                             color = '#22c55e';
                             user = c.userName || c.userEmail || 'غير معروف'; }
                         html += `
-                            <tr>
-                                <td>${i + 1}</td>
-                                <td><code style="font-weight:700;color:${color};">${c.code}</code></td>
-                                <td><span style="color:${color};">${status}</span></td>
-                                <td style="font-size:0.65rem;color:var(--text-light);">${user}</td>
-                                <td>
-                                    <button onclick="toggleCodeLock(${si}, ${ti}, '${c.code}')" style="background:${c.locked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
-                                        ${c.locked ? '🔓 فتح' : '🔒 قفل'}
-                                    </button>
-                                    ${!c.used && !c.locked ? `<button onclick="deleteCode(${si}, ${ti}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">🗑️</button>` : ''}
-                                </td>
-                            </tr>
-                        `;
+                                <tr>
+                                    <td>${i + 1}</td>
+                                    <td><code style="font-weight:700;color:${color};">${c.code}</code></td>
+                                    <td><span style="color:${color};">${status}</span></td>
+                                    <td style="font-size:0.65rem;color:var(--text-light);">${user}</td>
+                                    <td>
+                                        <button onclick="toggleCodeLock(${si}, ${ti}, '${c.code}')" style="background:${c.locked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
+                                            ${c.locked ? '🔓 فتح' : '🔒 قفل'}
+                                        </button>
+                                        ${!c.used && !c.locked ? `<button onclick="deleteCode(${si}, ${ti}, '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">🗑️</button>` : ''}
+                                    </td>
+                                </tr>
+                            `;
                     });
                 }
 
@@ -2715,6 +2751,7 @@
                 addChange();
                 renderAllData();
                 updateAllAdminSelects();
+                setTimeout(updateAllSemesterLists, 200);
                 const msg = document.getElementById('deleteSemesterMessage');
                 if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${sem.number}`;
                     msg.style.color = '#22c55e'; }
@@ -2745,7 +2782,7 @@
             };
 
             // ============================================================
-            // الطلاب - الإصدار المحسن
+            // الطلاب
             // ============================================================
             function renderUsersTable() {
                 const tbody = document.getElementById('usersTableBody');
@@ -2769,13 +2806,11 @@
                                                 .toISOString()
                                         });
                                     }
-                                    // إضافة المدرس إذا لم يكن موجوداً
                                     if (!studentsMap.get(c.userEmail).teachers.includes(teacher
                                         .name)) {
                                         studentsMap.get(c.userEmail).teachers.push(teacher
                                         .name);
                                     }
-                                    // تحديث القسم إذا كان موجوداً
                                     if (c.sectionName && !studentsMap.get(c.userEmail).section) {
                                         studentsMap.get(c.userEmail).section = c.sectionName;
                                     }
@@ -2800,16 +2835,16 @@
                     const teachersList = student.teachers.join('، ') || 'لا يوجد';
 
                     html += `
-                        <tr>
-                            <td>${index++}</td>
-                            <td><strong>${student.name}</strong></td>
-                            <td style="font-size:0.7rem;color:var(--text-light);">${student.email}</td>
-                            <td style="font-size:0.7rem;color:var(--text-light);">${student.phone}</td>
-                            <td style="font-size:0.7rem;color:var(--text-light);">${student.section || 'غير محدد'}</td>
-                            <td style="font-size:0.7rem;color:var(--primary);">${teachersList}</td>
-                            <td style="font-size:0.6rem;color:var(--text-light);">${date}</td>
-                        </tr>
-                    `;
+                            <tr>
+                                <td>${index++}</td>
+                                <td><strong>${student.name}</strong></td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.email}</td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.phone}</td>
+                                <td style="font-size:0.7rem;color:var(--text-light);">${student.section || 'غير محدد'}</td>
+                                <td style="font-size:0.7rem;color:var(--primary);">${teachersList}</td>
+                                <td style="font-size:0.6rem;color:var(--text-light);">${date}</td>
+                            </tr>
+                        `;
                 });
 
                 tbody.innerHTML = html;
@@ -2851,10 +2886,10 @@
                         const date = a.created_at ? new Date(a.created_at).toLocaleDateString('ar') :
                         'غير معروف';
                         html += `<tr style="border-bottom:1px solid var(--border);">
-                            <td style="padding:0.15rem 0.3rem;">${i + 1}</td>
-                            <td style="padding:0.15rem 0.3rem;">${a.email} ${isCurrent ? '👑' : ''}</td>
-                            <td style="padding:0.15rem 0.3rem;color:var(--text-light);font-size:0.65rem;">${date}</td>
-                        </tr>`;
+                                <td style="padding:0.15rem 0.3rem;">${i + 1}</td>
+                                <td style="padding:0.15rem 0.3rem;">${a.email} ${isCurrent ? '👑' : ''}</td>
+                                <td style="padding:0.15rem 0.3rem;color:var(--text-light);font-size:0.65rem;">${date}</td>
+                            </tr>`;
                     });
 
                     html += '</tbody></table></div>';
