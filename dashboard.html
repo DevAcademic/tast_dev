@@ -331,7 +331,6 @@
             font-size: 1.8rem;
         }
 
-        /* ===== علامة التفعيل ===== */
         .teacher-card .teacher-badge {
             position: absolute;
             top: -6px;
@@ -2116,6 +2115,20 @@
             </form>
         </div>
     </div>
+
+    <!-- ===== حل إضافي لمنع إعادة تحميل الصفحة ===== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('form').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('✅ تم منع إعادة التحميل للنموذج:', form.id);
+                    return false;
+                });
+            });
+        });
+    </script>
 
     <script src="script.js"></script>
 </body>

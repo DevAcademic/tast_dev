@@ -7,10 +7,20 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('✅ تم منع إعادة تحميل النموذج:', form.id || 'بدون ID');
                 return false;
             });
         });
     });
+
+    // ===== دالة مساعدة لإرسال النموذج يدوياً =====
+    window.submitForm = function(formId) {
+        const form = document.getElementById(formId);
+        if (form) {
+            const event = new Event('submit', { bubbles: true, cancelable: true });
+            form.dispatchEvent(event);
+        }
+    };
 
     // ===== حماية =====
     document.addEventListener('keydown', function(e) {
@@ -241,7 +251,6 @@
         codeData.usedAt = new Date().toISOString();
         saveData();
 
-        // محاولة حفظ في Supabase
         if (supabaseClient) {
             try {
                 await saveCodeToSupabase(teacher, codeData);
@@ -331,7 +340,7 @@
     }
 
     // ============================================================
-    // DATA - تحميل من Supabase أولاً
+    // DATA
     // ============================================================
     function normalizeDataStructure(courseData) {
         if (!courseData || !Array.isArray(courseData.sections)) {
@@ -413,7 +422,6 @@
                 localStorage.setItem('academyData', JSON.stringify(data));
                 console.log('✅ تم تحميل البيانات من Supabase:', data.sections.length, 'أقسام');
                 
-                // حذف المدرسين الافتراضيين
                 clearDefaultTeachers();
                 
                 renderAllData();
@@ -1781,7 +1789,7 @@
     });
 
     // ============================================================
-    // ADD SECTION - مع منع إعادة التحميل
+    // ADD SECTION
     // ============================================================
     addSectionForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1807,7 +1815,7 @@
     });
 
     // ============================================================
-    // ADD TEACHER - مع منع إعادة التحميل
+    // ADD TEACHER
     // ============================================================
     addTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1847,7 +1855,7 @@
     });
 
     // ============================================================
-    // ADD SEMESTER - مع منع إعادة التحميل
+    // ADD SEMESTER
     // ============================================================
     addSemesterForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1878,7 +1886,7 @@
     });
 
     // ============================================================
-    // ADD LECTURE - مع منع إعادة التحميل
+    // ADD LECTURE
     // ============================================================
     addLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1926,7 +1934,6 @@
         const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
         if (!teacher) return;
 
-        // جلب الطلاب المسجلين عند هذا المدرس
         const students = [];
         teacher.codes.forEach(c => {
             if (c.used && c.userEmail) {
@@ -1940,9 +1947,7 @@
 
         if (students.length === 0) return;
 
-        // إشعار لكل طالب
         students.forEach(student => {
-            // تخزين الإشعار في localStorage مؤقتاً
             const notifications = JSON.parse(localStorage.getItem('notifications_' + student.email) || '[]');
             notifications.push({
                 id: Date.now(),
