@@ -136,7 +136,7 @@
     // ============================================================
     // TOAST
     // ============================================================
-    function showToast(type, message, duration = 4000) {
+    function showToast(type, message, duration = 3000) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -270,7 +270,7 @@
     }
 
     // ============================================================
-    // DATA - تحميل من Supabase أولاً
+    // DATA
     // ============================================================
     function normalizeDataStructure(courseData) {
         if (!courseData || !Array.isArray(courseData.sections)) {
@@ -306,49 +306,54 @@
 
     async function loadData() {
         try {
-            let loadedFromSupabase = false;
+            // محاولة جلب البيانات من localStorage أولاً (أسرع)
+            const savedData = localStorage.getItem('academyData');
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed && parsed.sections && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+                        data = parsed;
+                        normalizeDataStructure(data);
+                        console.log('✅ تم تحميل البيانات من localStorage:', data.sections.length, 'أقسام');
+                        
+                        // جلب من Supabase في الخلفية
+                        if (supabaseClient) {
+                            getSupabaseAcademyData().then(remoteData => {
+                                if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
+                                    data = remoteData;
+                                    normalizeDataStructure(data);
+                                    localStorage.setItem('academyData', JSON.stringify(data));
+                                    renderAllData();
+                                    renderMyCourses();
+                                    renderAccount();
+                                    console.log('✅ تم تحديث البيانات من Supabase');
+                                }
+                            }).catch(() => {});
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ بيانات localStorage فاسدة');
+                }
+            }
 
-            // 1️⃣ محاولة جلب البيانات من Supabase أولاً
+            // محاولة جلب من Supabase
             if (supabaseClient) {
                 const remoteData = await getSupabaseAcademyData();
                 if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
                     data = remoteData;
                     normalizeDataStructure(data);
                     localStorage.setItem('academyData', JSON.stringify(data));
-                    loadedFromSupabase = true;
                     console.log('✅ تم تحميل البيانات من Supabase:', data.sections.length, 'أقسام');
-                    showToast('success', '✅ تم تحميل البيانات من قاعدة البيانات');
+                    return;
                 }
             }
 
-            // 2️⃣ إذا ما جابت من Supabase، حاول من localStorage
-            if (!loadedFromSupabase) {
-                const savedData = localStorage.getItem('academyData');
-                if (savedData) {
-                    try {
-                        const parsed = JSON.parse(savedData);
-                        if (parsed && parsed.sections && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
-                            data = parsed;
-                            normalizeDataStructure(data);
-                            console.log('✅ تم تحميل البيانات من localStorage:', data.sections.length, 'أقسام');
-                            return;
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ بيانات localStorage فاسدة');
-                    }
-                }
-
-                // 3️⃣ إذا مافي بيانات، استخدم الافتراضية
-                console.log('📚 لا توجد بيانات، جاري إنشاء الأقسام الافتراضية...');
-                data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
-                normalizeDataStructure(data);
-                localStorage.setItem('academyData', JSON.stringify(data));
-
-                // 4️⃣ محاولة حفظ في Supabase
-                if (supabaseClient) {
-                    await saveSupabaseAcademyData();
-                }
-            }
+            // استخدام الافتراضية
+            console.log('📚 جاري إنشاء الأقسام الافتراضية...');
+            data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
+            normalizeDataStructure(data);
+            localStorage.setItem('academyData', JSON.stringify(data));
 
         } catch (error) {
             console.error('❌ خطأ في تحميل البيانات:', error);
@@ -361,16 +366,8 @@
     function saveData() {
         try {
             localStorage.setItem('academyData', JSON.stringify(data));
-            // محاولة حفظ في Supabase تلقائياً
-            if (supabaseClient) {
-                saveSupabaseAcademyData().then(result => {
-                    if (result.success) {
-                        console.log('✅ تم حفظ البيانات في Supabase');
-                    }
-                });
-            }
         } catch (error) {
-            showToast('error', '⚠️ فشل حفظ البيانات');
+            console.warn('⚠️ فشل حفظ البيانات محلياً');
         }
     }
 
@@ -1026,34 +1023,52 @@
     }
 
     // ============================================================
-    // AUTH
+    // AUTH - تسجيل الخروج
     // ============================================================
     async function signOut() {
         try {
+            showToast('info', '⏳ جاري تسجيل الخروج...');
+            
+            // مسح localStorage
             localStorage.removeItem('devAcademicUser');
+            localStorage.removeItem('academyData');
+            
+            // تسجيل الخروج من Supabase
             if (supabaseClient) {
-                await supabaseClient.auth.signOut();
+                try {
+                    await supabaseClient.auth.signOut();
+                } catch (e) {
+                    console.warn('Supabase signOut error:', e);
+                }
             }
+            
+            // إعادة تعيين المتغيرات
             currentUser = null;
             activeTeacher = null;
             activeTeacherIndex = null;
             activeSectionIndex = null;
-            updateUI();
+            
+            // إغلاق جميع النوافذ المنبثقة
             if (adminPanel) adminPanel.classList.remove('active');
             if (semestersModal) semestersModal.classList.remove('active');
             if (lecturesModal) lecturesModal.classList.remove('active');
             if (teachersModal) teachersModal.classList.remove('active');
             if (editLectureModal) editLectureModal.classList.remove('active');
-            renderMyCourses();
-            renderAccount();
-            updateBadge();
-            renderAllData();
+            
             showToast('success', '✅ تم تسجيل الخروج بنجاح');
+            
+            // التوجيه إلى صفحة تسجيل الدخول
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 500);
+            }, 600);
+            
         } catch (error) {
+            console.error('SignOut error:', error);
             showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
+            // محاولة التوجيه قسراً
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
         }
     }
 
@@ -1101,7 +1116,6 @@
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // ===== إظهار البانر فقط في الصفحة الرئيسية =====
         var bannerSection = document.getElementById('bannerSection');
         if (bannerSection) {
             if (page === 'home') {
@@ -1136,7 +1150,11 @@
         navigateTo('account');
     });
 
-    logoutAccountBtn?.addEventListener('click', signOut);
+    // تسجيل الخروج - ربط مباشر
+    logoutAccountBtn?.addEventListener('click', function(e) {
+        e.preventDefault();
+        signOut();
+    });
 
     adminPanelBtn?.addEventListener('click', function() {
         if (!currentUser) {
@@ -1233,10 +1251,9 @@
     });
 
     // ============================================================
-    // ADMIN FUNCTIONS
+    // ADMIN FUNCTIONS - مبسطة ومباشرة
     // ============================================================
     function updateAllAdminSelects() {
-        // تحديث جميع القوائم المنسدلة
         const selectIds = [
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
@@ -1257,7 +1274,6 @@
             }
         });
 
-        // تحديث قوائم المدرسين
         updateTeacherSelects();
         updateSemesterSelects();
         updateLectureSelects();
@@ -2212,8 +2228,9 @@
     }
 
     async function init() {
-        if (supabaseClient) {
-            try {
+        try {
+            // التحقق من الجلسة
+            if (supabaseClient) {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session?.user) {
                     currentUser = session.user;
@@ -2223,12 +2240,15 @@
                         phone: currentUser.user_metadata?.phone || ''
                     }));
                     updateUI();
+                    
+                    // تحميل البيانات وعرضها
                     await loadData();
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
 
+                    // إخفاء التحميل وإظهار الواجهة
                     loadingScreen.style.display = 'none';
                     topBar.style.display = 'flex';
                     bottomNav.style.display = 'flex';
@@ -2240,19 +2260,25 @@
                 } else {
                     window.location.href = 'index.html';
                 }
-            } catch (error) {
+            } else {
                 window.location.href = 'index.html';
             }
-        } else {
+        } catch (error) {
+            console.error('Init error:', error);
             window.location.href = 'index.html';
         }
 
+        // الإشتراك في التحديثات
         if (supabaseClient && currentUser) {
             try {
                 const channel = supabaseClient
                     .channel('public:academy_data')
-                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data',
-                        filter: 'id=eq.main' }, (payload) => {
+                    .on('postgres_changes', { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'academy_data',
+                        filter: 'id=eq.main' 
+                    }, (payload) => {
                         if (!payload?.new?.content) return;
                         try {
                             const remoteData = payload.new.content;
@@ -2266,26 +2292,35 @@
                                 updateBadge();
                                 showToast('info', '🔄 تم تحديث البيانات تلقائياً');
                             }
-                        } catch (err) { console.warn('Realtime parse error:', err); }
+                        } catch (err) { 
+                            console.warn('Realtime parse error:', err); 
+                        }
                     })
                     .subscribe();
                 console.log('✅ مشترك في تحديثات Supabase');
-            } catch (error) {}
+            } catch (error) {
+                console.warn('Supabase realtime error:', error);
+            }
         }
 
+        // تحديث الجداول والقوائم
         renderUsersTable();
         updateAllAdminSelects();
         loadAdminsList();
         updateBannerPreview();
 
-        console.log('📚 ديف أكاديمي - النظام جاهز مع Supabase');
+        console.log('📚 ديف أكاديمي - النظام جاهز');
         console.log('📢 نظام الإشعارات مفعل');
         console.log('📱 يتم حفظ بيانات الطلاب مع رقم الهاتف');
     }
 
+    // بدء التطبيق
     loadData().then(init).catch((error) => {
         console.error('Initialization failed:', error);
-        window.location.href = 'index.html';
+        // محاولة إعادة التوجيه
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
     });
 
 })();
