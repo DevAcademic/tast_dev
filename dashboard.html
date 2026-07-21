@@ -123,11 +123,12 @@
             font-weight: 700;
         }
         .top-bar .user-btn .name {
-            font-size: 0.5rem;
+            font-size: 0.55rem;
             max-width: 60px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-weight: 600;
         }
         .top-bar .theme-toggle {
             background: var(--bg-card);
@@ -142,7 +143,6 @@
             justify-content: center;
         }
 
-        /* باقي الأنماط مختصرة */
         .banner-section {
             padding: 0.1rem 0.5rem;
             max-width: 600px;
@@ -1440,7 +1440,7 @@
     </div>
 
     <!-- ============================================================
-    JAVASCRIPT - الكود المبسط والمعدل
+    JAVASCRIPT - النسخة المعدلة بالكامل
     ============================================================ -->
     <script>
         (function() {
@@ -1471,6 +1471,7 @@
             let activeTeacher = null;
             let activeTeacherIndex = null;
             let activeSectionIndex = null;
+            let deviceId = localStorage.getItem('deviceId') || 'DEV_' + Date.now();
 
             // ===== الأقسام الافتراضية =====
             const defaultSections = [
@@ -1507,9 +1508,7 @@
                         toast.style.animation = 'slideOut 0.3s ease forwards';
                         setTimeout(() => toast.remove(), 300);
                     }, duration);
-                } catch (e) {
-                    console.warn('⚠️ فشل عرض الإشعار:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل عرض الإشعار:', e); }
             }
             window.showToast = showToast;
 
@@ -1530,9 +1529,7 @@
                                 currentUser = userData;
                                 console.log('✅ تم استعادة المستخدم:', currentUser.email);
                             }
-                        } catch (e) {
-                            console.warn('⚠️ فشل استعادة المستخدم:', e);
-                        }
+                        } catch (e) { console.warn('⚠️ فشل استعادة المستخدم:', e); }
                     }
 
                     if (!currentUser && supabaseClient) {
@@ -1543,9 +1540,7 @@
                                 localStorage.setItem('devAcademicUser', JSON.stringify(currentUser));
                                 console.log('✅ تم استعادة المستخدم من Supabase:', currentUser.email);
                             }
-                        } catch (e) {
-                            console.warn('⚠️ فشل استعادة المستخدم من Supabase:', e);
-                        }
+                        } catch (e) { console.warn('⚠️ فشل استعادة المستخدم من Supabase:', e); }
                     }
 
                     if (!currentUser) {
@@ -1554,7 +1549,7 @@
                         return;
                     }
 
-                    // 2. تحميل البيانات
+                    // 2. تحميل البيانات (مع محاولة من Supabase أولاً)
                     await loadData();
 
                     // 3. عرض الواجهة
@@ -1569,7 +1564,7 @@
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
-                    updateBannerPreview();
+                    loadBannerFromSupabase();
                     navigateTo('home');
 
                     // 5. تحديث القوائم
@@ -1577,18 +1572,12 @@
                         try {
                             updateAllAdminSelects();
                             updateAllSemesterLists();
-                        } catch (e) {
-                            console.warn('⚠️ فشل تحديث القوائم:', e);
-                        }
+                        } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
                     }, 500);
 
                     // 6. إظهار زر لوحة الإدارة
                     setTimeout(function() {
-                        try {
-                            showAdminButton();
-                        } catch (e) {
-                            console.warn('⚠️ فشل إظهار زر الإدارة:', e);
-                        }
+                        try { showAdminButton(); } catch (e) { console.warn('⚠️ فشل إظهار زر الإدارة:', e); }
                     }, 1000);
 
                     console.log('✅ تم التحميل بنجاح');
@@ -1597,16 +1586,65 @@
                     console.error('❌ خطأ في التحميل:', error);
                     if (loadingScreen) loadingScreen.style.display = 'none';
                     showToast('error', '❌ حدث خطأ في التحميل');
-
-                    // محاولة عرض الصفحة بشكل جزئي
                     try {
                         if (topBar) topBar.style.display = 'flex';
                         if (bottomNav) bottomNav.style.display = 'flex';
                         if (footer) footer.style.display = 'block';
                         navigateTo('home');
-                    } catch (e) {
-                        console.warn('⚠️ فشل عرض الصفحة بشكل جزئي:', e);
+                    } catch (e) { console.warn('⚠️ فشل عرض الصفحة بشكل جزئي:', e); }
+                }
+            }
+
+            // ============================================================
+            // تحميل البانر من Supabase
+            // ============================================================
+            async function loadBannerFromSupabase() {
+                try {
+                    if (!supabaseClient) return;
+                    const { data, error } = await supabaseClient
+                        .from('academy_data')
+                        .select('content')
+                        .eq('id', 'banner')
+                        .maybeSingle();
+
+                    if (error) {
+                        console.warn('⚠️ فشل تحميل البانر من Supabase:', error);
+                        return;
                     }
+
+                    if (data?.content?.image_url) {
+                        localStorage.setItem('bannerImage', data.content.image_url);
+                        updateBannerPreview();
+                        console.log('✅ تم تحميل البانر من Supabase');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ فشل تحميل البانر:', e);
+                }
+            }
+
+            // ============================================================
+            // حفظ البانر في Supabase
+            // ============================================================
+            async function saveBannerToSupabase(imageUrl) {
+                try {
+                    if (!supabaseClient) return;
+                    const { error } = await supabaseClient
+                        .from('academy_data')
+                        .upsert({
+                            id: 'banner',
+                            content: { image_url: imageUrl, updated_at: new Date().toISOString() },
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'id' });
+
+                    if (error) {
+                        console.warn('⚠️ فشل حفظ البانر في Supabase:', error);
+                        return false;
+                    }
+                    console.log('✅ تم حفظ البانر في Supabase');
+                    return true;
+                } catch (e) {
+                    console.warn('⚠️ فشل حفظ البانر:', e);
+                    return false;
                 }
             }
 
@@ -1615,19 +1653,7 @@
             // ============================================================
             async function loadData() {
                 try {
-                    const saved = localStorage.getItem('academyData');
-                    if (saved) {
-                        try {
-                            const parsed = JSON.parse(saved);
-                            if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
-                                data = parsed;
-                                normalizeData(data);
-                                console.log('✅ تم تحميل البيانات من localStorage');
-                                return;
-                            }
-                        } catch (e) { console.warn('⚠️ بيانات localStorage فاسدة'); }
-                    }
-
+                    // محاولة من Supabase أولاً
                     if (supabaseClient) {
                         try {
                             const { data: remote, error } = await supabaseClient
@@ -1646,6 +1672,21 @@
                         } catch (e) { console.warn('⚠️ فشل تحميل من Supabase:', e); }
                     }
 
+                    // محاولة من localStorage
+                    const saved = localStorage.getItem('academyData');
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
+                                data = parsed;
+                                normalizeData(data);
+                                console.log('✅ تم تحميل البيانات من localStorage');
+                                return;
+                            }
+                        } catch (e) { console.warn('⚠️ بيانات localStorage فاسدة'); }
+                    }
+
+                    // البيانات الافتراضية
                     data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
                     normalizeData(data);
                     localStorage.setItem('academyData', JSON.stringify(data));
@@ -1672,6 +1713,7 @@
                             if (!c.userName) c.userName = null;
                             if (!c.usedAt) c.usedAt = null;
                             if (!c.sectionName) c.sectionName = s.name;
+                            if (!c.deviceId) c.deviceId = null;
                         });
                         t.semesters.forEach(sem => {
                             if (!Array.isArray(sem.lectures)) sem.lectures = [];
@@ -1766,9 +1808,7 @@
                     renderTeachers(filtered, teachersGridContainer2);
                     updateClassFilter();
                     buildFilterButtons();
-                } catch (e) {
-                    console.warn('⚠️ فشل عرض البيانات:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل عرض البيانات:', e); }
             }
 
             function updateClassFilter() {
@@ -1811,23 +1851,17 @@
             };
 
             // ============================================================
-            // فتح المدرس
+            // فتح المدرس - مع نظام الأكواد المحسن
             // ============================================================
             window.openTeacher = function(sectionIndex, teacherIndex) {
                 try {
                     console.log('📂 فتح المدرس:', sectionIndex, teacherIndex);
 
                     const section = data.sections[sectionIndex];
-                    if (!section) {
-                        showToast('error', '❌ القسم غير موجود');
-                        return;
-                    }
+                    if (!section) { showToast('error', '❌ القسم غير موجود'); return; }
 
                     const teacher = section.teachers[teacherIndex];
-                    if (!teacher) {
-                        showToast('error', '❌ المدرس غير موجود');
-                        return;
-                    }
+                    if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
                     activeTeacher = teacher;
                     activeTeacherIndex = teacherIndex;
@@ -1903,6 +1937,9 @@
                 }
             };
 
+            // ============================================================
+            // تفعيل الكود - مع ربط بالبريد الإلكتروني
+            // ============================================================
             window.activateCodeFromTeacher = function() {
                 try {
                     const input = document.getElementById('codeInputTeacher');
@@ -1936,19 +1973,33 @@
                         return;
                     }
 
-                    if (codeData.used && codeData.userEmail !== currentUser.email) {
-                        msg.innerHTML = '❌ هذا الكود مستخدم من قبل شخص آخر';
-                        msg.style.color = '#ef4444';
-                        showToast('error', '❌ الكود مستخدم');
-                        return;
+                    // منع استخدام الكود من قبل شخص آخر
+                    if (codeData.used) {
+                        if (codeData.userEmail === currentUser.email) {
+                            msg.innerHTML = '✅ هذا الكود مفعل بالفعل على حسابك';
+                            msg.style.color = '#22c55e';
+                            showToast('info', '✅ الكود مفعل بالفعل على حسابك');
+                            return;
+                        } else {
+                            const usedBy = codeData.userName || codeData.userEmail || 'شخص آخر';
+                            msg.innerHTML = `❌ هذا الكود مستخدم من قبل: ${usedBy}`;
+                            msg.style.color = '#ef4444';
+                            showToast('error', `❌ هذا الكود مستخدم من قبل: ${usedBy}`);
+                            return;
+                        }
                     }
 
-                    // تفعيل الكود
+                    // تفعيل الكود - حفظ البريد الإلكتروني والاسم
+                    const fullName = currentUser.user_metadata?.full_name ||
+                        currentUser.user_metadata?.name ||
+                        currentUser.email?.split('@')[0] ||
+                        'مستخدم';
+
                     codeData.used = true;
                     codeData.userEmail = currentUser.email;
-                    codeData.userName = currentUser.user_metadata?.full_name ||
-                        currentUser.user_metadata?.name ||
-                        currentUser.email;
+                    codeData.userName = fullName;
+                    codeData.userPhone = currentUser.user_metadata?.phone || '';
+                    codeData.deviceId = deviceId;
                     codeData.usedAt = new Date().toISOString();
                     codeData.sectionName = data.sections[activeSectionIndex]?.name || '';
 
@@ -1959,9 +2010,32 @@
                     renderAccount();
                     updateBadge();
 
-                    msg.innerHTML = '✅ تم التفعيل بنجاح!';
+                    // محاولة حفظ في Supabase
+                    if (supabaseClient) {
+                        supabaseClient
+                            .from('codes')
+                            .upsert({
+                                code: code,
+                                teacher_id: teacher._id || null,
+                                teacher_name: teacher.name,
+                                user_id: currentUser.id,
+                                user_email: currentUser.email,
+                                user_name: fullName,
+                                user_phone: currentUser.user_metadata?.phone || '',
+                                device_id: deviceId,
+                                is_used: true,
+                                is_locked: false,
+                                used_at: new Date().toISOString()
+                            }, { onConflict: 'code' })
+                            .then(({ error }) => {
+                                if (error) console.warn('⚠️ فشل حفظ الكود في Supabase:', error);
+                                else console.log('✅ تم حفظ الكود في Supabase');
+                            });
+                    }
+
+                    msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${fullName}`;
                     msg.style.color = '#22c55e';
-                    showToast('success', '✅ تم التفعيل بنجاح!');
+                    showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${fullName}`);
 
                     setTimeout(() => {
                         if (activeSectionIndex !== null && activeTeacherIndex !== null) {
@@ -2035,10 +2109,7 @@
             // ============================================================
             window.playVideo = function(url, title) {
                 try {
-                    if (!url) {
-                        showToast('error', '❌ رابط الفيديو غير موجود');
-                        return;
-                    }
+                    if (!url) { showToast('error', '❌ رابط الفيديو غير موجود'); return; }
 
                     let videoUrl = url.trim();
                     let youtubeId = null;
@@ -2126,27 +2197,6 @@
                 document.body.style.overflow = 'auto';
             });
 
-            document.getElementById('videoPlayer')?.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    const videoWrapper = document.getElementById('videoWrapper');
-                    this.classList.remove('active');
-                    if (videoWrapper) videoWrapper.innerHTML = '';
-                    document.body.style.overflow = 'auto';
-                }
-            });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const videoPlayer = document.getElementById('videoPlayer');
-                    const videoWrapper = document.getElementById('videoWrapper');
-                    if (videoPlayer && videoPlayer.classList.contains('active')) {
-                        videoPlayer.classList.remove('active');
-                        if (videoWrapper) videoWrapper.innerHTML = '';
-                        document.body.style.overflow = 'auto';
-                    }
-                }
-            });
-
             // ============================================================
             // دوراتي
             // ============================================================
@@ -2205,9 +2255,7 @@
                     });
                     html += '</div>';
                     container.innerHTML = html;
-                } catch (e) {
-                    console.warn('⚠️ فشل عرض دوراتي:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل عرض دوراتي:', e); }
             }
 
             function updateBadge() {
@@ -2222,13 +2270,11 @@
                             badge.style.display = 'none';
                         }
                     }
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث الشارة:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث الشارة:', e); }
             }
 
             // ============================================================
-            // الحساب
+            // الحساب - مع عرض الاسم العربي
             // ============================================================
             function renderAccount() {
                 try {
@@ -2242,17 +2288,22 @@
                         return;
                     }
 
-                    const name = currentUser.user_metadata?.full_name ||
+                    // استخراج الاسم العربي
+                    let fullName = currentUser.user_metadata?.full_name ||
                         currentUser.user_metadata?.name ||
+                        currentUser.user_metadata?.user_name ||
                         currentUser.email?.split('@')[0] ||
                         'مستخدم';
+
+                    // حفظ الاسم في localStorage للاستخدام المستمر
+                    localStorage.setItem('userFullName', fullName);
 
                     const nameEl = document.getElementById('accountName');
                     const emailEl = document.getElementById('accountEmail');
                     const avatarEl = document.getElementById('accountAvatar');
-                    if (nameEl) nameEl.textContent = name;
+                    if (nameEl) nameEl.textContent = fullName;
                     if (emailEl) emailEl.textContent = currentUser.email;
-                    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+                    if (avatarEl) avatarEl.textContent = fullName.charAt(0).toUpperCase();
 
                     if (currentUser.created_at) {
                         const regEl = document.getElementById('accountRegistered');
@@ -2279,11 +2330,8 @@
                     const teachersEl = document.getElementById('accountTeachersCount');
                     if (teachersEl) teachersEl.textContent = courses.length;
 
-                    // إظهار زر لوحة الإدارة
                     showAdminButton();
-                } catch (e) {
-                    console.warn('⚠️ فشل عرض الحساب:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل عرض الحساب:', e); }
             }
 
             // ============================================================
@@ -2292,7 +2340,6 @@
             async function isUserAdmin(email) {
                 try {
                     console.log('🔍 التحقق من المشرف:', email);
-
                     if (!supabaseClient || !email) return false;
 
                     const { data, error } = await supabaseClient
@@ -2311,7 +2358,6 @@
                         return true;
                     }
 
-                    // محاولة إضافة المستخدم كمشرف
                     console.log('🔄 محاولة إضافة المستخدم كمشرف...');
                     try {
                         const { error: insertError } = await supabaseClient
@@ -2326,9 +2372,7 @@
                             console.log('✅ تم إضافة المشرف بنجاح');
                             return true;
                         }
-                    } catch (e) {
-                        console.warn('⚠️ فشل إضافة المشرف:', e);
-                    }
+                    } catch (e) { console.warn('⚠️ فشل إضافة المشرف:', e); }
 
                     return false;
                 } catch (e) {
@@ -2343,17 +2387,13 @@
             async function showAdminButton() {
                 try {
                     if (!currentUser) return;
-
                     const isAdmin = await isUserAdmin(currentUser.email);
                     const adminBtn = document.getElementById('adminPanelBtn');
-
                     if (adminBtn) {
                         adminBtn.style.display = isAdmin ? 'flex' : 'none';
                         console.log(isAdmin ? '✅ زر لوحة الإدارة ظاهر' : '❌ زر لوحة الإدارة مخفي');
                     }
-                } catch (e) {
-                    console.warn('⚠️ فشل إظهار زر الإدارة:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل إظهار زر الإدارة:', e); }
             }
 
             // ============================================================
@@ -2385,31 +2425,29 @@
 
                     const banner = document.getElementById('bannerSection');
                     if (banner) banner.style.display = page === 'home' ? 'block' : 'none';
-                } catch (e) {
-                    console.warn('⚠️ فشل التنقل:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل التنقل:', e); }
             };
 
             function updateUI() {
                 try {
                     if (currentUser) {
-                        const name = currentUser.user_metadata?.full_name ||
+                        let fullName = localStorage.getItem('userFullName') ||
+                            currentUser.user_metadata?.full_name ||
                             currentUser.user_metadata?.name ||
                             currentUser.email?.split('@')[0] ||
                             'مستخدم';
+
                         const nameEl = document.getElementById('userNameDisplay');
                         const avatarEl = document.getElementById('userAvatar');
-                        if (nameEl) nameEl.textContent = name;
-                        if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+                        if (nameEl) nameEl.textContent = fullName;
+                        if (avatarEl) avatarEl.textContent = fullName.charAt(0).toUpperCase();
                     } else {
                         const nameEl = document.getElementById('userNameDisplay');
                         const avatarEl = document.getElementById('userAvatar');
                         if (nameEl) nameEl.textContent = 'غير مسجل';
                         if (avatarEl) avatarEl.textContent = '👤';
                     }
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث الواجهة:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث الواجهة:', e); }
             }
 
             // ============================================================
@@ -2430,14 +2468,12 @@
                 console.log('📄 DOM loaded');
 
                 try {
-                    // ربط أزرار التنقل
                     document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
                         item.addEventListener('click', function() {
                             window.navigateTo(this.dataset.page);
                         });
                     });
 
-                    // ربط زر الحساب
                     const profileBtn = document.getElementById('userProfileBtn');
                     if (profileBtn) {
                         profileBtn.addEventListener('click', function() {
@@ -2446,7 +2482,6 @@
                         });
                     }
 
-                    // ربط زر تسجيل الخروج
                     const logoutBtn = document.getElementById('logoutAccountBtn');
                     if (logoutBtn) {
                         logoutBtn.addEventListener('click', function(e) {
@@ -2455,7 +2490,6 @@
                         });
                     }
 
-                    // ربط زر لوحة التحكم
                     const adminBtn = document.getElementById('adminPanelBtn');
                     if (adminBtn) {
                         adminBtn.addEventListener('click', function() {
@@ -2473,7 +2507,6 @@
                         });
                     }
 
-                    // ربط إغلاق لوحة التحكم
                     const adminClose = document.getElementById('adminClose');
                     if (adminClose) {
                         adminClose.addEventListener('click', function() {
@@ -2482,7 +2515,6 @@
                         });
                     }
 
-                    // ربط الوضع المظلم
                     const themeToggle = document.getElementById('themeToggle');
                     if (themeToggle) {
                         themeToggle.addEventListener('click', function() {
@@ -2499,7 +2531,6 @@
                         if (toggle) toggle.innerHTML = '<i class="fas fa-sun"></i>';
                     }
 
-                    // ربط البحث
                     const searchBtn = document.getElementById('searchBtn');
                     if (searchBtn) {
                         searchBtn.addEventListener('click', function() {
@@ -2525,7 +2556,6 @@
                         });
                     }
 
-                    // ربط إغلاق النوافذ المنبثقة
                     document.querySelectorAll('.modal .close').forEach(btn => {
                         btn.addEventListener('click', function() {
                             const modal = this.closest('.modal-overlay');
@@ -2541,7 +2571,6 @@
                         });
                     });
 
-                    // ربط علامات التبويب في لوحة التحكم
                     document.querySelectorAll('.admin-tabs .tab').forEach(btn => {
                         btn.addEventListener('click', function() {
                             document.querySelectorAll('.admin-tabs .tab').forEach(b => b.classList
@@ -2568,14 +2597,11 @@
                         });
                     });
 
-                    // زر النشر
                     document.getElementById('publishBtn')?.addEventListener('click', publishData);
 
-                    // بدء التطبيق
                     initApp();
                 } catch (e) {
                     console.error('❌ خطأ في ربط الأحداث:', e);
-                    // محاولة بدء التطبيق مباشرة
                     setTimeout(initApp, 1000);
                 }
             });
@@ -2636,9 +2662,7 @@
                             select.value = currentValue;
                         }
                     });
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث قوائم الفصول:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث قوائم الفصول:', e); }
             }
 
             function updateTeachersForSection(sectionIndex) {
@@ -2687,16 +2711,13 @@
                     });
 
                     setTimeout(updateAllSemesterLists, 150);
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث المدرسين:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث المدرسين:', e); }
             }
 
             function updateAllAdminSelects() {
                 try {
                     console.log('🔄 تحديث جميع القوائم...');
 
-                    // تحديث الأقسام
                     const sectionSelects = [
                         'teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
                         'editTeacherSection', 'deleteSection', 'deleteTeacherSection',
@@ -2721,7 +2742,6 @@
                         }
                     });
 
-                    // تحديث المدرسين
                     const sectionTeacherMap = [
                         { sectionId: 'teacherSection', teacherId: null },
                         { sectionId: 'semesterSection', teacherId: 'semesterTeacher' },
@@ -2765,12 +2785,9 @@
                     });
 
                     setTimeout(updateAllSemesterLists, 200);
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث القوائم:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
             }
 
-            // ===== إعداد مستمعات الأحداث =====
             function setupChangeListeners() {
                 try {
                     console.log('🔗 ربط أحداث التغيير...');
@@ -2807,13 +2824,11 @@
                             });
                         }
                     });
-                } catch (e) {
-                    console.warn('⚠️ فشل ربط أحداث التغيير:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل ربط أحداث التغيير:', e); }
             }
 
             // ============================================================
-            // دوال النشر
+            // دوال النشر المحسنة
             // ============================================================
             async function publishData() {
                 try {
@@ -2829,11 +2844,17 @@
 
                     showToast('info', '⏳ جاري النشر...');
 
+                    // حفظ البيانات مع تحديث الوقت
+                    const dataToSave = {
+                        ...data,
+                        _updatedAt: new Date().toISOString()
+                    };
+
                     const { error } = await supabaseClient
                         .from('academy_data')
                         .upsert({
                             id: 'main',
-                            content: data,
+                            content: dataToSave,
                             updated_at: new Date().toISOString()
                         }, {
                             onConflict: 'id',
@@ -2850,7 +2871,7 @@
                                 .from('academy_data')
                                 .insert({
                                     id: 'main',
-                                    content: data,
+                                    content: dataToSave,
                                     updated_at: new Date().toISOString()
                                 });
 
@@ -2875,7 +2896,11 @@
                         setTimeout(() => msg.innerHTML = '', 5000);
                     }
 
+                    // تحديث النسخة المحلية
+                    localStorage.setItem('academyData', JSON.stringify(data));
+
                     showToast('success', '✅ تم نشر التغييرات بنجاح');
+
                 } catch (e) {
                     console.error('❌ خطأ:', e);
                     showToast('error', '❌ فشل النشر: ' + e.message);
@@ -2883,7 +2908,7 @@
             }
 
             // ============================================================
-            // نماذج الإضافة (مختصرة)
+            // نماذج الإضافة
             // ============================================================
             document.getElementById('addSectionForm')?.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -2981,7 +3006,7 @@
             });
 
             // ============================================================
-            // الأكواد (مختصرة)
+            // الأكواد - مع عرض الأكواد عند اختيار المدرس
             // ============================================================
             window.addManualCode = function() {
                 try {
@@ -3004,8 +3029,17 @@
                         return;
                     }
 
-                    teacher.codes.push({ code, used: false, locked: false, userEmail: null, userName: null,
-                        usedAt: null, sectionName: data.sections[si].name });
+                    teacher.codes.push({
+                        code: code,
+                        used: false,
+                        locked: false,
+                        userEmail: null,
+                        userName: null,
+                        userPhone: null,
+                        deviceId: null,
+                        usedAt: null,
+                        sectionName: data.sections[si].name
+                    });
                     saveData();
                     addChange();
                     updateCodesManagement();
@@ -3033,8 +3067,17 @@
                         let code = '';
                         for (let j = 0; j < 8; j++) code += chars.charAt(Math.floor(Math.random() * chars.length));
                         if (!teacher.codes.some(c => c.code === code)) {
-                            teacher.codes.push({ code, used: false, locked: false, userEmail: null, userName: null,
-                                usedAt: null, sectionName: data.sections[si].name });
+                            teacher.codes.push({
+                                code: code,
+                                used: false,
+                                locked: false,
+                                userEmail: null,
+                                userName: null,
+                                userPhone: null,
+                                deviceId: null,
+                                usedAt: null,
+                                sectionName: data.sections[si].name
+                            });
                             gen++;
                         }
                     }
@@ -3080,28 +3123,33 @@
                                 </div>
                                 <div style="overflow-x:auto;">
                                     <table class="codes-table">
-                                        <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>المستخدم</th><th>إجراء</th></tr></thead>
+                                        <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>المستخدم</th><th>البريد</th><th>إجراء</th></tr></thead>
                                         <tbody>
                             `;
 
                     if (teacher.codes.length === 0) {
-                        html += `<tr><td colspan="5" style="text-align:center;padding:0.5rem 0;">لا توجد أكواد</td></tr>`;
+                        html += `<tr><td colspan="6" style="text-align:center;padding:0.5rem 0;">لا توجد أكواد</td></tr>`;
                     } else {
                         teacher.codes.forEach((c, i) => {
                             let status = '🟢 متاح';
                             let color = '#22c55e';
                             let user = '—';
+                            let email = '—';
                             if (c.locked) { status = '🔒 مقفل';
                                 color = '#f59e0b'; }
-                            if (c.used) { status = '✅ مستخدم';
+                            if (c.used) {
+                                status = '✅ مستخدم';
                                 color = '#22c55e';
-                                user = c.userName || c.userEmail || 'غير معروف'; }
+                                user = c.userName || 'غير معروف';
+                                email = c.userEmail || '—';
+                            }
                             html += `
                                         <tr>
                                             <td>${i + 1}</td>
                                             <td><code style="font-weight:700;color:${color};">${c.code}</code></td>
                                             <td><span style="color:${color};">${status}</span></td>
                                             <td style="font-size:0.65rem;color:var(--text-light);">${user}</td>
+                                            <td style="font-size:0.6rem;color:var(--text-light);">${email}</td>
                                             <td>
                                                 <button onclick="toggleCodeLock(${si}, ${ti}, '${c.code}')" style="background:${c.locked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
                                                     ${c.locked ? '🔓 فتح' : '🔒 قفل'}
@@ -3115,9 +3163,7 @@
 
                     html += `</tbody></table></div>`;
                     if (container) container.innerHTML = html;
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث إدارة الأكواد:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث إدارة الأكواد:', e); }
             }
 
             window.toggleCodeLock = function(si, ti, code) {
@@ -3313,7 +3359,7 @@
             };
 
             // ============================================================
-            // الطلاب
+            // الطلاب - الإصدار المحسن
             // ============================================================
             function renderUsersTable() {
                 try {
@@ -3338,13 +3384,14 @@
                                                     .toISOString()
                                             });
                                         }
+                                        // إضافة المدرس إذا لم يكن موجوداً
                                         if (!studentsMap.get(c.userEmail).teachers.includes(teacher
                                             .name)) {
                                             studentsMap.get(c.userEmail).teachers.push(teacher
                                                 .name);
                                         }
-                                        if (c.sectionName && !studentsMap.get(c.userEmail)
-                                            .section) {
+                                        // تحديث القسم
+                                        if (c.sectionName) {
                                             studentsMap.get(c.userEmail).section = c.sectionName;
                                         }
                                     }
@@ -3383,6 +3430,9 @@
                     tbody.innerHTML = html;
                 } catch (e) {
                     console.warn('⚠️ فشل عرض الطلاب:', e);
+                    const tbody = document.getElementById('usersTableBody');
+                    if (tbody) tbody.innerHTML =
+                        `<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:1rem 0;">❌ حدث خطأ في تحميل الطلاب</td></tr>`;
                 }
             }
 
@@ -3517,7 +3567,7 @@
             };
 
             // ============================================================
-            // البانر
+            // البانر - مع حفظ في Supabase
             // ============================================================
             function updateBannerPreview() {
                 try {
@@ -3540,12 +3590,10 @@
                         if (adminImg) adminImg.style.display = 'none';
                         if (adminPlaceholder) adminPlaceholder.style.display = 'block';
                     }
-                } catch (e) {
-                    console.warn('⚠️ فشل تحديث البانر:', e);
-                }
+                } catch (e) { console.warn('⚠️ فشل تحديث البانر:', e); }
             }
 
-            window.updateBannerImage = function() {
+            window.updateBannerImage = async function() {
                 try {
                     const url = document.getElementById('bannerImageInput').value.trim();
                     const msg = document.getElementById('bannerMessage');
@@ -3555,12 +3603,23 @@
                     try { new URL(url); } catch (e) { if (msg) { msg.innerHTML = '⚠️ الرابط غير صحيح';
                             msg.style.color = '#f59e0b'; } return; }
 
+                    // حفظ محلياً
                     localStorage.setItem('bannerImage', url);
                     updateBannerPreview();
-                    if (msg) { msg.innerHTML = '✅ تم تحديث البانر';
-                        msg.style.color = '#22c55e'; }
+
+                    // حفظ في Supabase
+                    const saved = await saveBannerToSupabase(url);
+                    if (saved) {
+                        if (msg) { msg.innerHTML = '✅ تم تحديث البانر وحفظه في قاعدة البيانات';
+                            msg.style.color = '#22c55e'; }
+                        showToast('success', '✅ تم تحديث البانر وحفظه في قاعدة البيانات');
+                    } else {
+                        if (msg) { msg.innerHTML = '✅ تم تحديث البانر محلياً (فشل الحفظ في قاعدة البيانات)';
+                            msg.style.color = '#f59e0b'; }
+                        showToast('warning', '⚠️ تم تحديث البانر محلياً، فشل الحفظ في قاعدة البيانات');
+                    }
+
                     document.getElementById('bannerImageInput').value = '';
-                    showToast('success', '✅ تم تحديث البانر');
                     addChange();
                 } catch (e) {
                     console.error('❌ خطأ:', e);
@@ -3568,12 +3627,30 @@
                 }
             };
 
-            window.removeBannerImage = function() {
+            window.removeBannerImage = async function() {
                 try {
                     if (!confirm('⚠️ حذف صورة البانر؟')) return;
+
                     localStorage.removeItem('bannerImage');
                     updateBannerPreview();
-                    showToast('success', '✅ تم حذف البانر');
+
+                    // حذف من Supabase
+                    if (supabaseClient) {
+                        const { error } = await supabaseClient
+                            .from('academy_data')
+                            .delete()
+                            .eq('id', 'banner');
+
+                        if (error) {
+                            console.warn('⚠️ فشل حذف البانر من Supabase:', error);
+                            showToast('warning', '⚠️ تم حذف البانر محلياً، فشل الحذف من قاعدة البيانات');
+                        } else {
+                            showToast('success', '✅ تم حذف البانر من الجميع');
+                        }
+                    } else {
+                        showToast('success', '✅ تم حذف البانر محلياً');
+                    }
+
                     addChange();
                 } catch (e) {
                     console.error('❌ خطأ:', e);
