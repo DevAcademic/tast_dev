@@ -1,6 +1,17 @@
 (function() {
     'use strict';
 
+    // ===== منع إعادة تحميل الصفحة عند إرسال النماذج =====
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+        });
+    });
+
     // ===== حماية =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12' ||
@@ -1724,6 +1735,8 @@
 
     editTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
+        e.stopPropagation();
+        
         const sectionSelect = document.getElementById('editTeacherSection');
         const teacherSelect = document.getElementById('editTeacherSelect');
         const messageEl = document.getElementById('editTeacherMessage');
@@ -1766,6 +1779,185 @@
         messageEl.style.color = '#22c55e';
         showToast('success', `✅ تم تعديل بيانات المدرس "${newName}"`);
     });
+
+    // ============================================================
+    // ADD SECTION - مع منع إعادة التحميل
+    // ============================================================
+    addSectionForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const name = document.getElementById('sectionName').value.trim();
+        if (!name) {
+            showToast('warning', '⚠️ يرجى إدخال اسم القسم');
+            return;
+        }
+        const newSection = {
+            id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+            name: name,
+            teachers: []
+        };
+        data.sections.push(newSection);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addSectionForm.reset();
+        showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
+    });
+
+    // ============================================================
+    // ADD TEACHER - مع منع إعادة التحميل
+    // ============================================================
+    addTeacherForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const sectionSelect = document.getElementById('teacherSection');
+        const sectionIndex = parseInt(sectionSelect?.value);
+        if (isNaN(sectionIndex) || sectionIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار القسم');
+            return;
+        }
+        const name = document.getElementById('teacherName').value.trim();
+        const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
+        const subject = document.getElementById('teacherSubject').value.trim();
+        const description = document.getElementById('teacherDesc').value.trim();
+        const image = document.getElementById('teacherImage').value.trim();
+        if (!name) {
+            showToast('warning', '⚠️ يرجى إدخال اسم المدرس');
+            return;
+        }
+        const newTeacher = {
+            name,
+            emoji,
+            subject: subject || 'مدرس',
+            description: description || '',
+            image: image || '',
+            codes: [],
+            semesters: []
+        };
+        data.sections[sectionIndex].teachers.push(newTeacher);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addTeacherForm.reset();
+        showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+    });
+
+    // ============================================================
+    // ADD SEMESTER - مع منع إعادة التحميل
+    // ============================================================
+    addSemesterForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const sectionSelect = document.getElementById('semesterSection');
+        const teacherSelect = document.getElementById('semesterTeacher');
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const number = parseInt(document.getElementById('semesterNumber').value);
+        const description = document.getElementById('semesterDesc').value.trim();
+        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
+            showToast('warning', '⚠️ يرجى اختيار القسم والمدرس وإدخال رقم الفصل');
+            return;
+        }
+        const newSemester = {
+            number: number,
+            description: description || `الفصل ${number}`,
+            lectures: []
+        };
+        data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addSemesterForm.reset();
+        showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+    });
+
+    // ============================================================
+    // ADD LECTURE - مع منع إعادة التحميل
+    // ============================================================
+    addLectureForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const sectionSelect = document.getElementById('lectureSection');
+        const teacherSelect = document.getElementById('lectureTeacher');
+        const semesterSelect = document.getElementById('lectureSemester');
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(semesterSelect?.value);
+        const number = parseInt(document.getElementById('lectureNumber').value);
+        const title = document.getElementById('lectureTitle').value.trim();
+        const youtubeUrl = document.getElementById('lectureUrl').value.trim();
+        const isFree = document.getElementById('lectureFree').value === 'true';
+        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
+            isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
+            showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
+            return;
+        }
+        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+            youtubeUrl.includes('youtube') ||
+            youtubeUrl.includes('youtu.be') ||
+            youtubeUrl.includes('player.') ||
+            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+        if (!isValidUrl) {
+            showToast('warning', '⚠️ رابط الفيديو غير صحيح');
+            return;
+        }
+        const newLecture = { number, title, youtubeUrl, isFree };
+        data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addLectureForm.reset();
+        showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+
+        // ===== إشعار للطلاب المسجلين =====
+        sendNotificationToStudents(teacherIndex, sectionIndex, title);
+    });
+
+    // ===== دالة إرسال الإشعارات =====
+    function sendNotificationToStudents(teacherIndex, sectionIndex, lectureTitle) {
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) return;
+
+        // جلب الطلاب المسجلين عند هذا المدرس
+        const students = [];
+        teacher.codes.forEach(c => {
+            if (c.used && c.userEmail) {
+                students.push({
+                    email: c.userEmail,
+                    name: c.userName || 'طالب',
+                    phone: c.userPhone || ''
+                });
+            }
+        });
+
+        if (students.length === 0) return;
+
+        // إشعار لكل طالب
+        students.forEach(student => {
+            // تخزين الإشعار في localStorage مؤقتاً
+            const notifications = JSON.parse(localStorage.getItem('notifications_' + student.email) || '[]');
+            notifications.push({
+                id: Date.now(),
+                teacherName: teacher.name,
+                lectureTitle: lectureTitle,
+                sectionName: data.sections[sectionIndex]?.name || '',
+                date: new Date().toLocaleString('ar'),
+                read: false
+            });
+            localStorage.setItem('notifications_' + student.email, JSON.stringify(notifications));
+        });
+
+        showToast('info', `📢 تم إرسال إشعار لـ ${students.length} طالب مسجل`);
+        console.log(`✅ تم إرسال إشعار لـ ${students.length} طالب: ${teacher.name} - ${lectureTitle}`);
+    }
 
     // ============================================================
     // DELETE FUNCTIONS
@@ -1958,6 +2150,8 @@
 
     editLectureForm?.addEventListener('submit', function(e) {
         e.preventDefault();
+        e.stopPropagation();
+        
         const { sectionIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
         if (sectionIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
             editLectureMessage.innerHTML = '⚠️ لم يتم تحديد المحاضرة بشكل صحيح';
@@ -2264,7 +2458,7 @@
     });
 
     // ============================================================
-    // BANNER MANAGEMENT - حفظ في localStorage و Supabase
+    // BANNER MANAGEMENT
     // ============================================================
     function updateBannerPreview() {
         var savedImage = localStorage.getItem('bannerImage');
@@ -2296,22 +2490,16 @@
         var urlInput = document.getElementById('bannerImageInput');
         var message = document.getElementById('bannerMessage');
         var url = urlInput.value.trim();
-        
         if (!url) {
             message.innerHTML = '⚠️ يرجى إدخال رابط الصورة';
             message.style.color = '#f59e0b';
             return;
         }
-        
-        try { 
-            new URL(url); 
-        } catch (e) {
+        try { new URL(url); } catch (e) {
             message.innerHTML = '⚠️ الرابط غير صحيح';
             message.style.color = '#f59e0b';
             return;
         }
-        
-        // حفظ في localStorage
         localStorage.setItem('bannerImage', url);
         updateBannerPreview();
         message.innerHTML = '✅ تم تحديث صورة البانر بنجاح';
@@ -2319,7 +2507,6 @@
         showToast('success', '✅ تم تحديث صورة البانر');
         urlInput.value = '';
         
-        // حفظ في Supabase
         if (supabaseClient && currentUser) {
             saveBannerToSupabase(url);
         }
@@ -2334,11 +2521,8 @@
                     content: { image_url: url, updated_at: new Date().toISOString() },
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'id' });
-                
             if (error) {
                 console.warn('⚠️ فشل حفظ البانر في Supabase:', error);
-            } else {
-                console.log('✅ تم حفظ البانر في Supabase');
             }
         } catch (error) {
             console.warn('⚠️ خطأ في حفظ البانر:', error);
@@ -2353,20 +2537,12 @@
                 .select('content')
                 .eq('id', 'banner')
                 .maybeSingle();
-                
-            if (error) {
-                console.warn('⚠️ فشل جلب البانر:', error);
-                return;
-            }
-            
+            if (error) return;
             if (data?.content?.image_url) {
                 localStorage.setItem('bannerImage', data.content.image_url);
                 updateBannerPreview();
-                console.log('✅ تم تحميل البانر من Supabase');
             }
-        } catch (error) {
-            console.warn('⚠️ خطأ في جلب البانر:', error);
-        }
+        } catch (error) {}
     }
 
     window.removeBannerImage = function() {
@@ -2374,27 +2550,12 @@
         localStorage.removeItem('bannerImage');
         updateBannerPreview();
         showToast('success', '✅ تم حذف صورة البانر');
-        
-        // حذف من Supabase
-        if (supabaseClient) {
-            try {
-                supabaseClient
-                    .from('academy_data')
-                    .delete()
-                    .eq('id', 'banner')
-                    .then(({ error }) => {
-                        if (!error) console.log('✅ تم حذف البانر من Supabase');
-                    });
-            } catch (e) {}
-        }
     };
 
     // ============================================================
     // SCROLL
     // ============================================================
-    window.addEventListener('scroll', function() {
-        // تم إزالة تأثير الـ navbar لأنه صار top-bar
-    });
+    window.addEventListener('scroll', function() {});
 
     // ============================================================
     // INIT
@@ -2418,16 +2579,9 @@
                         phone: currentUser.user_metadata?.phone || ''
                     }));
                     updateUI();
-                    
-                    // تحميل البانر من Supabase
                     await loadBannerFromSupabase();
-                    
-                    // تحميل البيانات وعرضها
                     await loadData();
-                    
-                    // حذف المدرسين الافتراضيين
                     clearDefaultTeachers();
-                    
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
@@ -2452,7 +2606,6 @@
             window.location.href = 'index.html';
         }
 
-        // الإشتراك في التحديثات
         if (supabaseClient && currentUser) {
             try {
                 const channel = supabaseClient
@@ -2487,7 +2640,6 @@
             }
         }
 
-        // تحديث الجداول والقوائم
         renderUsersTable();
         updateAllAdminSelects();
         loadAdminsList();
@@ -2499,9 +2651,9 @@
         console.log('🖼️ البانر محفوظ في قاعدة البيانات');
         console.log('✅ علامة التفعيل تظهر فوق صورة المدرس');
         console.log('🗑️ تم حذف المدرسين الافتراضيين');
+        console.log('🔒 منع إعادة تحميل الصفحة عند الإضافة');
     }
 
-    // بدء التطبيق
     loadData().then(init).catch((error) => {
         console.error('Initialization failed:', error);
         setTimeout(() => {
