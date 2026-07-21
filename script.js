@@ -59,6 +59,16 @@
         { id: 'sixth-literary', name: 'سادس أدبي', teachers: [] }
     ];
 
+    // ===== حذف المدرسين الافتراضيين =====
+    function clearDefaultTeachers() {
+        if (!data || !data.sections) return;
+        data.sections.forEach(section => {
+            section.teachers = [];
+        });
+        saveData();
+        console.log('✅ تم حذف جميع المدرسين الافتراضيين');
+    }
+
     // ===== DOM =====
     const loadingScreen = document.getElementById('loadingScreen');
     const topBar = document.getElementById('topBar');
@@ -346,7 +356,7 @@
 
     async function loadData() {
         try {
-            // محاولة جلب البيانات من localStorage أولاً (أسرع)
+            // محاولة جلب البيانات من localStorage أولاً
             const savedData = localStorage.getItem('academyData');
             if (savedData) {
                 try {
@@ -355,6 +365,9 @@
                         data = parsed;
                         normalizeDataStructure(data);
                         console.log('✅ تم تحميل البيانات من localStorage:', data.sections.length, 'أقسام');
+                        
+                        // حذف المدرسين الافتراضيين
+                        clearDefaultTeachers();
                         
                         // جلب من Supabase في الخلفية
                         if (supabaseClient) {
@@ -375,11 +388,12 @@
             data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
             normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
+            clearDefaultTeachers();
         }
     }
 
     async function loadFromSupabase() {
-        if (!supabaseClient) return;
+        if (!supabaseClient) return false;
         try {
             const remoteData = await getSupabaseAcademyData();
             if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
@@ -387,6 +401,10 @@
                 normalizeDataStructure(data);
                 localStorage.setItem('academyData', JSON.stringify(data));
                 console.log('✅ تم تحميل البيانات من Supabase:', data.sections.length, 'أقسام');
+                
+                // حذف المدرسين الافتراضيين
+                clearDefaultTeachers();
+                
                 renderAllData();
                 renderMyCourses();
                 renderAccount();
@@ -532,6 +550,7 @@
             const subject = teacher.subject || '';
             const semestersCount = Array.isArray(teacher.semesters) ? teacher.semesters.length : 0;
             const sectionName = teacher._sectionName || '';
+            
             html += `
                 <div class="teacher-card" onclick="openTeacher(${teacher._sectionIndex}, ${teacher._teacherIndex})">
                     <div class="teacher-section-badge">${sectionName}</div>
@@ -1092,12 +1111,12 @@
                     <div class="notification-item" style="background:${notif.read ? 'var(--bg)' : 'var(--bg-hover)'};border-radius:8px;padding:0.5rem;margin-bottom:0.4rem;border:1px solid var(--border);">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <strong style="font-size:0.8rem;">${notif.title}</strong>
-                            <span style="font-size:0.6rem;color:var(--text-light);">${date}</span>
+                            <span style="font-size:0.55rem;color:var(--text-light);">${date}</span>
                         </div>
-                        <p style="font-size:0.75rem;color:var(--text-light);margin:0.2rem 0;">${notif.message}</p>
+                        <p style="font-size:0.7rem;color:var(--text-light);margin:0.2rem 0;">${notif.message}</p>
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.2rem;">
-                            <span style="font-size:0.6rem;color:${notif.read ? '#22c55e' : '#f59e0b'};">${isRead}</span>
-                            ${!notif.read ? `<button onclick="markNotificationRead('${notif.id}')" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.5rem;font-size:0.6rem;cursor:pointer;">تحديد كمقروء</button>` : ''}
+                            <span style="font-size:0.55rem;font-weight:600;color:${notif.read ? '#22c55e' : '#f59e0b'};">${isRead}</span>
+                            ${!notif.read ? `<button onclick="markNotificationRead('${notif.id}')" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.5rem;font-size:0.55rem;cursor:pointer;">تحديد كمقروء</button>` : ''}
                         </div>
                     </div>
                 `;
@@ -2389,7 +2408,6 @@
 
     async function init() {
         try {
-            // التحقق من الجلسة
             if (supabaseClient) {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session?.user) {
@@ -2406,12 +2424,15 @@
                     
                     // تحميل البيانات وعرضها
                     await loadData();
+                    
+                    // حذف المدرسين الافتراضيين
+                    clearDefaultTeachers();
+                    
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
 
-                    // إخفاء التحميل وإظهار الواجهة
                     loadingScreen.style.display = 'none';
                     topBar.style.display = 'flex';
                     bottomNav.style.display = 'flex';
@@ -2476,6 +2497,8 @@
         console.log('📢 نظام الإشعارات مفعل');
         console.log('📱 يتم حفظ بيانات الطلاب مع رقم الهاتف');
         console.log('🖼️ البانر محفوظ في قاعدة البيانات');
+        console.log('✅ علامة التفعيل تظهر فوق صورة المدرس');
+        console.log('🗑️ تم حذف المدرسين الافتراضيين');
     }
 
     // بدء التطبيق
