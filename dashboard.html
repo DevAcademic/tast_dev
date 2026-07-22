@@ -9,31 +9,31 @@
     </script>
     
     <!-- ============================================================
-    🔒 الحماية الشاملة - مع السماح بالكتابة في الحقول
+    🔒 حماية شاملة - منع سرقة الملفات وF12 وجميع محاولات الاختراق
     ============================================================ -->
     <script>
         (function() {
             'use strict';
-            
+
             // ============================================================
-            // دالة للتحقق إذا كان العنصر هو حقل إدخال
+            // دالة للتحقق من الحقول (للاستثناء)
             // ============================================================
             function isInputField(element) {
                 if (!element) return false;
                 const tag = element.tagName.toLowerCase();
                 const type = element.type || '';
-                return tag === 'input' || 
-                       tag === 'textarea' || 
-                       tag === 'select' ||
-                       element.contentEditable === 'true' ||
-                       (tag === 'input' && (type === 'text' || type === 'password' || type === 'email' || type === 'number' || type === 'tel' || type === 'url' || type === 'search'));
+                return tag === 'input' ||
+                    tag === 'textarea' ||
+                    tag === 'select' ||
+                    element.contentEditable === 'true' ||
+                    (tag === 'input' && (type === 'text' || type === 'password' || type === 'email' || type === 'number' || type === 'tel' || type === 'url' || type === 'search'));
             }
 
             // ============================================================
-            // 1) منع F12 و Ctrl+Shift+I و Ctrl+Shift+J و Ctrl+U (مع استثناء الحقول)
+            // 1) منع جميع مفاتيح الاختراق (مع استثناء الحقول)
             // ============================================================
             document.addEventListener('keydown', function(e) {
-                // استثناء الحقول - السماح بالكتابة
+                // استثناء الحقول
                 if (isInputField(e.target)) {
                     return true;
                 }
@@ -45,7 +45,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+Shift+I
                 if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
                     e.preventDefault();
@@ -53,7 +53,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+Shift+J
                 if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
                     e.preventDefault();
@@ -61,7 +61,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+U
                 if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
                     e.preventDefault();
@@ -69,7 +69,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+S
                 if (e.ctrlKey && (e.key === 'S' || e.key === 's' || e.keyCode === 83)) {
                     e.preventDefault();
@@ -77,7 +77,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+Shift+C
                 if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
                     e.preventDefault();
@@ -85,7 +85,7 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
+
                 // Ctrl+E
                 if (e.ctrlKey && (e.key === 'E' || e.key === 'e' || e.keyCode === 69)) {
                     e.preventDefault();
@@ -93,8 +93,16 @@
                     e.stopImmediatePropagation();
                     return false;
                 }
-                
-                // منع Ctrl+Shift+أي حرف (ما عدا الحقول)
+
+                // Ctrl+A (منع تحديد الكل)
+                if (e.ctrlKey && (e.key === 'A' || e.key === 'a' || e.keyCode === 65)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+
+                // منع Ctrl+Shift+أي حرف
                 if (e.ctrlKey && e.shiftKey) {
                     const key = e.key.toUpperCase();
                     if (key.length === 1 && key >= 'A' && key <= 'Z') {
@@ -104,7 +112,7 @@
                         return false;
                     }
                 }
-                
+
                 return true;
             }, true);
 
@@ -170,12 +178,11 @@
             }, true);
 
             // ============================================================
-            // 6) منع لصق النص (مع استثناء الحقول - اختياري)
+            // 6) منع لصق النص (مع استثناء الحقول)
             // ============================================================
             document.addEventListener('paste', function(e) {
-                // السماح باللصق في الحقول (يمكنك تغيير إلى false إذا أردت المنع)
                 if (isInputField(e.target)) {
-                    return true;
+                    return true; // السماح باللصق في الحقول
                 }
                 e.preventDefault();
                 e.stopPropagation();
@@ -183,7 +190,7 @@
             }, true);
 
             // ============================================================
-            // 7) منع سحب الصور (مع استثناء الحقول)
+            // 7) منع سحب الصور والملفات
             // ============================================================
             document.addEventListener('dragstart', function(e) {
                 if (isInputField(e.target)) {
@@ -213,52 +220,22 @@
             }, true);
 
             // ============================================================
-            // 8) منع Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A (مع استثناء الحقول)
-            // ============================================================
-            document.addEventListener('keydown', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
-                
-                if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'X' || e.key === 'x' || e.keyCode === 88)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'V' || e.key === 'v' || e.keyCode === 86)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'A' || e.key === 'a' || e.keyCode === 65)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }, true);
-
-            // ============================================================
-            // 9) كشف أدوات المطور وإغلاقها
+            // 8) كشف أدوات المطور وإغلاقها
             // ============================================================
             let devtoolsOpen = false;
-            
+
             function closeDevTools() {
                 if (devtoolsOpen) {
                     document.body.innerHTML = `
-                        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#ef4444;font-size:28px;text-align:center;padding:30px;direction:rtl;">
-                            <div>
-                                <div style="font-size:60px;margin-bottom:20px;">🔒</div>
-                                <div>تم تعطيل أدوات المطور</div>
-                                <div style="font-size:18px;margin-top:10px;color:#64748b;">الرجاء إغلاقها والمتابعة</div>
-                                <button onclick="location.reload()" style="margin-top:20px;padding:12px 30px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:18px;cursor:pointer;">🔄 إعادة تحميل الصفحة</button>
-                            </div>
-                        </div>
-                    `;
+                                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#ef4444;font-size:28px;text-align:center;padding:30px;direction:rtl;">
+                                    <div>
+                                        <div style="font-size:60px;margin-bottom:20px;">🔒</div>
+                                        <div>تم تعطيل أدوات المطور</div>
+                                        <div style="font-size:18px;margin-top:10px;color:#64748b;">الرجاء إغلاقها والمتابعة</div>
+                                        <button onclick="location.reload()" style="margin-top:20px;padding:12px 30px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:18px;cursor:pointer;">🔄 إعادة تحميل الصفحة</button>
+                                    </div>
+                                </div>
+                            `;
                     document.body.style.margin = '0';
                     document.body.style.padding = '0';
                     document.body.style.overflow = 'hidden';
@@ -266,7 +243,7 @@
                 }
             }
 
-            // طريقة الكشف عبر console.log
+            // كشف عبر console.log
             let devtools = /./;
             devtools.toString = function() {
                 if (!this._started) {
@@ -276,38 +253,38 @@
                 }
                 return '';
             };
-            
+
             try {
                 console.log('%c', devtools);
-            } catch(e) {}
+            } catch (e) {}
 
-            // طريقة الكشف عبر تغيير الحجم
+            // كشف عبر تغيير الحجم
             function checkDevTools() {
                 const threshold = 100;
                 const widthThreshold = window.outerWidth - window.innerWidth > threshold;
                 const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-                
+
                 if (widthThreshold || heightThreshold) {
                     devtoolsOpen = true;
                     closeDevTools();
                 }
-                
+
                 setTimeout(checkDevTools, 2000);
             }
-            
+
             setTimeout(checkDevTools, 1000);
 
             // ============================================================
-            // 10) تعطيل دوال الكونسول
+            // 9) تعطيل دوال الكونسول
             // ============================================================
             const noop = function() {};
             const consoleMethods = [
-                'log', 'warn', 'error', 'info', 'debug', 'trace', 
-                'dir', 'dirxml', 'table', 'group', 'groupEnd', 
+                'log', 'warn', 'error', 'info', 'debug', 'trace',
+                'dir', 'dirxml', 'table', 'group', 'groupEnd',
                 'time', 'timeEnd', 'timeStamp', 'profile', 'profileEnd',
                 'count', 'clear', 'assert', 'memory'
             ];
-            
+
             consoleMethods.forEach(method => {
                 if (console[method]) {
                     console[method] = noop;
@@ -315,7 +292,7 @@
             });
 
             // ============================================================
-            // 11) تعطيل الدوال الخطيرة
+            // 10) تعطيل الدوال الخطيرة
             // ============================================================
             window.eval = function() { return null; };
             window.open = function() { return null; };
@@ -324,7 +301,7 @@
             window.prompt = function() { return null; };
 
             // ============================================================
-            // 12) منع إعادة توجيه الصفحة
+            // 11) منع إعادة توجيه الصفحة
             // ============================================================
             window.onbeforeunload = function(e) {
                 e.preventDefault();
@@ -333,7 +310,7 @@
             };
 
             // ============================================================
-            // 13) منع استخدام الـ Debugger
+            // 12) منع استخدام الـ Debugger
             // ============================================================
             function blockDebugger() {
                 const start = new Date();
@@ -345,16 +322,34 @@
                 }
                 setTimeout(blockDebugger, 1000);
             }
-            
+
             setTimeout(blockDebugger, 2000);
 
-            console.log('🔒 تم تفعيل الحماية مع السماح بالكتابة في الحقول');
+            // ============================================================
+            // 13) منع الروابط من الفتح في نافذة جديدة
+            // ============================================================
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('a');
+                if (target && target.target === '_blank') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+
+            // ============================================================
+            // 14) منع استخدام الـ iframe (لتجنب سرقة المحتوى)
+            // ============================================================
+            if (window.top !== window.self) {
+                window.top.location = window.self.location;
+            }
+
+            console.log('🔒 تم تفعيل الحماية الشاملة');
 
         })();
     </script>
 
     <style>
-        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -405,15 +400,16 @@
             --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.2);
         }
 
-        /* ===== السماح بتحديد النص في الحقول فقط ===== */
-        input, textarea, select, [contenteditable="true"] {
+        input,
+        textarea,
+        select,
+        [contenteditable="true"] {
             -webkit-user-select: text !important;
             -moz-user-select: text !important;
             -ms-user-select: text !important;
             user-select: text !important;
         }
 
-        /* ===== شريط علوي ===== */
         .top-bar {
             position: sticky;
             top: 0;
@@ -606,7 +602,6 @@
             display: none;
         }
 
-        /* ===== البانر ===== */
         .banner-section {
             padding: 0.1rem 0.5rem 0.1rem;
             max-width: 600px;
@@ -644,7 +639,6 @@
             border-radius: 12px;
         }
 
-        /* ===== شبكة المدرسين ===== */
         .teachers-container {
             padding: 0.3rem 0.6rem 70px;
             max-width: 1200px;
@@ -839,7 +833,6 @@
             font-size: 0.7rem;
         }
 
-        /* ===== فلتر ===== */
         .filter-section {
             display: flex;
             gap: 0.3rem;
@@ -894,7 +887,6 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
-        /* ===== باقي الأنماط ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -1197,7 +1189,6 @@
             background: var(--primary-dark);
         }
 
-        /* ===== Admin Panel ===== */
         .admin-panel {
             position: fixed;
             top: 0;
@@ -1459,7 +1450,6 @@
             font-size: 0.7rem;
         }
 
-        /* ===== Toast ===== */
         .toast-container {
             position: fixed;
             bottom: 80px;
@@ -1503,7 +1493,6 @@
             color: #1E293B;
         }
 
-        /* ===== Modal ===== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1575,7 +1564,6 @@
             transform: rotate(90deg);
         }
 
-        /* ===== Semester/Lecture Items ===== */
         .semester-item,
         .lecture-item {
             display: flex;
@@ -1638,7 +1626,6 @@
             font-size: 0.5rem;
         }
 
-        /* ===== Video Player ===== */
         .video-player-container {
             display: none;
             position: fixed;
@@ -1749,7 +1736,6 @@
             }
         }
 
-        /* ===== Notifications ===== */
         .notifications-list .notification-item {
             background: var(--bg);
             border-radius: 8px;
@@ -1839,7 +1825,6 @@
             color: #f59e0b;
         }
 
-        /* ===== نافذة تعديل المحاضرة ===== */
         .edit-lecture-modal .form-actions {
             display: flex;
             gap: 0.5rem;
@@ -1884,7 +1869,6 @@
             padding: 0.4rem 0.6rem;
         }
 
-        /* ===== Media Queries ===== */
         @media (max-width: 480px) {
             .top-bar {
                 flex-wrap: nowrap;
@@ -2040,14 +2024,6 @@
                 max-width: 20px;
                 font-size: 0.35rem;
             }
-        }
-
-        /* ===== السماح بتحديد النص في الحقول فقط ===== */
-        input, textarea, select, [contenteditable="true"] {
-            -webkit-user-select: text !important;
-            -moz-user-select: text !important;
-            -ms-user-select: text !important;
-            user-select: text !important;
         }
     </style>
 </head>
@@ -2713,7 +2689,7 @@
     </div>
 
     <!-- ============================================================
-    JAVASCRIPT - الكود الكامل المعدل مع الحماية
+    JAVASCRIPT - الكود الكامل مع إصلاح جميع المشاكل
     ============================================================ -->
     <script>
         (function() {
@@ -2801,6 +2777,8 @@
 
                     if (data && data.success) {
                         console.log('✅ تم جلب ملف المستخدم:', data);
+                        if (data.full_name) localStorage.setItem('userFullName', data.full_name);
+                        if (data.phone) localStorage.setItem('userPhone', data.phone);
                         return data;
                     }
                     return null;
@@ -2830,6 +2808,8 @@
 
                     if (data && data.success) {
                         console.log('✅ تم تحديث ملف المستخدم');
+                        localStorage.setItem('userFullName', fullName);
+                        localStorage.setItem('userPhone', phone);
                         return true;
                     }
                     return false;
@@ -2840,7 +2820,7 @@
             }
 
             // ============================================================
-            // تفعيل الكود عبر Supabase - باستخدام activate_code_final
+            // تفعيل الكود عبر Supabase
             // ============================================================
             async function activateCodeFinal(code) {
                 try {
@@ -2894,41 +2874,6 @@
             }
 
             // ============================================================
-            // دالة إضافة كود في Supabase
-            // ============================================================
-            async function addCodeToSupabase(code, teacherId) {
-                try {
-                    if (!supabaseClient || !currentUser) {
-                        console.warn('⚠️ Supabase أو المستخدم غير متاح');
-                        return false;
-                    }
-
-                    const isAdmin = await isUserAdmin(currentUser.email);
-                    if (!isAdmin) {
-                        console.warn('⚠️ غير مصرح لك بإضافة أكواد');
-                        return false;
-                    }
-
-                    const { data, error } = await supabaseClient
-                        .rpc('add_code', {
-                            p_code: code,
-                            p_teacher_id: teacherId
-                        });
-
-                    if (error) {
-                        console.error('❌ فشل إضافة الكود في Supabase:', error);
-                        return false;
-                    }
-
-                    console.log('✅ تم إضافة الكود في Supabase:', data);
-                    return data && data.success;
-                } catch (e) {
-                    console.error('❌ خطأ في إضافة الكود:', e);
-                    return false;
-                }
-            }
-
-            // ============================================================
             // دالة جلب أكواد المدرس من Supabase
             // ============================================================
             async function getTeacherCodesFromSupabase(teacherId) {
@@ -2978,13 +2923,27 @@
                     const teacher = section.teachers[teacherIndex];
                     if (!teacher) return;
 
-                    const teacherId = teacher._id || teacher.id;
-                    if (!teacherId) return;
+                    let teacherId = teacher._id || teacher.id;
 
-                    // جلب الأكواد من Supabase
+                    if (!teacherId) {
+                        const { data: teacherData } = await supabaseClient
+                            .from('teachers')
+                            .select('id')
+                            .eq('name', teacher.name)
+                            .maybeSingle();
+
+                        if (teacherData) {
+                            teacherId = teacherData.id;
+                            teacher._id = teacherId;
+                            teacher.id = teacherId;
+                            saveData();
+                        } else {
+                            return;
+                        }
+                    }
+
                     const supabaseCodes = await getTeacherCodesFromSupabase(teacherId);
 
-                    // تحديث الأكواد المحلية
                     supabaseCodes.forEach(sc => {
                         const existing = teacher.codes.find(c => c.code === sc.code);
                         if (existing) {
@@ -3137,7 +3096,6 @@
                         return;
                     }
 
-                    // حذف من البيانات المحلية
                     const index = teacher.codes.findIndex(c => c.code === code);
                     if (index === -1) {
                         showToast('error', '❌ الكود غير موجود');
@@ -3153,7 +3111,6 @@
                     saveData();
                     addChange();
 
-                    // حذف من Supabase
                     if (supabaseClient) {
                         const isAdmin = await isUserAdmin(currentUser.email);
                         if (isAdmin) {
@@ -3181,9 +3138,8 @@
             };
 
             // ============================================================
-            // دالة إنشاء الأكواد - النسخة القوية مع دعم كلا الدالتين
+            // دالة إنشاء الأكواد - النسخة النهائية مع UUID
             // ============================================================
-            
             window.generateCodes = async function(count) {
                 try {
                     const si = parseInt(document.getElementById('codeSection').value);
@@ -3206,80 +3162,56 @@
                         return;
                     }
 
-                    const teacherId = teacher._id || teacher.id;
+                    let teacherId = teacher._id || teacher.id;
+
                     if (!teacherId) {
-                        showToast('error', '❌ معرف المدرس غير موجود');
-                        return;
+                        showToast('info', '⏳ جاري جلب معرف المدرس...');
+
+                        const { data: teacherData, error: teacherError } = await supabaseClient
+                            .from('teachers')
+                            .select('id')
+                            .eq('name', teacher.name)
+                            .maybeSingle();
+
+                        if (teacherError || !teacherData) {
+                            showToast('error', '❌ لم نتمكن من العثور على معرف المدرس');
+                            return;
+                        }
+
+                        teacherId = teacherData.id;
+                        teacher._id = teacherId;
+                        teacher.id = teacherId;
+                        saveData();
                     }
+
+                    console.log('✅ معرف المدرس (UUID):', teacherId);
+                    console.log('✅ اسم المدرس:', teacher.name);
 
                     showToast('info', '⏳ جاري إنشاء الأكواد...');
 
-                    let result = null;
-                    let error = null;
+                    let result = await supabaseClient.rpc('create_codes_batch', {
+                        p_count: count,
+                        p_teacher_id: teacherId
+                    });
 
-                    // المحاولة الأولى: استخدام create_codes_batch
-                    try {
-                        const response = await supabaseClient
-                            .rpc('create_codes_batch', {
-                                p_count: count,
-                                p_teacher_id: teacherId
-                            });
-                        
-                        if (response.error) {
-                            error = response.error;
-                            console.warn('⚠️ فشلت create_codes_batch:', error);
-                        } else {
-                            result = response.data;
-                            console.log('✅ نجحت create_codes_batch:', result);
-                        }
-                    } catch (e) {
-                        error = e;
-                        console.warn('⚠️ استثناء في create_codes_batch:', e);
-                    }
-
-                    // المحاولة الثانية: استخدام create_codes_simple
-                    if (!result || !result.success) {
-                        try {
-                            const response = await supabaseClient
-                                .rpc('create_codes_simple', {
-                                    p_count: count,
-                                    p_teacher_id: teacherId
-                                });
-                            
-                            if (response.error) {
-                                error = response.error;
-                                console.warn('⚠️ فشلت create_codes_simple:', error);
-                            } else {
-                                result = response.data;
-                                console.log('✅ نجحت create_codes_simple:', result);
-                            }
-                        } catch (e) {
-                            error = e;
-                            console.warn('⚠️ استثناء في create_codes_simple:', e);
-                        }
-                    }
-
-                    // معالجة النتيجة النهائية
-                    if (!result || !result.success) {
-                        const errorMsg = result?.message || error?.message || 'فشل إنشاء الأكواد';
-                        showToast('error', '❌ ' + errorMsg);
-                        
-                        console.error('❌ تفاصيل الخطأ:', {
-                            result: result,
-                            error: error,
-                            teacherId: teacherId,
-                            count: count
+                    if (result.error || !result.data?.success) {
+                        result = await supabaseClient.rpc('create_codes_simple', {
+                            p_count: count,
+                            p_teacher_id: teacherId
                         });
-                        
+                    }
+
+                    if (result.error || !result.data?.success) {
+                        const errorMsg = result.data?.message || result.error?.message || 'فشل إنشاء الأكواد';
+                        showToast('error', '❌ ' + errorMsg);
                         return;
                     }
 
-                    // إضافة الأكواد إلى البيانات المحلية
-                    const newCodes = result.codes || [];
-                    let addedCount = 0;
-                    
-                    newCodes.forEach(code => {
-                        if (code && !teacher.codes.some(c => c.code === code)) {
+                    const dataResult = result.data;
+                    const codes = dataResult.codes || [];
+
+                    codes.forEach(code => {
+                        if (!teacher.codes.some(c => c.code === code)) {
                             teacher.codes.push({
                                 code: code,
                                 used: false,
@@ -3289,45 +3221,28 @@
                                 userPhone: null,
                                 deviceId: null,
                                 usedAt: null,
-                                sectionName: section.name
+                                sectionName: dataResult.section_name || section.name
                             });
-                            addedCount++;
                         }
                     });
 
-                    if (addedCount === 0 && result.count) {
-                        addedCount = result.count;
-                    }
-
                     saveData();
                     addChange();
-
                     await refreshCodesFromSupabase();
                     renderAllData();
                     updateCodesManagement();
 
-                    const message = result.message || `✅ تم إنشاء ${addedCount || result.count || count} كود جديد`;
-                    showToast('success', message);
-
-                    // تحديث عداد الأكواد
-                    const stats = document.querySelector('.codes-stats');
-                    if (stats) {
-                        const totalSpan = stats.querySelector('span:first-child');
-                        if (totalSpan) {
-                            totalSpan.textContent = `📊 المجموع: ${teacher.codes.length}`;
-                        }
-                    }
+                    showToast('success', `✅ تم إنشاء ${dataResult.count || codes.length} كود`);
 
                 } catch (e) {
-                    console.error('❌ خطأ في إنشاء الأكواد:', e);
-                    showToast('error', '❌ فشل إنشاء الأكواد: ' + e.message);
+                    console.error('❌ خطأ:', e);
+                    showToast('error', '❌ ' + e.message);
                 }
             };
 
             // ============================================================
-            // دالة إضافة كود يدوي - نسخة محسنة
+            // دالة إضافة كود يدوي - النسخة النهائية مع UUID
             // ============================================================
-
             window.addManualCode = async function() {
                 try {
                     const si = parseInt(document.getElementById('codeSection').value);
@@ -3335,11 +3250,6 @@
                     const input = document.getElementById('manualCodeInput');
                     const code = input.value.trim().toUpperCase();
 
-                    if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
-                        showToast('warning', '⚠️ اختر القسم والمدرس');
-                        return;
-                    }
-                    
                     if (!code || code.length < 4) {
                         showToast('warning', '⚠️ أدخل كود صحيح (4 أحرف على الأقل)');
                         input.focus();
@@ -3358,13 +3268,26 @@
                         return;
                     }
 
-                    const teacherId = teacher._id || teacher.id;
+                    let teacherId = teacher._id || teacher.id;
+
                     if (!teacherId) {
-                        showToast('error', '❌ معرف المدرس غير موجود');
-                        return;
+                        const { data: teacherData, error: teacherError } = await supabaseClient
+                            .from('teachers')
+                            .select('id')
+                            .eq('name', teacher.name)
+                            .maybeSingle();
+
+                        if (teacherError || !teacherData) {
+                            showToast('error', '❌ لم نتمكن من العثور على معرف المدرس');
+                            return;
+                        }
+
+                        teacherId = teacherData.id;
+                        teacher._id = teacherId;
+                        teacher.id = teacherId;
+                        saveData();
                     }
 
-                    // التحقق من عدم وجود الكود مسبقاً
                     if (teacher.codes.some(c => c.code === code)) {
                         showToast('warning', '⚠️ الكود موجود مسبقاً');
                         input.value = '';
@@ -3374,24 +3297,16 @@
 
                     showToast('info', '⏳ جاري إضافة الكود...');
 
-                    // إضافة الكود عبر Supabase
-                    const { data, error } = await supabaseClient
-                        .rpc('add_code', {
-                            p_code: code,
-                            p_teacher_id: teacherId
-                        });
+                    const { data, error } = await supabaseClient.rpc('add_code', {
+                        p_code: code,
+                        p_teacher_id: teacherId
+                    });
 
-                    if (error) {
-                        showToast('error', '❌ فشل إضافة الكود: ' + error.message);
+                    if (error || !data?.success) {
+                        showToast('error', '❌ ' + (data?.message || error?.message || 'فشل الإضافة'));
                         return;
                     }
 
-                    if (!data || !data.success) {
-                        showToast('error', '❌ ' + (data?.message || 'فشل إضافة الكود'));
-                        return;
-                    }
-
-                    // إضافة الكود محلياً
                     teacher.codes.push({
                         code: code,
                         used: false,
@@ -3401,27 +3316,26 @@
                         userPhone: null,
                         deviceId: null,
                         usedAt: null,
-                        sectionName: section.name
+                        sectionName: data.section_name || section.name
                     });
 
                     saveData();
                     addChange();
-
                     await refreshCodesFromSupabase();
-                    input.value = '';
                     renderAllData();
                     updateCodesManagement();
+                    input.value = '';
 
                     showToast('success', `✅ تم إضافة الكود: ${code}`);
 
                 } catch (e) {
-                    console.error('❌ خطأ في إضافة الكود:', e);
-                    showToast('error', '❌ فشل إضافة الكود: ' + e.message);
+                    console.error('❌ خطأ:', e);
+                    showToast('error', '❌ ' + e.message);
                 }
             };
 
             // ============================================================
-            // تفعيل الكود - باستخدام activate_code_final
+            // تفعيل الكود
             // ============================================================
             window.activateCodeFromTeacher = async function() {
                 try {
@@ -3439,7 +3353,6 @@
                         msg.style.color = '#ef4444';
                         showToast('error', '⚠️ سجل الدخول أولاً'); return; }
 
-                    // تفعيل الكود عبر Supabase
                     const result = await activateCodeFinal(code);
 
                     if (!result.success) {
@@ -3456,7 +3369,6 @@
                         return;
                     }
 
-                    // تحديث البيانات المحلية
                     if (activeTeacher) {
                         const codeData = activeTeacher.codes.find(c => c.code === code);
                         if (codeData) {
@@ -3471,13 +3383,11 @@
                         saveData();
                     }
 
-                    // تحديث الواجهة
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
 
-                    // تحديث الطلاب
                     const students = await loadStudentsFromSupabase();
                     renderUsersTable(students);
 
@@ -3485,7 +3395,6 @@
                     msg.style.color = '#22c55e';
                     showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`);
 
-                    // إعادة تحميل الأكواد بعد التفعيل
                     setTimeout(refreshCodesFromSupabase, 1000);
 
                     setTimeout(() => {
@@ -3508,7 +3417,6 @@
                     console.log('🚀 جاري التحميل...');
                     if (loadingScreen) loadingScreen.style.display = 'flex';
 
-                    // 1. استعادة المستخدم
                     const savedUser = localStorage.getItem('devAcademicUser');
                     if (savedUser) {
                         try {
@@ -3537,7 +3445,6 @@
                         return;
                     }
 
-                    // 2. تحميل بيانات المستخدم من Supabase
                     const profile = await loadUserProfile();
                     if (profile && profile.full_name) {
                         localStorage.setItem('userFullName', profile.full_name);
@@ -3545,30 +3452,24 @@
                         console.log('✅ تم تحميل الملف الشخصي:', profile.full_name);
                     }
 
-                    // 3. تحميل البيانات المحلية
                     await loadData();
 
-                    // 4. عرض الواجهة
                     if (loadingScreen) loadingScreen.style.display = 'none';
                     if (topBar) topBar.style.display = 'flex';
                     if (bottomNav) bottomNav.style.display = 'flex';
                     if (footer) footer.style.display = 'block';
 
-                    // 5. تحديث الواجهة
-                    updateUI();
-                    renderAllData();
+                    await renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
                     loadBannerFromSupabase();
 
-                    // 6. تحميل الطلاب من Supabase
                     const students = await loadStudentsFromSupabase();
                     renderUsersTable(students);
 
                     navigateTo('home');
 
-                    // 7. تحديث القوائم
                     setTimeout(function() {
                         try {
                             updateAllAdminSelects();
@@ -3577,7 +3478,6 @@
                         } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
                     }, 500);
 
-                    // 8. تحديث الأكواد من Supabase
                     setTimeout(async function() {
                         try {
                             await refreshCodesFromSupabase();
@@ -3586,7 +3486,6 @@
                         }
                     }, 800);
 
-                    // 9. إظهار زر لوحة الإدارة
                     setTimeout(function() {
                         try { showAdminButton(); } catch (e) { console.warn('⚠️ فشل إظهار زر الإدارة:', e); }
                     }, 1000);
@@ -3746,7 +3645,7 @@
             }
 
             // ============================================================
-            // دوال العرض (مختصرة)
+            // دوال العرض
             // ============================================================
             function getAllTeachers() {
                 const teachers = [];
@@ -3820,14 +3719,47 @@
                 container.innerHTML = html;
             }
 
-            function renderAllData() {
+            async function renderAllData() {
                 try {
+                    // جلب معرفات المدرسين من قاعدة البيانات
+                    if (supabaseClient) {
+                        const { data: teachersData, error } = await supabaseClient
+                            .from('teachers')
+                            .select('id, name');
+
+                        if (!error && teachersData) {
+                            const teacherIdMap = {};
+                            teachersData.forEach(t => {
+                                teacherIdMap[t.name] = t.id;
+                            });
+
+                            data.sections.forEach(section => {
+                                section.teachers.forEach(teacher => {
+                                    if (teacherIdMap[teacher.name]) {
+                                        teacher._id = teacherIdMap[teacher.name];
+                                        teacher.id = teacherIdMap[teacher.name];
+                                    }
+                                });
+                            });
+
+                            saveData();
+                            console.log('✅ تم تحديث معرفات المدرسين');
+                        }
+                    }
+
                     const filtered = getFilteredTeachers();
                     renderTeachers(filtered, teachersGridContainer);
                     renderTeachers(filtered, teachersGridContainer2);
                     updateClassFilter();
                     buildFilterButtons();
-                } catch (e) { console.warn('⚠️ فشل عرض البيانات:', e); }
+                    updateAllAdminSelects();
+
+                } catch (e) {
+                    console.warn('⚠️ فشل عرض البيانات:', e);
+                    const filtered = getFilteredTeachers();
+                    renderTeachers(filtered, teachersGridContainer);
+                    renderTeachers(filtered, teachersGridContainer2);
+                }
             }
 
             function updateClassFilter() {
@@ -4039,9 +3971,6 @@
 
                     const videoPlayer = document.getElementById('videoPlayer');
                     const videoWrapper = document.getElementById('videoWrapper');
-                    const titleEl = document.getElementById('playerTitle');
-
-                    if (titleEl) titleEl.textContent = `🎬 ${title || 'محاضرة'}`;
 
                     if (youtubeId) {
                         const embedUrl =
@@ -4199,10 +4128,13 @@
                         const emailEl = document.getElementById('accountEmail');
                         const avatarEl = document.getElementById('accountAvatar');
                         const phoneEl = document.getElementById('accountPhone');
+                        const regEl = document.getElementById('accountRegistered');
+
                         if (nameEl) nameEl.textContent = 'غير مسجل';
                         if (emailEl) emailEl.textContent = 'يرجى تسجيل الدخول';
                         if (avatarEl) avatarEl.textContent = '👤';
-                        if (phoneEl) phoneEl.style.display = 'none';
+                        if (phoneEl) { phoneEl.style.display = 'none'; }
+                        if (regEl) regEl.textContent = 'مسجل منذ: --';
                         return;
                     }
 
@@ -4225,14 +4157,24 @@
                     if (nameEl) nameEl.textContent = fullName;
                     if (emailEl) emailEl.textContent = currentUser.email;
                     if (avatarEl) avatarEl.textContent = fullName.charAt(0).toUpperCase();
+
                     if (phoneEl) {
-                        phoneEl.textContent = '📱 ' + phone;
-                        phoneEl.style.display = 'block';
+                        if (phone && phone !== 'غير مسجل' && phone !== 'null' && phone !== 'undefined') {
+                            phoneEl.textContent = '📱 ' + phone;
+                            phoneEl.style.display = 'block';
+                            phoneEl.style.color = 'var(--text-light)';
+                        } else {
+                            phoneEl.textContent = '📱 لم يتم تسجيل رقم';
+                            phoneEl.style.display = 'block';
+                            phoneEl.style.color = '#f59e0b';
+                        }
                     }
 
                     if (currentUser.created_at) {
                         const date = new Date(currentUser.created_at).toLocaleDateString('ar');
                         if (regEl) regEl.textContent = 'مسجل منذ: ' + date;
+                    } else if (regEl) {
+                        regEl.textContent = 'مسجل منذ: --';
                     }
 
                     const courses = getMyCourses();
@@ -4240,14 +4182,17 @@
                     if (coursesEl) coursesEl.textContent = courses.length;
 
                     let codesCount = 0;
-                    data.sections.forEach(s => {
-                        s.teachers.forEach(t => {
-                            if (t.codes) {
-                                codesCount += t.codes.filter(c => c.used && c.userEmail === currentUser
-                                    .email).length;
-                            }
+                    if (data && data.sections) {
+                        data.sections.forEach(s => {
+                            s.teachers.forEach(t => {
+                                if (t.codes) {
+                                    codesCount += t.codes.filter(c =>
+                                        c.used && c.userEmail === currentUser.email
+                                    ).length;
+                                }
+                            });
                         });
-                    });
+                    }
                     const codesEl = document.getElementById('accountCodes');
                     if (codesEl) codesEl.textContent = codesCount;
 
@@ -4255,6 +4200,7 @@
                     if (teachersEl) teachersEl.textContent = courses.length;
 
                     showAdminButton();
+
                 } catch (e) {
                     console.warn('⚠️ فشل عرض الحساب:', e);
                 }
@@ -4292,7 +4238,6 @@
             // ============================================================
             async function isUserAdmin(email) {
                 try {
-                    console.log('🔍 التحقق من المشرف:', email);
                     if (!supabaseClient || !email) return false;
 
                     const { data, error } = await supabaseClient
@@ -4333,7 +4278,7 @@
             }
 
             // ============================================================
-            // عرض الطلاب - من Supabase
+            // عرض الطلاب
             // ============================================================
             function renderUsersTable(students) {
                 try {
@@ -4401,7 +4346,7 @@
             }
 
             // ============================================================
-            // فتح تعديل المحاضرة من لوحة التحكم
+            // فتح تعديل المحاضرة
             // ============================================================
             window.openEditLectureFromAdmin = function() {
                 try {
@@ -4465,7 +4410,6 @@
                         return;
                     }
 
-                    // فتح نافذة التعديل
                     const modal = document.getElementById('editLectureModal');
                     const infoEl = document.getElementById('editLectureInfo');
                     const titleInput = document.getElementById('editLectureTitle');
@@ -4481,7 +4425,6 @@
                     if (freeSelect) freeSelect.value = lecture.isFree ? 'true' : 'false';
                     if (msgEl) msgEl.innerHTML = '';
 
-                    // حفظ المؤشرات
                     window._editLectureTarget = { sectionIndex, teacherIndex, semesterIndex, lectureIndex };
 
                     if (modal) modal.classList.add('active');
@@ -4580,7 +4523,6 @@
                         return;
                     }
 
-                    // تحديث المحاضرة
                     lecture.title = title;
                     lecture.youtubeUrl = url;
                     lecture.isFree = isFree;
@@ -4713,11 +4655,9 @@
                                 if (panel.classList.contains('active')) {
                                     updateAllAdminSelects();
                                     loadAdminsList();
-                                    // تحميل الطلاب من Supabase
                                     loadStudentsFromSupabase().then(students => {
                                         renderUsersTable(students);
                                     });
-                                    // تحديث الأكواد
                                     setTimeout(refreshCodesFromSupabase, 300);
                                     setTimeout(updateAllSemesterLists, 300);
                                     setTimeout(updateLectureLists, 300);
@@ -4897,7 +4837,6 @@
                         }
                     });
 
-                    // تحديث قوائم المحاضرات بعد تحديث الفصول
                     updateLectureLists();
 
                 } catch (e) {
@@ -4905,14 +4844,10 @@
                 }
             }
 
-            // ============================================================
-            // دالة تحديث قوائم المحاضرات
-            // ============================================================
             function updateLectureLists() {
                 try {
                     console.log('🔄 تحديث قوائم المحاضرات...');
 
-                    // 1. تحديث قائمة المحاضرات في تعديل محاضرة
                     const editLectureSelect = document.getElementById('editLectureSelect');
                     const editSectionSelect = document.getElementById('editLectureSection');
                     const editTeacherSelect = document.getElementById('editLectureTeacher');
@@ -4955,7 +4890,6 @@
                         }
                     }
 
-                    // 2. تحديث قائمة المحاضرات في حذف محاضرة
                     const deleteLectureSelect = document.getElementById('deleteLectureSelect');
                     const deleteSectionSelect = document.getElementById('deleteLectureSection');
                     const deleteTeacherSelect = document.getElementById('deleteLectureTeacher');
@@ -5003,13 +4937,8 @@
                 }
             }
 
-            // ============================================================
-            // تحديث المدرسين حسب القسم
-            // ============================================================
             function updateTeachersForSection(sectionIndex) {
                 try {
-                    console.log('🔄 تحديث قوائم المدرسين للقسم:', sectionIndex);
-
                     const idx = parseInt(sectionIndex);
 
                     const teacherSelects = [
@@ -5058,9 +4987,6 @@
                 }
             }
 
-            // ============================================================
-            // تحديث جميع القوائم
-            // ============================================================
             function updateAllAdminSelects() {
                 try {
                     console.log('🔄 تحديث جميع القوائم...');
@@ -5138,13 +5064,8 @@
                 }
             }
 
-            // ============================================================
-            // إعداد مستمعات الأحداث للتغيير
-            // ============================================================
             function setupChangeListeners() {
                 try {
-                    console.log('🔗 ربط أحداث التغيير...');
-
                     const sectionIds = [
                         'teacherSection', 'semesterSection', 'lectureSection', 'codeSection',
                         'editTeacherSection', 'editLectureSection',
@@ -5155,7 +5076,6 @@
                         const el = document.getElementById(id);
                         if (el) {
                             el.addEventListener('change', function() {
-                                console.log('📌 تغيير القسم:', id, this.value);
                                 updateTeachersForSection(this.value);
                                 setTimeout(updateAllSemesterLists, 200);
                                 setTimeout(updateLectureLists, 250);
@@ -5173,14 +5093,12 @@
                         const el = document.getElementById(id);
                         if (el) {
                             el.addEventListener('change', function() {
-                                console.log('📌 تغيير المدرس:', id, this.value);
                                 setTimeout(updateAllSemesterLists, 150);
                                 setTimeout(updateLectureLists, 200);
                             });
                         }
                     });
 
-                    // مستمعات لتحديث المحاضرات عند تغيير الفصل
                     const semesterIds = [
                         'editLectureSemester', 'deleteLectureSemester'
                     ];
@@ -5189,7 +5107,6 @@
                         const el = document.getElementById(id);
                         if (el) {
                             el.addEventListener('change', function() {
-                                console.log('📌 تغيير الفصل:', id, this.value);
                                 setTimeout(updateLectureLists, 150);
                             });
                         }
@@ -5279,7 +5196,7 @@
             }
 
             // ============================================================
-            // نماذج الإضافة (مختصرة)
+            // نماذج الإضافة
             // ============================================================
             document.getElementById('addSectionForm')?.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -5294,28 +5211,60 @@
                 showToast('success', `✅ تم إضافة القسم "${name}"`);
             });
 
-            document.getElementById('addTeacherForm')?.addEventListener('submit', function(e) {
+            document.getElementById('addTeacherForm')?.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                const si = parseInt(document.getElementById('teacherSection').value);
-                const name = document.getElementById('teacherName').value.trim();
-                if (isNaN(si) || si < 0) { showToast('warning', '⚠️ اختر القسم'); return; }
-                if (!name) { showToast('warning', '⚠️ أدخل اسم المدرس'); return; }
+                try {
+                    const si = parseInt(document.getElementById('teacherSection').value);
+                    const name = document.getElementById('teacherName').value.trim();
+                    const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
+                    const subject = document.getElementById('teacherSubject').value.trim() || 'مدرس';
+                    const description = document.getElementById('teacherDesc').value.trim() || '';
+                    const image = document.getElementById('teacherImage').value.trim() || '';
 
-                data.sections[si].teachers.push({
-                    name: name,
-                    emoji: document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫',
-                    subject: document.getElementById('teacherSubject').value.trim() || 'مدرس',
-                    description: document.getElementById('teacherDesc').value.trim() || '',
-                    image: document.getElementById('teacherImage').value.trim() || '',
-                    codes: [],
-                    semesters: []
-                });
-                saveData();
-                addChange();
-                renderAllData();
-                updateAllAdminSelects();
-                this.reset();
-                showToast('success', `✅ تم إضافة المدرس "${name}"`);
+                    if (isNaN(si) || si < 0) { showToast('warning', '⚠️ اختر القسم'); return; }
+                    if (!name) { showToast('warning', '⚠️ أدخل اسم المدرس'); return; }
+
+                    const { data: newTeacher, error } = await supabaseClient
+                        .from('teachers')
+                        .insert({
+                            name: name,
+                            emoji: emoji,
+                            subject: subject,
+                            description: description,
+                            image_url: image,
+                            department_id: null
+                        })
+                        .select()
+                        .single();
+
+                    if (error) {
+                        showToast('error', '❌ فشل إضافة المدرس: ' + error.message);
+                        return;
+                    }
+
+                    data.sections[si].teachers.push({
+                        name: name,
+                        emoji: emoji,
+                        subject: subject,
+                        description: description,
+                        image: image,
+                        codes: [],
+                        semesters: [],
+                        _id: newTeacher.id,
+                        id: newTeacher.id
+                    });
+
+                    saveData();
+                    addChange();
+                    renderAllData();
+                    updateAllAdminSelects();
+                    this.reset();
+                    showToast('success', `✅ تم إضافة المدرس "${name}"`);
+
+                } catch (e) {
+                    console.error('❌ خطأ:', e);
+                    showToast('error', '❌ فشل إضافة المدرس');
+                }
             });
 
             document.getElementById('addSemesterForm')?.addEventListener('submit', function(e) {
@@ -5377,7 +5326,7 @@
             });
 
             // ============================================================
-            // دوال الحذف (مختصرة)
+            // دوال الحذف
             // ============================================================
             window.deleteSelectedSection = function() {
                 try {
@@ -5484,7 +5433,7 @@
             };
 
             // ============================================================
-            // المشرفين (مختصر)
+            // المشرفين
             // ============================================================
             async function loadAdminsList() {
                 try {
@@ -5706,7 +5655,7 @@
             // التشغيل
             // ============================================================
             setTimeout(setupChangeListeners, 1000);
-            console.log('✅ تم تحميل لوحة التحكم بنجاح');
+            console.log('✅ تم تحميل لوحة التحكم بنجاح مع الحماية');
 
         })();
     </script>
