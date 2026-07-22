@@ -280,6 +280,7 @@
     <!-- حقل الاسم الثلاثي (يظهر فقط في التسجيل) -->
     <div class="input-group extra-field hidden" id="fullNameGroup">
         <input type="text" id="fullName" class="input-field" placeholder="الاسم الثلاثي (بالعربية)">
+        <div class="text-xs text-gray-500 mt-1 pr-2">مثال: أحمد محمد علي</div>
     </div>
 
     <!-- البريد الإلكتروني -->
@@ -430,70 +431,56 @@
             });
         }
 
-        // ========== دالة حفظ المستخدم في جدول users ==========
-        async function saveUserToDatabase(userId, email, fullName, phone) {
+        // ============================================================
+        // الحل الجذري: حفظ المستخدم في جدول users مع full_name
+        // ============================================================
+        async function saveUserToUsersTable(userId, email, fullName, phone) {
             try {
                 console.log("📝 حفظ المستخدم في جدول users:", userId);
-                
-                // التحقق من وجود المستخدم
-                const { data: existing, error: checkError } = await sb
+                console.log("📝 الاسم:", fullName);
+                console.log("📝 البريد:", email);
+                console.log("📝 الهاتف:", phone);
+
+                // محاولة إدراج أو تحديث المستخدم
+                const { data, error } = await sb
                     .from('users')
-                    .select('id')
-                    .eq('id', userId)
-                    .maybeSingle();
+                    .upsert({
+                        id: userId,
+                        email: email,
+                        full_name: fullName,
+                        phone: phone,
+                        registered_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'id'
+                    });
 
-                if (checkError && checkError.code !== 'PGRST116') {
-                    console.error("❌ خطأ في التحقق:", checkError);
-                    throw checkError;
-                }
-
-                let result;
-                if (existing) {
-                    // تحديث
-                    result = await sb
-                        .from('users')
-                        .update({ 
-                            full_name: fullName, 
-                            phone: phone
-                        })
-                        .eq('id', userId);
-                } else {
-                    // إدراج جديد
-                    result = await sb
-                        .from('users')
-                        .insert({ 
-                            id: userId, 
-                            email: email,
-                            full_name: fullName, 
-                            phone: phone
-                        });
-                }
-
-                if (result.error) {
-                    console.error("❌ خطأ في حفظ المستخدم:", result.error);
-                    throw result.error;
+                if (error) {
+                    console.error("❌ خطأ في upsert:", error);
+                    throw error;
                 }
 
                 console.log("✅ تم حفظ المستخدم بنجاح");
-                
-                // تخزين البيانات في localStorage
+
+                // تخزين في localStorage
                 localStorage.setItem('user_full_name', fullName);
                 localStorage.setItem('user_email', email);
                 localStorage.setItem('user_phone', phone);
                 localStorage.setItem('user_id', userId);
-                
+
                 return true;
             } catch (err) {
-                console.error("❌ خطأ في saveUserToDatabase:", err);
+                console.error("❌ خطأ في saveUserToUsersTable:", err);
                 throw err;
             }
         }
 
-        // ========== دالة جلب بيانات المستخدم من جدول users ==========
-        async function fetchAndStoreUser(userId, email) {
+        // ============================================================
+        // جلب بيانات المستخدم من جدول users
+        // ============================================================
+        async function fetchUserFromUsersTable(userId, email) {
             try {
-                console.log("🔍 جلب بيانات المستخدم:", userId);
-                
+                console.log("🔍 جلب بيانات المستخدم من users:", userId);
+
                 const { data, error } = await sb
                     .from('users')
                     .select('full_name, phone')
@@ -502,10 +489,13 @@
 
                 if (error) {
                     console.error("❌ خطأ في جلب المستخدم:", error);
+                    // حفظ البريد كاسم مؤقت
                     localStorage.setItem('user_full_name', email);
                     localStorage.setItem('user_email', email);
                     return email;
                 }
+
+                console.log("📊 البيانات المسترجعة:", data);
 
                 if (data && data.full_name) {
                     console.log("✅ تم جلب الاسم:", data.full_name);
@@ -514,21 +504,40 @@
                     if (data.phone) localStorage.setItem('user_phone', data.phone);
                     return data.full_name;
                 } else {
-                    // إذا لم يوجد، نستخدم البريد
-                    console.log("⚠️ لا توجد بيانات، استخدام البريد كاسم");
+                    // إذا لم يوجد full_name، نحاول تحديثه
+                    console.log("⚠️ لا يوجد full_name، محاولة التحديث...");
+                    
+                    // محاولة جلب الاسم من metadata
+                    const { data: authData } = await sb.auth.getUser();
+                    const metaName = authData?.user?.user_metadata?.full_name || email;
+                    
+                    // تحديث جدول users
+                    const { error: updateError } = await sb
+                        .from('users')
+                        .update({ full_name: metaName })
+                        .eq('id', userId);
+
+                    if (!updateError) {
+                        localStorage.setItem('user_full_name', metaName);
+                        localStorage.setItem('user_email', email);
+                        return metaName;
+                    }
+
                     localStorage.setItem('user_full_name', email);
                     localStorage.setItem('user_email', email);
                     return email;
                 }
             } catch (err) {
-                console.error("❌ خطأ في fetchAndStoreUser:", err);
+                console.error("❌ خطأ في fetchUserFromUsersTable:", err);
                 localStorage.setItem('user_full_name', email);
                 localStorage.setItem('user_email', email);
                 return email;
             }
         }
 
-        // ========== معالج النموذج الرئيسي ==========
+        // ============================================================
+        // معالج النموذج الرئيسي
+        // ============================================================
         window.handleAuth = async function() {
             const email = emailInput.value.trim();
             const password = passwordInput.value;
@@ -587,8 +596,10 @@
             try {
                 if (currentMode === 'signup') {
                     console.log("📝 إنشاء حساب جديد...");
+                    console.log("📝 الاسم:", fullName);
+                    console.log("📝 البريد:", email);
                     
-                    // إنشاء الحساب في Auth
+                    // إنشاء الحساب في Auth مع حفظ الاسم في metadata
                     const { data, error } = await sb.auth.signUp({ 
                         email, 
                         password,
@@ -601,16 +612,17 @@
                     
                     if (error) throw error;
 
+                    console.log("✅ تم إنشاء الحساب في Auth:", data.user.id);
+
                     const fullPhone = '+964' + phoneRaw;
                     
-                    // حفظ البيانات في جدول users (سيتم تنفيذها تلقائياً بواسطة trigger handle_new_user)
-                    // لكن للتأكد، نحفظها يدوياً
-                    await saveUserToDatabase(data.user.id, email, fullName, fullPhone);
+                    // حفظ في جدول users
+                    await saveUserToUsersTable(data.user.id, email, fullName, fullPhone);
 
                     showMessage('✅ تم إنشاء الحساب بنجاح!', true);
                     setTimeout(() => {
                         window.location.href = "dashboard.html";
-                    }, 1200);
+                    }, 1500);
 
                 } else if (currentMode === 'login') {
                     console.log("🔐 تسجيل الدخول...");
@@ -622,7 +634,15 @@
                     
                     if (error) throw error;
 
-                    await fetchAndStoreUser(data.user.id, email);
+                    console.log("✅ تم تسجيل الدخول:", data.user.id);
+                    
+                    // جلب الاسم من جدول users
+                    await fetchUserFromUsersTable(data.user.id, email);
+
+                    // التحقق من وجود الاسم في localStorage
+                    const storedName = localStorage.getItem('user_full_name');
+                    console.log("📝 الاسم المخزن:", storedName);
+
                     showMessage('✅ مرحباً بك!', true);
                     setTimeout(() => {
                         window.location.href = "dashboard.html";
@@ -681,7 +701,11 @@
                 
                 if (session) {
                     console.log("✅ جلسة موجودة للمستخدم:", session.user.email);
-                    await fetchAndStoreUser(session.user.id, session.user.email);
+                    await fetchUserFromUsersTable(session.user.id, session.user.email);
+                    
+                    const name = localStorage.getItem('user_full_name');
+                    console.log("📝 الاسم المسترجع:", name);
+                    
                     window.location.href = "dashboard.html";
                 } else {
                     console.log("❌ لا توجد جلسة");
@@ -696,7 +720,7 @@
             console.log("🔄 تغيير في حالة المصادقة:", event);
             if (event === 'SIGNED_IN' && session) {
                 console.log("✅ تم تسجيل الدخول");
-                fetchAndStoreUser(session.user.id, session.user.email);
+                fetchUserFromUsersTable(session.user.id, session.user.email);
                 setTimeout(() => {
                     window.location.href = "dashboard.html";
                 }, 500);
