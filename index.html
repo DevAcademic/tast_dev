@@ -22,13 +22,16 @@
         }
     </script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Cairo', sans-serif;
             min-height: 100vh;
             display: flex;
-            background-image: url(1357323.jpeg);
-            background-size: cover;
-            background-position: center;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%);
             align-items: center;
             justify-content: center;
             padding: 20px;
@@ -38,24 +41,25 @@
             content: '';
             position: fixed;
             inset: 0;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(4px);
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(2px);
             z-index: 0;
         }
         .auth-card {
             background: #ffffff;
             border-radius: 2rem;
-            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 25px 60px -15px rgba(37, 99, 235, 0.2);
+            border: 1px solid rgba(255,255,255,0.6);
             width: 100%;
             max-width: 440px;
             padding: 2.5rem 2rem;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             position: relative;
             z-index: 1;
         }
         .auth-card:hover {
-            box-shadow: 0 25px 60px -15px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 30px 70px -15px rgba(37, 99, 235, 0.3);
+            transform: translateY(-2px);
         }
         .auth-title {
             text-align: center;
@@ -273,15 +277,17 @@
         <span class="mode-text" id="modeText">تسجيل الدخول</span>
     </div>
 
-    <!-- الترتيب: الاسم ← البريد ← كلمة المرور ← الهاتف (للتسجيل فقط) -->
+    <!-- حقل الاسم الثلاثي (يظهر فقط في التسجيل) -->
     <div class="input-group extra-field hidden" id="fullNameGroup">
         <input type="text" id="fullName" class="input-field" placeholder="الاسم الثلاثي (بالعربية)">
     </div>
 
+    <!-- البريد الإلكتروني -->
     <div class="input-group">
         <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" autocomplete="email">
     </div>
 
+    <!-- كلمة المرور -->
     <div class="input-group" id="passwordGroup">
         <div class="password-wrapper">
             <input type="password" id="password" class="input-field" placeholder="كلمة المرور" autocomplete="current-password">
@@ -291,6 +297,7 @@
         </div>
     </div>
 
+    <!-- حقل رقم الهاتف (يظهر فقط في التسجيل) -->
     <div class="input-group extra-field hidden" id="phoneGroup">
         <div class="phone-wrapper">
             <span class="phone-prefix">+964</span>
@@ -330,7 +337,7 @@
             }
         });
 
-        // ========== Supabase ==========
+        // ========== تهيئة Supabase ==========
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
 
@@ -343,6 +350,7 @@
         }
 
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log("✅ تم إنشاء عميل Supabase");
 
         // ========== عناصر DOM ==========
         const modeText = document.getElementById('modeText');
@@ -363,6 +371,7 @@
 
         // ========== دالة عرض الرسائل ==========
         function showMessage(msg, isSuccess = false) {
+            console.log("📢 رسالة:", msg);
             messageDiv.textContent = msg;
             messageDiv.className = 'show';
             messageDiv.classList.add(isSuccess ? 'message-success' : 'message-error');
@@ -422,21 +431,61 @@
         }
 
         // ========== دالة حفظ البروفايل ==========
-        async function upsertProfile(userId, fullName, phone, email) {
+        async function saveProfile(userId, fullName, phone, email) {
             try {
-                const { data: existing } = await sb
+                console.log("📝 حفظ البروفايل للمستخدم:", userId);
+                
+                // التحقق من وجود البروفايل
+                const { data: existing, error: checkError } = await sb
                     .from('profiles')
                     .select('id')
                     .eq('id', userId)
                     .maybeSingle();
 
-                if (existing) {
-                    await sb.from('profiles').update({ full_name: fullName, phone: phone }).eq('id', userId);
-                } else {
-                    await sb.from('profiles').insert({ id: userId, full_name: fullName, phone: phone, role: 'user' });
+                if (checkError && checkError.code !== 'PGRST116') {
+                    console.error("❌ خطأ في التحقق:", checkError);
+                    throw checkError;
                 }
+
+                let result;
+                if (existing) {
+                    // تحديث
+                    result = await sb
+                        .from('profiles')
+                        .update({ 
+                            full_name: fullName, 
+                            phone: phone,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', userId);
+                } else {
+                    // إدراج جديد
+                    result = await sb
+                        .from('profiles')
+                        .insert({ 
+                            id: userId, 
+                            full_name: fullName, 
+                            phone: phone, 
+                            role: 'user',
+                            created_at: new Date().toISOString()
+                        });
+                }
+
+                if (result.error) {
+                    console.error("❌ خطأ في حفظ البروفايل:", result.error);
+                    throw result.error;
+                }
+
+                console.log("✅ تم حفظ البروفايل بنجاح");
+                
+                // تخزين الاسم في localStorage
+                localStorage.setItem('user_full_name', fullName);
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('user_phone', phone);
+                
+                return true;
             } catch (err) {
-                console.error("❌ خطأ في حفظ البروفايل:", err);
+                console.error("❌ خطأ في saveProfile:", err);
                 throw err;
             }
         }
@@ -444,23 +493,44 @@
         // ========== دالة جلب الاسم من البروفايل ==========
         async function fetchAndStoreProfile(userId, email) {
             try {
+                console.log("🔍 جلب البروفايل للمستخدم:", userId);
+                
                 const { data, error } = await sb
                     .from('profiles')
-                    .select('full_name')
+                    .select('full_name, phone')
                     .eq('id', userId)
-                    .single();
+                    .maybeSingle();
 
-                if (error) throw error;
+                if (error) {
+                    console.error("❌ خطأ في جلب البروفايل:", error);
+                    // إذا كان الخطأ بسبب عدم وجود جدول، نحاول إنشاء بروفايل افتراضي
+                    if (error.message.includes('relation "profiles" does not exist')) {
+                        console.log("⚠️ جدول profiles غير موجود، سيتم إنشاؤه لاحقاً");
+                        // تخزين البريد كاسم مؤقت
+                        localStorage.setItem('user_full_name', email);
+                        localStorage.setItem('user_email', email);
+                        return email;
+                    }
+                    throw error;
+                }
 
-                // تخزين الاسم في localStorage
-                const displayName = data.full_name || email;
-                localStorage.setItem('user_full_name', displayName);
-                localStorage.setItem('user_email', email);
-                console.log("✅ تم تخزين الاسم:", displayName);
-                return displayName;
+                if (data && data.full_name) {
+                    console.log("✅ تم جلب الاسم:", data.full_name);
+                    localStorage.setItem('user_full_name', data.full_name);
+                    localStorage.setItem('user_email', email);
+                    if (data.phone) localStorage.setItem('user_phone', data.phone);
+                    return data.full_name;
+                } else {
+                    // إذا لم يوجد بروفايل، نستخدم البريد
+                    console.log("⚠️ لا يوجد بروفايل، استخدام البريد كاسم");
+                    localStorage.setItem('user_full_name', email);
+                    localStorage.setItem('user_email', email);
+                    return email;
+                }
             } catch (err) {
-                console.error("❌ خطأ في جلب الاسم:", err);
+                console.error("❌ خطأ في fetchAndStoreProfile:", err);
                 localStorage.setItem('user_full_name', email);
+                localStorage.setItem('user_email', email);
                 return email;
             }
         }
@@ -472,28 +542,50 @@
             const fullName = fullNameInput.value.trim();
             const phoneRaw = phoneInput.value.trim();
 
-            if (!email) { showMessage('الرجاء إدخال البريد الإلكتروني', false); return; }
-            if (currentMode !== 'forgot' && !password) { showMessage('الرجاء إدخال كلمة المرور', false); return; }
+            // التحقق الأساسي
+            if (!email) {
+                showMessage('الرجاء إدخال البريد الإلكتروني', false);
+                return;
+            }
 
+            if (currentMode !== 'forgot' && !password) {
+                showMessage('الرجاء إدخال كلمة المرور', false);
+                return;
+            }
+
+            // التحقق من التسجيل
             if (currentMode === 'signup') {
-                // التحقق من الاسم الثلاثي (3 كلمات على الأقل)
                 const nameParts = fullName.trim().split(/\s+/);
+                
                 if (!fullName) {
                     showMessage('الرجاء إدخال الاسم الثلاثي', false);
                     return;
                 }
+                
                 if (!/^[\u0600-\u06FF\s]+$/.test(fullName)) {
                     showMessage('الاسم يجب أن يكون بالعربية فقط', false);
                     return;
                 }
+                
                 if (nameParts.length < 3) {
                     showMessage('الرجاء إدخال الاسم الثلاثي كاملاً (ثلاث كلمات)', false);
                     return;
                 }
 
-                if (!phoneRaw) { showMessage('الرجاء إدخال رقم الهاتف', false); return; }
-                if (!/^\d{10}$/.test(phoneRaw)) { showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false); return; }
-                if (password.length < 6) { showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false); return; }
+                if (!phoneRaw) {
+                    showMessage('الرجاء إدخال رقم الهاتف', false);
+                    return;
+                }
+                
+                if (!/^\d{10}$/.test(phoneRaw)) {
+                    showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false);
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false);
+                    return;
+                }
             }
 
             actionBtn.disabled = true;
@@ -501,72 +593,126 @@
 
             try {
                 if (currentMode === 'signup') {
-                    const { data, error } = await sb.auth.signUp({ email, password });
+                    console.log("📝 إنشاء حساب جديد...");
+                    const { data, error } = await sb.auth.signUp({ 
+                        email, 
+                        password,
+                        options: {
+                            data: {
+                                full_name: fullName
+                            }
+                        }
+                    });
+                    
                     if (error) throw error;
 
                     const fullPhone = '+964' + phoneRaw;
-                    await upsertProfile(data.user.id, fullName, fullPhone, email);
-                    await fetchAndStoreProfile(data.user.id, email);
+                    await saveProfile(data.user.id, fullName, fullPhone, email);
 
-                    showMessage('✅ تم إنشاء الحساب! جاري التوجيه...', true);
-                    setTimeout(() => window.location.href = "dashboard.html", 1200);
+                    showMessage('✅ تم إنشاء الحساب بنجاح!', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1200);
 
                 } else if (currentMode === 'login') {
-                    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                    console.log("🔐 تسجيل الدخول...");
+                    const { data, error } = await sb.auth.signInWithPassword({ 
+                        email, 
+                        password 
+                    });
+                    
                     if (error) throw error;
 
                     await fetchAndStoreProfile(data.user.id, email);
-                    showMessage('✅ مرحباً بك! جاري التوجيه...', true);
-                    setTimeout(() => window.location.href = "dashboard.html", 1000);
+                    showMessage('✅ مرحباً بك!', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
 
                 } else if (currentMode === 'forgot') {
+                    console.log("📧 استعادة كلمة المرور...");
                     const { error } = await sb.auth.resetPasswordForEmail(email, {
                         redirectTo: window.location.origin + '/dashboard.html'
                     });
+                    
                     if (error) throw error;
 
                     showMessage('📬 تم إرسال رابط الاستعادة إلى بريدك.', true);
-                    setTimeout(() => { currentMode = 'login'; updateUIMode(); emailInput.value = ''; }, 2500);
+                    setTimeout(() => {
+                        currentMode = 'login';
+                        updateUIMode();
+                        emailInput.value = '';
+                    }, 2500);
                 }
             } catch (err) {
+                console.error("❌ خطأ:", err);
                 let errorMsg = err.message;
-                if (errorMsg.includes('Invalid login credentials')) errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';
-                else if (errorMsg.includes('User already registered')) errorMsg = '⚠️ هذا البريد مسجل مسبقاً';
-                else if (errorMsg.includes('Password should be at least 6 characters')) errorMsg = 'كلمة المرور 6 أحرف فأكثر';
-                else if (errorMsg.includes('Database error')) errorMsg = '⚠️ خطأ في قاعدة البيانات، حاول مرة أخرى';
-                else if (errorMsg.includes('Network')) errorMsg = '⚠️ مشكلة في الاتصال';
+                
+                if (errorMsg.includes('Invalid login credentials')) {
+                    errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';
+                } else if (errorMsg.includes('User already registered')) {
+                    errorMsg = '⚠️ هذا البريد مسجل مسبقاً';
+                } else if (errorMsg.includes('Password should be at least 6 characters')) {
+                    errorMsg = 'كلمة المرور 6 أحرف فأكثر';
+                } else if (errorMsg.includes('Database error') || errorMsg.includes('relation')) {
+                    errorMsg = '⚠️ خطأ في قاعدة البيانات، تأكد من وجود جدول profiles';
+                } else if (errorMsg.includes('Network')) {
+                    errorMsg = '⚠️ مشكلة في الاتصال، تأكد من الإنترنت';
+                }
+                
                 showMessage(errorMsg, false);
             } finally {
                 actionBtn.disabled = false;
-                if (currentMode === 'login') actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
-                else if (currentMode === 'signup') actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
-                else actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
+                if (currentMode === 'login') {
+                    actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
+                } else if (currentMode === 'signup') {
+                    actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
+                } else {
+                    actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
+                }
             }
         };
 
         // ========== التحقق من الجلسة ==========
         async function checkSessionAndRedirect() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) {
-                await fetchAndStoreProfile(session.user.id, session.user.email);
-                window.location.href = "dashboard.html";
+            console.log("🔍 التحقق من الجلسة...");
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                
+                if (session) {
+                    console.log("✅ جلسة موجودة للمستخدم:", session.user.email);
+                    await fetchAndStoreProfile(session.user.id, session.user.email);
+                    window.location.href = "dashboard.html";
+                } else {
+                    console.log("❌ لا توجد جلسة");
+                }
+            } catch (err) {
+                console.error("❌ خطأ في التحقق من الجلسة:", err);
             }
         }
 
         // ========== مراقبة تغييرات المصادقة ==========
         sb.auth.onAuthStateChange((event, session) => {
+            console.log("🔄 تغيير في حالة المصادقة:", event);
             if (event === 'SIGNED_IN' && session) {
+                console.log("✅ تم تسجيل الدخول");
                 fetchAndStoreProfile(session.user.id, session.user.email);
-                window.location.href = "dashboard.html";
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 500);
             }
         });
 
         // ========== ربط الأحداث ==========
         toggleModeLink.onclick = (e) => {
             e.preventDefault();
-            if (currentMode === 'forgot') currentMode = 'login';
-            else if (currentMode === 'login') currentMode = 'signup';
-            else if (currentMode === 'signup') currentMode = 'login';
+            if (currentMode === 'forgot') {
+                currentMode = 'login';
+            } else if (currentMode === 'login') {
+                currentMode = 'signup';
+            } else if (currentMode === 'signup') {
+                currentMode = 'login';
+            }
             updateUIMode();
         };
 
@@ -578,11 +724,19 @@
 
         actionBtn.onclick = window.handleAuth;
 
-        // Enter
-        emailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
-        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
-        fullNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
-        phoneInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
+        // مفتاح Enter
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        fullNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        phoneInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
 
         // منع إدخال غير أرقام في الهاتف
         phoneInput.addEventListener('input', function() {
@@ -590,8 +744,8 @@
         });
 
         // ========== بدء التشغيل ==========
-        checkSessionAndRedirect();
         updateUIMode();
+        checkSessionAndRedirect();
         console.log("✅ تم تهيئة الصفحة بالكامل");
     })();
 </script>
