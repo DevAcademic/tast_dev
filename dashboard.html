@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>📚 ديف أكاديمي - منصة التعلم</title>
+    <title>📚 ديف أكاديمي - لوحة التحكم</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
     </script>
@@ -2478,16 +2478,16 @@
             }
 
             // ============================================================
-            // تفعيل الكود عبر Supabase - باستخدام activate_code_v3
+            // تفعيل الكود عبر Supabase - باستخدام activate_code_final
             // ============================================================
-            async function activateCodeInSupabaseV3(code) {
+            async function activateCodeFinal(code) {
                 try {
                     if (!supabaseClient || !currentUser) {
                         return { success: false, message: 'يجب تسجيل الدخول أولاً' };
                     }
 
                     const { data, error } = await supabaseClient
-                        .rpc('activate_code_v3', {
+                        .rpc('activate_code_final', {
                             p_code: code,
                             p_device_id: deviceId
                         });
@@ -2513,7 +2513,7 @@
                     if (!supabaseClient || !currentUser) return [];
 
                     const { data, error } = await supabaseClient
-                        .rpc('get_all_students');
+                        .rpc('get_all_students_v2');
 
                     if (error) {
                         console.warn('⚠️ فشل جلب الطلاب:', error);
@@ -2534,7 +2534,7 @@
             // ============================================================
             // دالة إضافة كود في Supabase
             // ============================================================
-            async function addCodeToSupabase(code, teacherId, sectionName) {
+            async function addCodeToSupabase(code, teacherId) {
                 try {
                     if (!supabaseClient || !currentUser) {
                         console.warn('⚠️ Supabase أو المستخدم غير متاح');
@@ -2567,43 +2567,38 @@
             }
 
             // ============================================================
-            // جلب الأكواد من Supabase عند اختيار المدرس
+            // دالة جلب أكواد المدرس من Supabase
             // ============================================================
-            async function loadCodesFromSupabase(sectionIndex, teacherIndex) {
+            async function getTeacherCodesFromSupabase(teacherId) {
                 try {
-                    if (!supabaseClient || !currentUser) return [];
-
-                    const section = data.sections[sectionIndex];
-                    if (!section) return [];
-
-                    const teacher = section.teachers[teacherIndex];
-                    if (!teacher) return [];
-
-                    const teacherId = teacher._id || teacher.id;
-
-                    const { data, error } = await supabaseClient
-                        .from('codes')
-                        .select('*')
-                        .eq('teacher_id', teacherId)
-                        .order('created_at', { ascending: false });
-
-                    if (error) {
-                        console.warn('⚠️ فشل جلب الأكواد من Supabase:', error);
+                    if (!supabaseClient || !currentUser) {
                         return [];
                     }
 
-                    console.log('✅ تم جلب الأكواد من Supabase:', data?.length || 0);
-                    return data || [];
+                    const { data, error } = await supabaseClient
+                        .rpc('get_teacher_codes', {
+                            p_teacher_id: teacherId
+                        });
+
+                    if (error) {
+                        console.warn('⚠️ فشل جلب الأكواد:', error);
+                        return [];
+                    }
+
+                    if (data && data.success) {
+                        return data.codes || [];
+                    }
+                    return [];
                 } catch (e) {
-                    console.error('❌ خطأ في جلب الأكواد:', e);
+                    console.warn('⚠️ خطأ في جلب الأكواد:', e);
                     return [];
                 }
             }
 
             // ============================================================
-            // دالة تحديث عرض الأكواد
+            // تحديث الأكواد من Supabase
             // ============================================================
-            async function updateCodesDisplay() {
+            async function refreshCodesFromSupabase() {
                 try {
                     const sectionSelect = document.getElementById('codeSection');
                     const teacherSelect = document.getElementById('codeTeacherSelect');
@@ -2612,11 +2607,6 @@
                     const teacherIndex = parseInt(teacherSelect?.value);
 
                     if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0) {
-                        const container = document.getElementById('codesListContainer');
-                        if (container) {
-                            container.innerHTML =
-                            '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">اختر المدرس أولاً</p>';
-                        }
                         return;
                     }
 
@@ -2626,17 +2616,24 @@
                     const teacher = section.teachers[teacherIndex];
                     if (!teacher) return;
 
+                    const teacherId = teacher._id || teacher.id;
+                    if (!teacherId) return;
+
                     // جلب الأكواد من Supabase
-                    const supabaseCodes = await loadCodesFromSupabase(sectionIndex, teacherIndex);
+                    const supabaseCodes = await getTeacherCodesFromSupabase(teacherId);
 
-                    // دمج الأكواد من البيانات المحلية مع Supabase
-                    const localCodes = teacher.codes || [];
-
-                    // دمج الأكواد (تجنب التكرار)
-                    const allCodes = [...localCodes];
+                    // تحديث الأكواد المحلية
                     supabaseCodes.forEach(sc => {
-                        if (!allCodes.some(c => c.code === sc.code)) {
-                            allCodes.push({
+                        const existing = teacher.codes.find(c => c.code === sc.code);
+                        if (existing) {
+                            existing.used = sc.is_used || false;
+                            existing.locked = sc.is_locked || false;
+                            existing.userEmail = sc.user_email || null;
+                            existing.userName = sc.user_name || null;
+                            existing.userPhone = sc.user_phone || null;
+                            existing.usedAt = sc.used_at || null;
+                        } else {
+                            teacher.codes.push({
                                 code: sc.code,
                                 used: sc.is_used || false,
                                 locked: sc.is_locked || false,
@@ -2644,7 +2641,7 @@
                                 userName: sc.user_name || null,
                                 userPhone: sc.user_phone || null,
                                 usedAt: sc.used_at || null,
-                                deviceId: sc.device_id || null,
+                                deviceId: null,
                                 sectionName: sc.section_name || section.name,
                                 _id: sc.id,
                                 _fromSupabase: true
@@ -2652,177 +2649,13 @@
                         }
                     });
 
-                    // تحديث البيانات المحلية
-                    teacher.codes = allCodes;
-
-                    // عرض الأكواد
+                    saveData();
                     updateCodesManagement();
-
+                    console.log('✅ تم تحديث الأكواد من Supabase');
                 } catch (e) {
-                    console.error('❌ خطأ في تحديث عرض الأكواد:', e);
+                    console.warn('⚠️ فشل تحديث الأكواد:', e);
                 }
             }
-
-            // ============================================================
-            // استبدال دالة addManualCode
-            // ============================================================
-            window.addManualCode = async function() {
-                try {
-                    const si = parseInt(document.getElementById('codeSection').value);
-                    const ti = parseInt(document.getElementById('codeTeacherSelect').value);
-                    const code = document.getElementById('manualCodeInput').value.trim().toUpperCase();
-
-                    if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
-                        showToast('warning', '⚠️ اختر القسم والمدرس');
-                        return;
-                    }
-                    if (!code || code.length < 4) {
-                        showToast('warning', '⚠️ أدخل كود صحيح (4 أحرف على الأقل)');
-                        return;
-                    }
-
-                    const section = data.sections[si];
-                    if (!section) {
-                        showToast('error', '❌ القسم غير موجود');
-                        return;
-                    }
-
-                    const teacher = section.teachers[ti];
-                    if (!teacher) {
-                        showToast('error', '❌ المدرس غير موجود');
-                        return;
-                    }
-
-                    // التحقق من وجود الكود مسبقاً
-                    if (teacher.codes.some(c => c.code === code)) {
-                        showToast('warning', '⚠️ الكود موجود مسبقاً');
-                        return;
-                    }
-
-                    // إضافة الكود محلياً
-                    teacher.codes.push({
-                        code: code,
-                        used: false,
-                        locked: false,
-                        userEmail: null,
-                        userName: null,
-                        userPhone: null,
-                        deviceId: null,
-                        usedAt: null,
-                        sectionName: section.name
-                    });
-
-                    saveData();
-                    addChange();
-
-                    // إضافة الكود في Supabase
-                    const teacherId = teacher._id || teacher.id || null;
-                    if (teacherId && supabaseClient) {
-                        const success = await addCodeToSupabase(code, teacherId, section.name);
-                        if (!success) {
-                            console.warn('⚠️ فشل إضافة الكود في Supabase، ولكن تم حفظه محلياً');
-                            showToast('warning', '⚠️ تم حفظ الكود محلياً، قد لا يعمل حتى النشر');
-                        } else {
-                            showToast('success', `✅ تم إضافة الكود: ${code}`);
-                        }
-                    } else {
-                        showToast('warning', '⚠️ تم حفظ الكود محلياً، يرجى النشر لتفعيله');
-                    }
-
-                    // تحديث العرض
-                    await updateCodesDisplay();
-                    document.getElementById('manualCodeInput').value = '';
-                    renderAllData();
-
-                } catch (e) {
-                    console.error('❌ خطأ في إضافة الكود:', e);
-                    showToast('error', '❌ فشل إضافة الكود');
-                }
-            };
-
-            // ============================================================
-            // استبدال دالة generateCodes
-            // ============================================================
-            window.generateCodes = async function(count) {
-                try {
-                    const si = parseInt(document.getElementById('codeSection').value);
-                    const ti = parseInt(document.getElementById('codeTeacherSelect').value);
-
-                    if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
-                        showToast('warning', '⚠️ اختر القسم والمدرس');
-                        return;
-                    }
-
-                    const section = data.sections[si];
-                    if (!section) {
-                        showToast('error', '❌ القسم غير موجود');
-                        return;
-                    }
-
-                    const teacher = section.teachers[ti];
-                    if (!teacher) {
-                        showToast('error', '❌ المدرس غير موجود');
-                        return;
-                    }
-
-                    const teacherId = teacher._id || teacher.id || null;
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                    let gen = 0;
-                    const newCodes = [];
-
-                    for (let i = 0; i < count * 2 && gen < count; i++) {
-                        let code = '';
-                        for (let j = 0; j < 8; j++) {
-                            code += chars.charAt(Math.floor(Math.random() * chars.length));
-                        }
-
-                        if (!teacher.codes.some(c => c.code === code)) {
-                            teacher.codes.push({
-                                code: code,
-                                used: false,
-                                locked: false,
-                                userEmail: null,
-                                userName: null,
-                                userPhone: null,
-                                deviceId: null,
-                                usedAt: null,
-                                sectionName: section.name
-                            });
-                            newCodes.push(code);
-                            gen++;
-                        }
-                    }
-
-                    saveData();
-                    addChange();
-
-                    // إضافة الأكواد في Supabase
-                    if (teacherId && supabaseClient) {
-                        let successCount = 0;
-                        for (const code of newCodes) {
-                            const success = await addCodeToSupabase(code, teacherId, section.name);
-                            if (success) successCount++;
-                        }
-
-                        if (successCount === newCodes.length) {
-                            showToast('success', `✅ تم إنشاء ${newCodes.length} كود جديد`);
-                        } else {
-                            showToast('warning',
-                                `⚠️ تم إنشاء ${newCodes.length} كود، لكن ${newCodes.length - successCount} لم تُحفظ في قاعدة البيانات`
-                                );
-                        }
-                    } else {
-                        showToast('warning', '⚠️ تم حفظ الأكواد محلياً، يرجى النشر لتفعيلها');
-                    }
-
-                    await updateCodesDisplay();
-                    renderAllData();
-
-                } catch (e) {
-                    console.error('❌ خطأ في إنشاء الأكواد:', e);
-                    showToast('error', '❌ فشل إنشاء الأكواد');
-                }
-            };
 
             // ============================================================
             // دالة updateCodesManagement
@@ -2976,12 +2809,253 @@
                         }
                     }
 
-                    await updateCodesDisplay();
+                    await refreshCodesFromSupabase();
                     renderAllData();
 
                 } catch (e) {
                     console.error('❌ خطأ في حذف الكود:', e);
                     showToast('error', '❌ فشل حذف الكود');
+                }
+            };
+
+            // ============================================================
+            // استبدال دالة generateCodes
+            // ============================================================
+            window.generateCodes = async function(count) {
+                try {
+                    const si = parseInt(document.getElementById('codeSection').value);
+                    const ti = parseInt(document.getElementById('codeTeacherSelect').value);
+
+                    if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                        showToast('warning', '⚠️ اختر القسم والمدرس');
+                        return;
+                    }
+
+                    const section = data.sections[si];
+                    if (!section) {
+                        showToast('error', '❌ القسم غير موجود');
+                        return;
+                    }
+
+                    const teacher = section.teachers[ti];
+                    if (!teacher) {
+                        showToast('error', '❌ المدرس غير موجود');
+                        return;
+                    }
+
+                    const teacherId = teacher._id || teacher.id;
+                    if (!teacherId) {
+                        showToast('error', '❌ معرف المدرس غير موجود');
+                        return;
+                    }
+
+                    showToast('info', '⏳ جاري إنشاء الأكواد...');
+
+                    // إنشاء الأكواد في Supabase
+                    const { data, error } = await supabaseClient
+                        .rpc('create_codes_batch', {
+                            p_count: count,
+                            p_teacher_id: teacherId
+                        });
+
+                    if (error) {
+                        console.error('❌ فشل إنشاء الأكواد:', error);
+                        showToast('error', '❌ فشل إنشاء الأكواد');
+                        return;
+                    }
+
+                    if (!data || !data.success) {
+                        showToast('error', '❌ ' + (data?.message || 'فشل إنشاء الأكواد'));
+                        return;
+                    }
+
+                    // تحديث الأكواد المحلية
+                    const newCodes = data.codes || [];
+                    newCodes.forEach(code => {
+                        if (!teacher.codes.some(c => c.code === code)) {
+                            teacher.codes.push({
+                                code: code,
+                                used: false,
+                                locked: false,
+                                userEmail: null,
+                                userName: null,
+                                userPhone: null,
+                                deviceId: null,
+                                usedAt: null,
+                                sectionName: section.name
+                            });
+                        }
+                    });
+
+                    saveData();
+                    addChange();
+
+                    // تحديث العرض
+                    await refreshCodesFromSupabase();
+                    renderAllData();
+
+                    showToast('success', `✅ تم إنشاء ${data.count || newCodes.length} كود جديد`);
+
+                } catch (e) {
+                    console.error('❌ خطأ في إنشاء الأكواد:', e);
+                    showToast('error', '❌ فشل إنشاء الأكواد');
+                }
+            };
+
+            // ============================================================
+            // استبدال دالة addManualCode
+            // ============================================================
+            window.addManualCode = async function() {
+                try {
+                    const si = parseInt(document.getElementById('codeSection').value);
+                    const ti = parseInt(document.getElementById('codeTeacherSelect').value);
+                    const code = document.getElementById('manualCodeInput').value.trim().toUpperCase();
+
+                    if (isNaN(si) || si < 0 || isNaN(ti) || ti < 0) {
+                        showToast('warning', '⚠️ اختر القسم والمدرس');
+                        return;
+                    }
+                    if (!code || code.length < 4) {
+                        showToast('warning', '⚠️ أدخل كود صحيح (4 أحرف على الأقل)');
+                        return;
+                    }
+
+                    const section = data.sections[si];
+                    if (!section) {
+                        showToast('error', '❌ القسم غير موجود');
+                        return;
+                    }
+
+                    const teacher = section.teachers[ti];
+                    if (!teacher) {
+                        showToast('error', '❌ المدرس غير موجود');
+                        return;
+                    }
+
+                    const teacherId = teacher._id || teacher.id;
+                    if (!teacherId) {
+                        showToast('error', '❌ معرف المدرس غير موجود');
+                        return;
+                    }
+
+                    // إضافة الكود في Supabase
+                    const { data, error } = await supabaseClient
+                        .rpc('add_code', {
+                            p_code: code,
+                            p_teacher_id: teacherId
+                        });
+
+                    if (error) {
+                        console.error('❌ فشل إضافة الكود:', error);
+                        showToast('error', '❌ فشل إضافة الكود');
+                        return;
+                    }
+
+                    // إضافة الكود محلياً
+                    teacher.codes.push({
+                        code: code,
+                        used: false,
+                        locked: false,
+                        userEmail: null,
+                        userName: null,
+                        userPhone: null,
+                        deviceId: null,
+                        usedAt: null,
+                        sectionName: section.name
+                    });
+
+                    saveData();
+                    addChange();
+
+                    await refreshCodesFromSupabase();
+                    document.getElementById('manualCodeInput').value = '';
+                    renderAllData();
+
+                    showToast('success', `✅ تم إضافة الكود: ${code}`);
+
+                } catch (e) {
+                    console.error('❌ خطأ في إضافة الكود:', e);
+                    showToast('error', '❌ فشل إضافة الكود');
+                }
+            };
+
+            // ============================================================
+            // تفعيل الكود - باستخدام activate_code_final
+            // ============================================================
+            window.activateCodeFromTeacher = async function() {
+                try {
+                    const input = document.getElementById('codeInputTeacher');
+                    const msg = document.getElementById('codeMessageTeacher');
+                    if (!input || !msg) return;
+
+                    const code = input.value.trim().toUpperCase();
+
+                    if (!code) { msg.innerHTML = '⚠️ أدخل الكود';
+                        msg.style.color = '#f59e0b'; return; }
+                    if (!activeTeacher) { msg.innerHTML = '⚠️ اختر مدرساً';
+                        msg.style.color = '#f59e0b'; return; }
+                    if (!currentUser) { msg.innerHTML = '⚠️ سجل الدخول أولاً';
+                        msg.style.color = '#ef4444';
+                        showToast('error', '⚠️ سجل الدخول أولاً'); return; }
+
+                    // تفعيل الكود عبر Supabase
+                    const result = await activateCodeFinal(code);
+
+                    if (!result.success) {
+                        msg.innerHTML = '❌ ' + result.message;
+                        msg.style.color = '#ef4444';
+                        showToast('error', '❌ ' + result.message);
+                        return;
+                    }
+
+                    if (result.already_used) {
+                        msg.innerHTML = '✅ ' + result.message;
+                        msg.style.color = '#22c55e';
+                        showToast('info', '✅ ' + result.message);
+                        return;
+                    }
+
+                    // تحديث البيانات المحلية
+                    if (activeTeacher) {
+                        const codeData = activeTeacher.codes.find(c => c.code === code);
+                        if (codeData) {
+                            codeData.used = true;
+                            codeData.userEmail = currentUser.email;
+                            codeData.userName = result.user_name || currentUser.user_metadata?.full_name || currentUser
+                                .email;
+                            codeData.userPhone = result.user_phone || '';
+                            codeData.usedAt = new Date().toISOString();
+                            codeData.deviceId = deviceId;
+                        }
+                        saveData();
+                    }
+
+                    // تحديث الواجهة
+                    renderAllData();
+                    renderMyCourses();
+                    renderAccount();
+                    updateBadge();
+
+                    // تحديث الطلاب
+                    const students = await loadStudentsFromSupabase();
+                    renderUsersTable(students);
+
+                    msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`;
+                    msg.style.color = '#22c55e';
+                    showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`);
+
+                    // إعادة تحميل الأكواد بعد التفعيل
+                    setTimeout(refreshCodesFromSupabase, 1000);
+
+                    setTimeout(() => {
+                        if (activeSectionIndex !== null && activeTeacherIndex !== null) {
+                            openTeacher(activeSectionIndex, activeTeacherIndex);
+                        }
+                    }, 1500);
+
+                } catch (e) {
+                    console.error('❌ خطأ في التفعيل:', e);
+                    showToast('error', '❌ حدث خطأ');
                 }
             };
 
@@ -3062,12 +3136,14 @@
                         } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
                     }, 500);
 
-                    // 8. تحديث عرض الأكواد
-                    setTimeout(function() {
+                    // 8. تحديث الأكواد من Supabase
+                    setTimeout(async function() {
                         try {
-                            updateCodesDisplay();
-                        } catch (e) { console.warn('⚠️ فشل تحديث الأكواد:', e); }
-                    }, 600);
+                            await refreshCodesFromSupabase();
+                        } catch (e) {
+                            console.warn('⚠️ فشل تحديث الأكواد:', e);
+                        }
+                    }, 800);
 
                     // 9. إظهار زر لوحة الإدارة
                     setTimeout(function() {
@@ -3229,7 +3305,7 @@
             }
 
             // ============================================================
-            // دوال العرض
+            // دوال العرض (مختصرة)
             // ============================================================
             function getAllTeachers() {
                 const teachers = [];
@@ -3435,84 +3511,6 @@
                     document.body.style.overflow = 'hidden';
                 } catch (e) {
                     console.error('❌ خطأ في فتح المدرس:', e);
-                    showToast('error', '❌ حدث خطأ');
-                }
-            };
-
-            // ============================================================
-            // تفعيل الكود - باستخدام activate_code_v3
-            // ============================================================
-            window.activateCodeFromTeacher = async function() {
-                try {
-                    const input = document.getElementById('codeInputTeacher');
-                    const msg = document.getElementById('codeMessageTeacher');
-                    if (!input || !msg) return;
-
-                    const code = input.value.trim().toUpperCase();
-
-                    if (!code) { msg.innerHTML = '⚠️ أدخل الكود';
-                        msg.style.color = '#f59e0b'; return; }
-                    if (!activeTeacher) { msg.innerHTML = '⚠️ اختر مدرساً';
-                        msg.style.color = '#f59e0b'; return; }
-                    if (!currentUser) { msg.innerHTML = '⚠️ سجل الدخول أولاً';
-                        msg.style.color = '#ef4444';
-                        showToast('error', '⚠️ سجل الدخول أولاً'); return; }
-
-                    // تفعيل الكود عبر Supabase باستخدام activate_code_v3
-                    const result = await activateCodeInSupabaseV3(code);
-
-                    if (!result.success) {
-                        msg.innerHTML = '❌ ' + result.message;
-                        msg.style.color = '#ef4444';
-                        showToast('error', '❌ ' + result.message);
-                        return;
-                    }
-
-                    if (result.already_used) {
-                        msg.innerHTML = '✅ ' + result.message;
-                        msg.style.color = '#22c55e';
-                        showToast('info', '✅ ' + result.message);
-                        return;
-                    }
-
-                    // تحديث البيانات المحلية
-                    if (activeTeacher) {
-                        const codeData = activeTeacher.codes.find(c => c.code === code);
-                        if (codeData) {
-                            codeData.used = true;
-                            codeData.userEmail = currentUser.email;
-                            codeData.userName = result.user_name || currentUser.user_metadata?.full_name || currentUser
-                                .email;
-                            codeData.userPhone = result.user_phone || '';
-                            codeData.usedAt = new Date().toISOString();
-                            codeData.deviceId = deviceId;
-                            codeData.sectionName = data.sections[activeSectionIndex]?.name || '';
-                        }
-                        saveData();
-                    }
-
-                    // تحديث الواجهة
-                    renderAllData();
-                    renderMyCourses();
-                    renderAccount();
-                    updateBadge();
-
-                    // تحديث الطلاب من Supabase
-                    const students = await loadStudentsFromSupabase();
-                    renderUsersTable(students);
-
-                    msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`;
-                    msg.style.color = '#22c55e';
-                    showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`);
-
-                    setTimeout(() => {
-                        if (activeSectionIndex !== null && activeTeacherIndex !== null) {
-                            openTeacher(activeSectionIndex, activeTeacherIndex);
-                        }
-                    }, 1500);
-
-                } catch (e) {
-                    console.error('❌ خطأ في التفعيل:', e);
                     showToast('error', '❌ حدث خطأ');
                 }
             };
@@ -4279,7 +4277,7 @@
                                         renderUsersTable(students);
                                     });
                                     // تحديث الأكواد
-                                    setTimeout(updateCodesDisplay, 300);
+                                    setTimeout(refreshCodesFromSupabase, 300);
                                     setTimeout(updateAllSemesterLists, 300);
                                     setTimeout(updateLectureLists, 300);
                                     showToast('info', '🔓 مرحباً بك في لوحة التحكم');
@@ -4364,7 +4362,7 @@
 
                             if (this.dataset.tab === 'manage-codes') {
                                 updateAllAdminSelects();
-                                setTimeout(updateCodesDisplay, 200);
+                                setTimeout(refreshCodesFromSupabase, 200);
                             }
                             if (this.dataset.tab === 'users') {
                                 loadStudentsFromSupabase().then(students => {
@@ -4938,7 +4936,7 @@
             });
 
             // ============================================================
-            // دوال الحذف
+            // دوال الحذف (مختصرة)
             // ============================================================
             window.deleteSelectedSection = function() {
                 try {
@@ -5045,7 +5043,7 @@
             };
 
             // ============================================================
-            // المشرفين
+            // المشرفين (مختصر)
             // ============================================================
             async function loadAdminsList() {
                 try {
