@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
     </script>
     <style>
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -1447,7 +1448,7 @@
     </div>
 
     <!-- ============================================================
-    JAVASCRIPT - الكود الكامل والمعدل
+    JAVASCRIPT - النسخة النهائية مع حفظ في Supabase
     ============================================================ -->
     <script>
         (function() {
@@ -1520,7 +1521,116 @@
             window.showToast = showToast;
 
             // ============================================================
-            // التهيئة - مع حفظ الاسم والرقم
+            // جلب ملف المستخدم من Supabase
+            // ============================================================
+            async function loadUserProfile() {
+                try {
+                    if (!supabaseClient || !currentUser) return null;
+
+                    const { data, error } = await supabaseClient
+                        .rpc('get_user_profile');
+
+                    if (error) {
+                        console.warn('⚠️ فشل جلب ملف المستخدم:', error);
+                        return null;
+                    }
+
+                    if (data && data.success) {
+                        console.log('✅ تم جلب ملف المستخدم:', data);
+                        return data;
+                    }
+                    return null;
+                } catch (e) {
+                    console.warn('⚠️ خطأ في جلب ملف المستخدم:', e);
+                    return null;
+                }
+            }
+
+            // ============================================================
+            // تحديث ملف المستخدم في Supabase
+            // ============================================================
+            async function updateUserProfile(fullName, phone) {
+                try {
+                    if (!supabaseClient || !currentUser) return false;
+
+                    const { data, error } = await supabaseClient
+                        .rpc('update_user_profile', {
+                            p_full_name: fullName,
+                            p_phone: phone
+                        });
+
+                    if (error) {
+                        console.warn('⚠️ فشل تحديث ملف المستخدم:', error);
+                        return false;
+                    }
+
+                    if (data && data.success) {
+                        console.log('✅ تم تحديث ملف المستخدم');
+                        return true;
+                    }
+                    return false;
+                } catch (e) {
+                    console.warn('⚠️ خطأ في تحديث ملف المستخدم:', e);
+                    return false;
+                }
+            }
+
+            // ============================================================
+            // تفعيل الكود عبر Supabase
+            // ============================================================
+            async function activateCodeInSupabase(code) {
+                try {
+                    if (!supabaseClient || !currentUser) {
+                        return { success: false, message: 'يجب تسجيل الدخول أولاً' };
+                    }
+
+                    const { data, error } = await supabaseClient
+                        .rpc('activate_code_v2', {
+                            p_code: code,
+                            p_device_id: deviceId
+                        });
+
+                    if (error) {
+                        console.error('❌ خطأ في تفعيل الكود:', error);
+                        return { success: false, message: error.message };
+                    }
+
+                    console.log('✅ نتيجة تفعيل الكود:', data);
+                    return data;
+                } catch (e) {
+                    console.error('❌ خطأ:', e);
+                    return { success: false, message: e.message };
+                }
+            }
+
+            // ============================================================
+            // جلب جميع الطلاب من Supabase
+            // ============================================================
+            async function loadStudentsFromSupabase() {
+                try {
+                    if (!supabaseClient || !currentUser) return [];
+
+                    const { data, error } = await supabaseClient
+                        .rpc('get_all_students');
+
+                    if (error) {
+                        console.warn('⚠️ فشل جلب الطلاب:', error);
+                        return [];
+                    }
+
+                    if (data && data.success) {
+                        console.log('✅ تم جلب الطلاب:', data.students?.length || 0);
+                        return data.students || [];
+                    }
+                    return [];
+                } catch (e) {
+                    console.warn('⚠️ خطأ في جلب الطلاب:', e);
+                    return [];
+                }
+            }
+
+            // ============================================================
+            // التهيئة
             // ============================================================
             async function initApp() {
                 try {
@@ -1535,14 +1645,6 @@
                             if (userData && userData.email) {
                                 currentUser = userData;
                                 console.log('✅ تم استعادة المستخدم:', currentUser.email);
-
-                                let fullName = currentUser.user_metadata?.full_name ||
-                                    currentUser.user_metadata?.name ||
-                                    currentUser.email?.split('@')[0] ||
-                                    'مستخدم';
-                                let phone = currentUser.user_metadata?.phone || '';
-                                localStorage.setItem('userFullName', fullName);
-                                localStorage.setItem('userPhone', phone);
                             }
                         } catch (e) { console.warn('⚠️ فشل استعادة المستخدم:', e); }
                     }
@@ -1554,14 +1656,6 @@
                                 currentUser = sessionData.session.user;
                                 localStorage.setItem('devAcademicUser', JSON.stringify(currentUser));
                                 console.log('✅ تم استعادة المستخدم من Supabase:', currentUser.email);
-
-                                let fullName = currentUser.user_metadata?.full_name ||
-                                    currentUser.user_metadata?.name ||
-                                    currentUser.email?.split('@')[0] ||
-                                    'مستخدم';
-                                let phone = currentUser.user_metadata?.phone || '';
-                                localStorage.setItem('userFullName', fullName);
-                                localStorage.setItem('userPhone', phone);
                             }
                         } catch (e) { console.warn('⚠️ فشل استعادة المستخدم من Supabase:', e); }
                     }
@@ -1572,26 +1666,39 @@
                         return;
                     }
 
-                    // 2. تحميل البيانات
+                    // 2. تحميل بيانات المستخدم من Supabase
+                    const profile = await loadUserProfile();
+                    if (profile && profile.full_name) {
+                        // حفظ الاسم في localStorage
+                        localStorage.setItem('userFullName', profile.full_name);
+                        localStorage.setItem('userPhone', profile.phone || '');
+                        console.log('✅ تم تحميل الملف الشخصي:', profile.full_name);
+                    }
+
+                    // 3. تحميل البيانات المحلية
                     await loadData();
 
-                    // 3. عرض الواجهة
+                    // 4. عرض الواجهة
                     if (loadingScreen) loadingScreen.style.display = 'none';
                     if (topBar) topBar.style.display = 'flex';
                     if (bottomNav) bottomNav.style.display = 'flex';
                     if (footer) footer.style.display = 'block';
 
-                    // 4. تحديث الواجهة
+                    // 5. تحديث الواجهة
                     updateUI();
                     renderAllData();
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
                     loadBannerFromSupabase();
-                    renderUsersTable(); // تحميل الطلاب
+                    
+                    // 6. تحميل الطلاب من Supabase
+                    const students = await loadStudentsFromSupabase();
+                    renderUsersTable(students);
+                    
                     navigateTo('home');
 
-                    // 5. تحديث القوائم
+                    // 7. تحديث القوائم
                     setTimeout(function() {
                         try {
                             updateAllAdminSelects();
@@ -1599,7 +1706,7 @@
                         } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
                     }, 500);
 
-                    // 6. إظهار زر لوحة الإدارة
+                    // 8. إظهار زر لوحة الإدارة
                     setTimeout(function() {
                         try { showAdminButton(); } catch (e) { console.warn('⚠️ فشل إظهار زر الإدارة:', e); }
                     }, 1000);
@@ -1653,12 +1760,7 @@
                 try {
                     if (!supabaseClient) return;
                     const { error } = await supabaseClient
-                        .from('banner')
-                        .upsert({
-                            id: 'main',
-                            image_url: imageUrl,
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'id' });
+                        .rpc('update_banner', { p_image_url: imageUrl });
 
                     if (error) {
                         console.warn('⚠️ فشل حفظ البانر في Supabase:', error);
@@ -1673,7 +1775,7 @@
             }
 
             // ============================================================
-            // البيانات
+            // البيانات المحلية
             // ============================================================
             async function loadData() {
                 try {
@@ -1960,9 +2062,9 @@
             };
 
             // ============================================================
-            // تفعيل الكود - مع حفظ الاسم والرقم ومنع إعادة الاستخدام
+            // تفعيل الكود - عبر Supabase
             // ============================================================
-            window.activateCodeFromTeacher = function() {
+            window.activateCodeFromTeacher = async function() {
                 try {
                     const input = document.getElementById('codeInputTeacher');
                     const msg = document.getElementById('codeMessageTeacher');
@@ -1978,83 +2080,37 @@
                         msg.style.color = '#ef4444';
                         showToast('error', '⚠️ سجل الدخول أولاً'); return; }
 
-                    const teacher = activeTeacher;
-                    const codeData = teacher.codes.find(c => c.code === code);
+                    // تفعيل الكود عبر Supabase
+                    const result = await activateCodeInSupabase(code);
 
-                    if (!codeData) {
-                        msg.innerHTML = '❌ الكود غير صحيح';
+                    if (!result.success) {
+                        msg.innerHTML = '❌ ' + result.message;
                         msg.style.color = '#ef4444';
-                        showToast('error', '❌ الكود غير صحيح');
+                        showToast('error', '❌ ' + result.message);
                         return;
                     }
 
-                    if (codeData.locked) {
-                        msg.innerHTML = '🔒 هذا الكود مقفل';
-                        msg.style.color = '#f59e0b';
-                        showToast('warning', '🔒 الكود مقفل');
+                    if (result.already_used) {
+                        msg.innerHTML = '✅ ' + result.message;
+                        msg.style.color = '#22c55e';
+                        showToast('info', '✅ ' + result.message);
                         return;
                     }
 
-                    if (codeData.used) {
-                        if (codeData.userEmail === currentUser.email) {
-                            msg.innerHTML = '✅ هذا الكود مفعل بالفعل على حسابك';
-                            msg.style.color = '#22c55e';
-                            showToast('info', '✅ الكود مفعل بالفعل');
-                            return;
-                        } else {
-                            const usedBy = codeData.userName || codeData.userEmail || 'شخص آخر';
-                            msg.innerHTML = `❌ هذا الكود مستخدم من قبل: ${usedBy}`;
-                            msg.style.color = '#ef4444';
-                            showToast('error', `❌ هذا الكود مستخدم من قبل: ${usedBy}`);
-                            return;
+                    // تحديث البيانات المحلية
+                    if (activeTeacher) {
+                        const codeData = activeTeacher.codes.find(c => c.code === code);
+                        if (codeData) {
+                            codeData.used = true;
+                            codeData.userEmail = currentUser.email;
+                            codeData.userName = result.user_name || currentUser.user_metadata?.full_name || currentUser
+                                .email;
+                            codeData.userPhone = result.user_phone || '';
+                            codeData.usedAt = new Date().toISOString();
+                            codeData.deviceId = deviceId;
+                            codeData.sectionName = data.sections[activeSectionIndex]?.name || '';
                         }
-                    }
-
-                    // جلب الاسم والرقم
-                    let fullName = currentUser.user_metadata?.full_name ||
-                        currentUser.user_metadata?.name ||
-                        currentUser.user_metadata?.user_name ||
-                        currentUser.email?.split('@')[0] ||
-                        'مستخدم';
-
-                    let phone = currentUser.user_metadata?.phone ||
-                        currentUser.user_metadata?.phone_number ||
-                        '';
-
-                    // تفعيل الكود
-                    codeData.used = true;
-                    codeData.userEmail = currentUser.email;
-                    codeData.userName = fullName;
-                    codeData.userPhone = phone;
-                    codeData.deviceId = deviceId;
-                    codeData.usedAt = new Date().toISOString();
-                    codeData.sectionName = data.sections[activeSectionIndex]?.name || '';
-
-                    saveData();
-                    addChange();
-
-                    // حفظ في Supabase
-                    if (supabaseClient) {
-                        supabaseClient
-                            .from('codes')
-                            .upsert({
-                                code: code,
-                                teacher_id: teacher._id || null,
-                                teacher_name: teacher.name,
-                                user_id: currentUser.id,
-                                user_email: currentUser.email,
-                                user_name: fullName,
-                                user_phone: phone,
-                                device_id: deviceId,
-                                is_used: true,
-                                is_locked: false,
-                                section_name: data.sections[activeSectionIndex]?.name || '',
-                                used_at: new Date().toISOString()
-                            }, { onConflict: 'code' })
-                            .then(({ error }) => {
-                                if (error) console.warn('⚠️ فشل حفظ الكود في Supabase:', error);
-                                else console.log('✅ تم حفظ الكود في Supabase');
-                            });
+                        saveData();
                     }
 
                     // تحديث الواجهة
@@ -2062,11 +2118,14 @@
                     renderMyCourses();
                     renderAccount();
                     updateBadge();
-                    renderUsersTable(); // ← تحديث الطلاب
 
-                    msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${fullName}`;
+                    // تحديث الطلاب من Supabase
+                    const students = await loadStudentsFromSupabase();
+                    renderUsersTable(students);
+
+                    msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`;
                     msg.style.color = '#22c55e';
-                    showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${fullName}`);
+                    showToast('success', `✅ تم التفعيل بنجاح!`);
 
                     setTimeout(() => {
                         if (activeSectionIndex !== null && activeTeacherIndex !== null) {
@@ -2306,7 +2365,7 @@
             }
 
             // ============================================================
-            // الحساب - مع عرض الاسم والرقم
+            // الحساب
             // ============================================================
             function renderAccount() {
                 try {
@@ -2325,17 +2384,12 @@
                     let fullName = localStorage.getItem('userFullName') ||
                         currentUser.user_metadata?.full_name ||
                         currentUser.user_metadata?.name ||
-                        currentUser.user_metadata?.user_name ||
                         currentUser.email?.split('@')[0] ||
                         'مستخدم';
 
                     let phone = localStorage.getItem('userPhone') ||
                         currentUser.user_metadata?.phone ||
-                        currentUser.user_metadata?.phone_number ||
                         'غير مسجل';
-
-                    localStorage.setItem('userFullName', fullName);
-                    localStorage.setItem('userPhone', phone);
 
                     const nameEl = document.getElementById('accountName');
                     const emailEl = document.getElementById('accountEmail');
@@ -2351,8 +2405,9 @@
                         phoneEl.style.display = 'block';
                     }
 
-                    if (regEl && currentUser.created_at) {
-                        regEl.textContent = 'مسجل منذ: ' + new Date(currentUser.created_at).toLocaleDateString('ar');
+                    if (currentUser.created_at) {
+                        const date = new Date(currentUser.created_at).toLocaleDateString('ar');
+                        if (regEl) regEl.textContent = 'مسجل منذ: ' + date;
                     }
 
                     const courses = getMyCourses();
@@ -2381,7 +2436,7 @@
             }
 
             // ============================================================
-            // تحديث الواجهة - مع عرض الاسم
+            // تحديث الواجهة
             // ============================================================
             function updateUI() {
                 try {
@@ -2389,7 +2444,6 @@
                         let fullName = localStorage.getItem('userFullName') ||
                             currentUser.user_metadata?.full_name ||
                             currentUser.user_metadata?.name ||
-                            currentUser.user_metadata?.user_name ||
                             currentUser.email?.split('@')[0] ||
                             'مستخدم';
 
@@ -2431,23 +2485,6 @@
                         console.log('✅ مستخدم مشرف:', data);
                         return true;
                     }
-
-                    console.log('🔄 محاولة إضافة المستخدم كمشرف...');
-                    try {
-                        const { error: insertError } = await supabaseClient
-                            .from('admins')
-                            .insert({
-                                uid: currentUser.id,
-                                email: email,
-                                role: 'admin'
-                            });
-
-                        if (!insertError) {
-                            console.log('✅ تم إضافة المشرف بنجاح');
-                            return true;
-                        }
-                    } catch (e) { console.warn('⚠️ فشل إضافة المشرف:', e); }
-
                     return false;
                 } catch (e) {
                     console.error('❌ خطأ في التحقق من المشرف:', e);
@@ -2468,6 +2505,74 @@
                         console.log(isAdmin ? '✅ زر لوحة الإدارة ظاهر' : '❌ زر لوحة الإدارة مخفي');
                     }
                 } catch (e) { console.warn('⚠️ فشل إظهار زر الإدارة:', e); }
+            }
+
+            // ============================================================
+            // عرض الطلاب - من Supabase
+            // ============================================================
+            function renderUsersTable(students) {
+                try {
+                    const tbody = document.getElementById('usersTableBody');
+                    if (!tbody) return;
+
+                    if (!students || students.length === 0) {
+                        tbody.innerHTML = `
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;color:var(--text-light);padding:1.5rem 0;">
+                                            🧑‍🎓 لا يوجد طلاب مسجلين حتى الآن
+                                        </td>
+                                    </tr>
+                                `;
+                        return;
+                    }
+
+                    let html = '';
+                    let index = 1;
+
+                    students.forEach(student => {
+                        const date = student.registered_at ?
+                            new Date(student.registered_at).toLocaleString('ar') :
+                            'غير معروف';
+                        const teachersList = student.teachers && student.teachers.length > 0 ?
+                            student.teachers.map(t => t.name).join('، ') :
+                            'لا يوجد';
+                        const section = student.teachers && student.teachers.length > 0 ?
+                            student.teachers[0].section || 'غير محدد' :
+                            'غير محدد';
+
+                        html += `
+                                    <tr>
+                                        <td style="font-weight:700;color:var(--primary);">${index++}</td>
+                                        <td><strong style="font-size:0.9rem;">${student.full_name || student.email}</strong></td>
+                                        <td style="font-size:0.75rem;color:var(--text-light);">${student.email}</td>
+                                        <td style="font-size:0.75rem;color:var(--text-light);">${student.phone || 'غير مسجل'}</td>
+                                        <td style="font-size:0.75rem;color:var(--text-light);">
+                                            <span style="background:var(--primary);color:white;padding:0.1rem 0.5rem;border-radius:20px;font-size:0.65rem;">
+                                                ${section}
+                                            </span>
+                                        </td>
+                                        <td style="font-size:0.75rem;color:var(--primary);">${teachersList}</td>
+                                        <td style="font-size:0.65rem;color:var(--text-light);">${date}</td>
+                                    </tr>
+                                `;
+                    });
+
+                    tbody.innerHTML = html;
+                    console.log(`✅ تم عرض ${students.length} طالب`);
+
+                } catch (e) {
+                    console.error('❌ خطأ في عرض الطلاب:', e);
+                    const tbody = document.getElementById('usersTableBody');
+                    if (tbody) {
+                        tbody.innerHTML = `
+                                    <tr>
+                                        <td colspan="7" style="text-align:center;color:var(--text-light);padding:1.5rem 0;">
+                                            ❌ حدث خطأ في تحميل الطلاب
+                                        </td>
+                                    </tr>
+                                `;
+                    }
+                }
             }
 
             // ============================================================
@@ -2516,121 +2621,6 @@
             };
 
             // ============================================================
-            // عرض الطلاب - النسخة المحسنة
-            // ============================================================
-            function renderUsersTable() {
-                try {
-                    const tbody = document.getElementById('usersTableBody');
-                    if (!tbody) return;
-
-                    // خريطة لتجميع الطلاب
-                    const studentsMap = new Map();
-
-                    // 1. جمع البيانات من جميع الأقسام والمدرسين
-                    data.sections.forEach(section => {
-                        section.teachers.forEach(teacher => {
-                            if (teacher.codes) {
-                                teacher.codes.forEach(c => {
-                                    if (c.used && c.userEmail) {
-                                        if (!studentsMap.has(c.userEmail)) {
-                                            studentsMap.set(c.userEmail, {
-                                                email: c.userEmail,
-                                                name: c.userName || c.userEmail.split('@')[0],
-                                                phone: c.userPhone || 'غير مسجل',
-                                                section: c.sectionName || section.name ||
-                                                    'غير محدد',
-                                                teachers: [],
-                                                registeredAt: c.usedAt || new Date()
-                                                    .toISOString()
-                                            });
-                                        }
-                                        // إضافة المدرس إذا لم يكن موجوداً
-                                        if (!studentsMap.get(c.userEmail).teachers.includes(teacher
-                                            .name)) {
-                                            studentsMap.get(c.userEmail).teachers.push(teacher
-                                                .name);
-                                        }
-                                        // تحديث القسم
-                                        if (c.sectionName) {
-                                            studentsMap.get(c.userEmail).section = c.sectionName;
-                                        }
-                                        // تحديث الاسم
-                                        if (c.userName && studentsMap.get(c.userEmail).name === c
-                                            .userEmail.split('@')[0]) {
-                                            studentsMap.get(c.userEmail).name = c.userName;
-                                        }
-                                        // تحديث رقم الهاتف
-                                        if (c.userPhone) {
-                                            studentsMap.get(c.userEmail).phone = c.userPhone;
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    });
-
-                    // 2. التحقق من وجود طلاب
-                    if (studentsMap.size === 0) {
-                        tbody.innerHTML = `
-                                    <tr>
-                                        <td colspan="7" style="text-align:center;color:var(--text-light);padding:1.5rem 0;">
-                                            🧑‍🎓 لا يوجد طلاب مسجلين حتى الآن
-                                        </td>
-                                    </tr>
-                                `;
-                        return;
-                    }
-
-                    // 3. عرض الطلاب
-                    let html = '';
-                    let index = 1;
-
-                    // ترتيب الطلاب حسب تاريخ التسجيل (الأحدث أولاً)
-                    const sortedStudents = Array.from(studentsMap.entries())
-                        .sort((a, b) => new Date(b[1].registeredAt) - new Date(a[1].registeredAt));
-
-                    sortedStudents.forEach(([email, student]) => {
-                        const date = student.registeredAt ?
-                            new Date(student.registeredAt).toLocaleString('ar') :
-                            'غير معروف';
-                        const teachersList = student.teachers.join('، ') || 'لا يوجد';
-
-                        html += `
-                                    <tr>
-                                        <td style="font-weight:700;color:var(--primary);">${index++}</td>
-                                        <td><strong style="font-size:0.9rem;">${student.name}</strong></td>
-                                        <td style="font-size:0.75rem;color:var(--text-light);">${student.email}</td>
-                                        <td style="font-size:0.75rem;color:var(--text-light);">${student.phone}</td>
-                                        <td style="font-size:0.75rem;color:var(--text-light);">
-                                            <span style="background:var(--primary);color:white;padding:0.1rem 0.5rem;border-radius:20px;font-size:0.65rem;">
-                                                ${student.section || 'غير محدد'}
-                                            </span>
-                                        </td>
-                                        <td style="font-size:0.75rem;color:var(--primary);">${teachersList}</td>
-                                        <td style="font-size:0.65rem;color:var(--text-light);">${date}</td>
-                                    </tr>
-                                `;
-                    });
-
-                    tbody.innerHTML = html;
-                    console.log(`✅ تم عرض ${studentsMap.size} طالب`);
-
-                } catch (e) {
-                    console.error('❌ خطأ في عرض الطلاب:', e);
-                    const tbody = document.getElementById('usersTableBody');
-                    if (tbody) {
-                        tbody.innerHTML = `
-                                    <tr>
-                                        <td colspan="7" style="text-align:center;color:var(--text-light);padding:1.5rem 0;">
-                                            ❌ حدث خطأ في تحميل الطلاب
-                                        </td>
-                                    </tr>
-                                `;
-                    }
-                }
-            }
-
-            // ============================================================
             // ربط الأحداث
             // ============================================================
             document.addEventListener('DOMContentLoaded', function() {
@@ -2668,7 +2658,10 @@
                                 if (panel.classList.contains('active')) {
                                     updateAllAdminSelects();
                                     loadAdminsList();
-                                    renderUsersTable();
+                                    // تحميل الطلاب من Supabase
+                                    loadStudentsFromSupabase().then(students => {
+                                        renderUsersTable(students);
+                                    });
                                     setTimeout(updateAllSemesterLists, 300);
                                     showToast('info', '🔓 مرحباً بك في لوحة التحكم');
                                 }
@@ -2755,7 +2748,9 @@
                                 updateCodesManagement();
                             }
                             if (this.dataset.tab === 'users') {
-                                renderUsersTable();
+                                loadStudentsFromSupabase().then(students => {
+                                    renderUsersTable(students);
+                                });
                             }
                             if (this.dataset.tab === 'add-admin') loadAdminsList();
                             if (this.dataset.tab === 'banner') updateBannerPreview();
@@ -3077,7 +3072,7 @@
             }
 
             // ============================================================
-            // نماذج الإضافة
+            // نماذج الإضافة (مختصرة)
             // ============================================================
             document.getElementById('addSectionForm')?.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -3175,7 +3170,7 @@
             });
 
             // ============================================================
-            // الأكواد
+            // الأكواد (مختصرة)
             // ============================================================
             window.addManualCode = function() {
                 try {
