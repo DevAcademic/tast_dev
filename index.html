@@ -430,14 +430,14 @@
             });
         }
 
-        // ========== دالة حفظ البروفايل ==========
-        async function saveProfile(userId, fullName, phone, email) {
+        // ========== دالة حفظ المستخدم في جدول users ==========
+        async function saveUserToDatabase(userId, email, fullName, phone) {
             try {
-                console.log("📝 حفظ البروفايل للمستخدم:", userId);
+                console.log("📝 حفظ المستخدم في جدول users:", userId);
                 
-                // التحقق من وجود البروفايل
+                // التحقق من وجود المستخدم
                 const { data: existing, error: checkError } = await sb
-                    .from('profiles')
+                    .from('users')
                     .select('id')
                     .eq('id', userId)
                     .maybeSingle();
@@ -451,67 +451,60 @@
                 if (existing) {
                     // تحديث
                     result = await sb
-                        .from('profiles')
+                        .from('users')
                         .update({ 
                             full_name: fullName, 
-                            phone: phone,
-                            updated_at: new Date().toISOString()
+                            phone: phone
                         })
                         .eq('id', userId);
                 } else {
                     // إدراج جديد
                     result = await sb
-                        .from('profiles')
+                        .from('users')
                         .insert({ 
                             id: userId, 
+                            email: email,
                             full_name: fullName, 
-                            phone: phone, 
-                            role: 'user',
-                            created_at: new Date().toISOString()
+                            phone: phone
                         });
                 }
 
                 if (result.error) {
-                    console.error("❌ خطأ في حفظ البروفايل:", result.error);
+                    console.error("❌ خطأ في حفظ المستخدم:", result.error);
                     throw result.error;
                 }
 
-                console.log("✅ تم حفظ البروفايل بنجاح");
+                console.log("✅ تم حفظ المستخدم بنجاح");
                 
-                // تخزين الاسم في localStorage
+                // تخزين البيانات في localStorage
                 localStorage.setItem('user_full_name', fullName);
                 localStorage.setItem('user_email', email);
                 localStorage.setItem('user_phone', phone);
+                localStorage.setItem('user_id', userId);
                 
                 return true;
             } catch (err) {
-                console.error("❌ خطأ في saveProfile:", err);
+                console.error("❌ خطأ في saveUserToDatabase:", err);
                 throw err;
             }
         }
 
-        // ========== دالة جلب الاسم من البروفايل ==========
-        async function fetchAndStoreProfile(userId, email) {
+        // ========== دالة جلب بيانات المستخدم من جدول users ==========
+        async function fetchAndStoreUser(userId, email) {
             try {
-                console.log("🔍 جلب البروفايل للمستخدم:", userId);
+                console.log("🔍 جلب بيانات المستخدم:", userId);
                 
                 const { data, error } = await sb
-                    .from('profiles')
+                    .from('users')
                     .select('full_name, phone')
                     .eq('id', userId)
                     .maybeSingle();
 
                 if (error) {
-                    console.error("❌ خطأ في جلب البروفايل:", error);
-                    // إذا كان الخطأ بسبب عدم وجود جدول، نحاول إنشاء بروفايل افتراضي
-                    if (error.message.includes('relation "profiles" does not exist')) {
-                        console.log("⚠️ جدول profiles غير موجود، سيتم إنشاؤه لاحقاً");
-                        // تخزين البريد كاسم مؤقت
-                        localStorage.setItem('user_full_name', email);
-                        localStorage.setItem('user_email', email);
-                        return email;
-                    }
-                    throw error;
+                    console.error("❌ خطأ في جلب المستخدم:", error);
+                    localStorage.setItem('user_full_name', email);
+                    localStorage.setItem('user_email', email);
+                    return email;
                 }
 
                 if (data && data.full_name) {
@@ -521,14 +514,14 @@
                     if (data.phone) localStorage.setItem('user_phone', data.phone);
                     return data.full_name;
                 } else {
-                    // إذا لم يوجد بروفايل، نستخدم البريد
-                    console.log("⚠️ لا يوجد بروفايل، استخدام البريد كاسم");
+                    // إذا لم يوجد، نستخدم البريد
+                    console.log("⚠️ لا توجد بيانات، استخدام البريد كاسم");
                     localStorage.setItem('user_full_name', email);
                     localStorage.setItem('user_email', email);
                     return email;
                 }
             } catch (err) {
-                console.error("❌ خطأ في fetchAndStoreProfile:", err);
+                console.error("❌ خطأ في fetchAndStoreUser:", err);
                 localStorage.setItem('user_full_name', email);
                 localStorage.setItem('user_email', email);
                 return email;
@@ -594,6 +587,8 @@
             try {
                 if (currentMode === 'signup') {
                     console.log("📝 إنشاء حساب جديد...");
+                    
+                    // إنشاء الحساب في Auth
                     const { data, error } = await sb.auth.signUp({ 
                         email, 
                         password,
@@ -607,7 +602,10 @@
                     if (error) throw error;
 
                     const fullPhone = '+964' + phoneRaw;
-                    await saveProfile(data.user.id, fullName, fullPhone, email);
+                    
+                    // حفظ البيانات في جدول users (سيتم تنفيذها تلقائياً بواسطة trigger handle_new_user)
+                    // لكن للتأكد، نحفظها يدوياً
+                    await saveUserToDatabase(data.user.id, email, fullName, fullPhone);
 
                     showMessage('✅ تم إنشاء الحساب بنجاح!', true);
                     setTimeout(() => {
@@ -616,6 +614,7 @@
 
                 } else if (currentMode === 'login') {
                     console.log("🔐 تسجيل الدخول...");
+                    
                     const { data, error } = await sb.auth.signInWithPassword({ 
                         email, 
                         password 
@@ -623,7 +622,7 @@
                     
                     if (error) throw error;
 
-                    await fetchAndStoreProfile(data.user.id, email);
+                    await fetchAndStoreUser(data.user.id, email);
                     showMessage('✅ مرحباً بك!', true);
                     setTimeout(() => {
                         window.location.href = "dashboard.html";
@@ -631,6 +630,7 @@
 
                 } else if (currentMode === 'forgot') {
                     console.log("📧 استعادة كلمة المرور...");
+                    
                     const { error } = await sb.auth.resetPasswordForEmail(email, {
                         redirectTo: window.location.origin + '/dashboard.html'
                     });
@@ -655,7 +655,7 @@
                 } else if (errorMsg.includes('Password should be at least 6 characters')) {
                     errorMsg = 'كلمة المرور 6 أحرف فأكثر';
                 } else if (errorMsg.includes('Database error') || errorMsg.includes('relation')) {
-                    errorMsg = '⚠️ خطأ في قاعدة البيانات، تأكد من وجود جدول profiles';
+                    errorMsg = '⚠️ خطأ في قاعدة البيانات، تأكد من وجود جدول users';
                 } else if (errorMsg.includes('Network')) {
                     errorMsg = '⚠️ مشكلة في الاتصال، تأكد من الإنترنت';
                 }
@@ -681,7 +681,7 @@
                 
                 if (session) {
                     console.log("✅ جلسة موجودة للمستخدم:", session.user.email);
-                    await fetchAndStoreProfile(session.user.id, session.user.email);
+                    await fetchAndStoreUser(session.user.id, session.user.email);
                     window.location.href = "dashboard.html";
                 } else {
                     console.log("❌ لا توجد جلسة");
@@ -696,7 +696,7 @@
             console.log("🔄 تغيير في حالة المصادقة:", event);
             if (event === 'SIGNED_IN' && session) {
                 console.log("✅ تم تسجيل الدخول");
-                fetchAndStoreProfile(session.user.id, session.user.email);
+                fetchAndStoreUser(session.user.id, session.user.email);
                 setTimeout(() => {
                     window.location.href = "dashboard.html";
                 }, 500);
