@@ -209,7 +209,6 @@
             display: none !important;
         }
 
-        /* تنسيق خاص بحقل الهاتف مع +964 ثابت */
         .phone-wrapper {
             position: relative;
             display: flex;
@@ -274,19 +273,15 @@
         <span class="mode-text" id="modeText">تسجيل الدخول</span>
     </div>
 
-    <!-- الترتيب الجديد: الاسم ← البريد ← كلمة المرور ← الهاتف (للتسجيل) -->
-
-    <!-- حقل الاسم الثلاثي (يظهر فقط في التسجيل) -->
+    <!-- الترتيب: الاسم ← البريد ← كلمة المرور ← الهاتف (للتسجيل فقط) -->
     <div class="input-group extra-field hidden" id="fullNameGroup">
         <input type="text" id="fullName" class="input-field" placeholder="الاسم الثلاثي (بالعربية)">
     </div>
 
-    <!-- البريد الإلكتروني -->
     <div class="input-group">
         <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" autocomplete="email">
     </div>
 
-    <!-- كلمة المرور -->
     <div class="input-group" id="passwordGroup">
         <div class="password-wrapper">
             <input type="password" id="password" class="input-field" placeholder="كلمة المرور" autocomplete="current-password">
@@ -296,7 +291,6 @@
         </div>
     </div>
 
-    <!-- حقل رقم الهاتف (يظهر فقط في التسجيل) مع +964 ثابت -->
     <div class="input-group extra-field hidden" id="phoneGroup">
         <div class="phone-wrapper">
             <span class="phone-prefix">+964</span>
@@ -325,7 +319,7 @@
     (function() {
         console.log("✅ بدء تشغيل الصفحة (ديف أكاديمي)");
 
-        // ========== حماية بسيطة ضد F12 ==========
+        // ========== حماية ضد F12 ==========
         document.addEventListener('contextmenu', event => event.preventDefault());
         document.addEventListener('keydown', function(e) {
             if (e.key === 'F12' ||
@@ -336,7 +330,7 @@
             }
         });
 
-        // ========== تهيئة Supabase ==========
+        // ========== Supabase ==========
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
 
@@ -347,10 +341,8 @@
             msg.className = 'show message-error';
             return;
         }
-        console.log("✅ Supabase محمل بنجاح");
 
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        console.log("✅ تم إنشاء عميل Supabase");
 
         // ========== عناصر DOM ==========
         const modeText = document.getElementById('modeText');
@@ -367,11 +359,10 @@
         const messageDiv = document.getElementById('message');
         const togglePwBtn = document.getElementById('togglePasswordBtn');
 
-        let currentMode = 'login'; // 'login' | 'signup' | 'forgot'
+        let currentMode = 'login';
 
         // ========== دالة عرض الرسائل ==========
         function showMessage(msg, isSuccess = false) {
-            console.log("📢 رسالة:", msg, isSuccess ? "(نجاح)" : "(خطأ)");
             messageDiv.textContent = msg;
             messageDiv.className = 'show';
             messageDiv.classList.add(isSuccess ? 'message-success' : 'message-error');
@@ -382,11 +373,8 @@
             messageDiv.className = '';
         }
 
-        // ========== تحديث واجهة المستخدم حسب الوضع ==========
+        // ========== تحديث واجهة المستخدم ==========
         function updateUIMode() {
-            console.log("🔄 تغيير الوضع إلى:", currentMode);
-
-            // إظهار/إخفاء الحقول الإضافية (الاسم والهاتف) في وضع التسجيل فقط
             if (currentMode === 'signup') {
                 fullNameGroup.classList.remove('hidden');
                 phoneGroup.classList.remove('hidden');
@@ -433,84 +421,79 @@
             });
         }
 
-        // ========== دالة إنشاء/تحديث البروفايل ==========
+        // ========== دالة حفظ البروفايل ==========
         async function upsertProfile(userId, fullName, phone, email) {
-            console.log("📝 تحديث البروفايل للمستخدم:", userId);
             try {
-                const { data: existing, error: selectError } = await sb
+                const { data: existing } = await sb
                     .from('profiles')
                     .select('id')
                     .eq('id', userId)
                     .maybeSingle();
 
-                if (selectError && selectError.code !== 'PGRST116') {
-                    console.error("❌ خطأ في الاستعلام عن البروفايل:", selectError);
-                    throw selectError;
-                }
-
                 if (existing) {
-                    const { error: updateError } = await sb
-                        .from('profiles')
-                        .update({ full_name: fullName, phone: phone, role: 'user' })
-                        .eq('id', userId);
-                    if (updateError) throw updateError;
-                    console.log("✅ تم تحديث البروفايل");
+                    await sb.from('profiles').update({ full_name: fullName, phone: phone }).eq('id', userId);
                 } else {
-                    const { error: insertError } = await sb
-                        .from('profiles')
-                        .insert({ id: userId, full_name: fullName, phone: phone, role: 'user' });
-                    if (insertError) throw insertError;
-                    console.log("✅ تم إنشاء البروفايل");
+                    await sb.from('profiles').insert({ id: userId, full_name: fullName, phone: phone, role: 'user' });
                 }
             } catch (err) {
-                console.error("❌ خطأ في upsertProfile:", err);
+                console.error("❌ خطأ في حفظ البروفايل:", err);
                 throw err;
+            }
+        }
+
+        // ========== دالة جلب الاسم من البروفايل ==========
+        async function fetchAndStoreProfile(userId, email) {
+            try {
+                const { data, error } = await sb
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                // تخزين الاسم في localStorage
+                const displayName = data.full_name || email;
+                localStorage.setItem('user_full_name', displayName);
+                localStorage.setItem('user_email', email);
+                console.log("✅ تم تخزين الاسم:", displayName);
+                return displayName;
+            } catch (err) {
+                console.error("❌ خطأ في جلب الاسم:", err);
+                localStorage.setItem('user_full_name', email);
+                return email;
             }
         }
 
         // ========== معالج النموذج الرئيسي ==========
         window.handleAuth = async function() {
-            console.log("🔘 تم الضغط على زر", currentMode);
-
             const email = emailInput.value.trim();
             const password = passwordInput.value;
             const fullName = fullNameInput.value.trim();
-            const phoneRaw = phoneInput.value.trim(); // سيحتوي فقط على الأرقام (بسبب maxlength والـ placeholder)
+            const phoneRaw = phoneInput.value.trim();
 
-            // التحقق من البريد
-            if (!email) {
-                showMessage('الرجاء إدخال البريد الإلكتروني', false);
-                return;
-            }
-            if (currentMode !== 'forgot' && !password) {
-                showMessage('الرجاء إدخال كلمة المرور', false);
-                return;
-            }
+            if (!email) { showMessage('الرجاء إدخال البريد الإلكتروني', false); return; }
+            if (currentMode !== 'forgot' && !password) { showMessage('الرجاء إدخال كلمة المرور', false); return; }
 
             if (currentMode === 'signup') {
-                // الاسم الثلاثي عربي
-                const arabicRegex = /^[\u0600-\u06FF\s]+$/;
+                // التحقق من الاسم الثلاثي (3 كلمات على الأقل)
+                const nameParts = fullName.trim().split(/\s+/);
                 if (!fullName) {
                     showMessage('الرجاء إدخال الاسم الثلاثي', false);
                     return;
                 }
-                if (!arabicRegex.test(fullName)) {
+                if (!/^[\u0600-\u06FF\s]+$/.test(fullName)) {
                     showMessage('الاسم يجب أن يكون بالعربية فقط', false);
                     return;
                 }
-                // رقم الهاتف: يجب أن يكون 10 أرقام (لأننا أضفنا +964 ثابت)
-                if (!phoneRaw) {
-                    showMessage('الرجاء إدخال رقم الهاتف', false);
+                if (nameParts.length < 3) {
+                    showMessage('الرجاء إدخال الاسم الثلاثي كاملاً (ثلاث كلمات)', false);
                     return;
                 }
-                if (!/^\d{10}$/.test(phoneRaw)) {
-                    showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false);
-                    return;
-                }
-                if (password.length < 6) {
-                    showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false);
-                    return;
-                }
+
+                if (!phoneRaw) { showMessage('الرجاء إدخال رقم الهاتف', false); return; }
+                if (!/^\d{10}$/.test(phoneRaw)) { showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false); return; }
+                if (password.length < 6) { showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false); return; }
             }
 
             actionBtn.disabled = true;
@@ -518,50 +501,40 @@
 
             try {
                 if (currentMode === 'signup') {
-                    console.log("📝 محاولة إنشاء حساب جديد...");
                     const { data, error } = await sb.auth.signUp({ email, password });
                     if (error) throw error;
 
                     const fullPhone = '+964' + phoneRaw;
                     await upsertProfile(data.user.id, fullName, fullPhone, email);
+                    await fetchAndStoreProfile(data.user.id, email);
 
-                    showMessage('✅ تم إنشاء الحساب بنجاح! جاري التوجيه...', true);
-                    setTimeout(() => {
-                        window.location.href = "dashboard.html";
-                    }, 1200);
+                    showMessage('✅ تم إنشاء الحساب! جاري التوجيه...', true);
+                    setTimeout(() => window.location.href = "dashboard.html", 1200);
 
                 } else if (currentMode === 'login') {
-                    console.log("🔐 محاولة تسجيل الدخول...");
                     const { data, error } = await sb.auth.signInWithPassword({ email, password });
                     if (error) throw error;
 
+                    await fetchAndStoreProfile(data.user.id, email);
                     showMessage('✅ مرحباً بك! جاري التوجيه...', true);
-                    setTimeout(() => {
-                        window.location.href = "dashboard.html";
-                    }, 1000);
+                    setTimeout(() => window.location.href = "dashboard.html", 1000);
 
                 } else if (currentMode === 'forgot') {
-                    console.log("📧 طلب استعادة كلمة المرور...");
                     const { error } = await sb.auth.resetPasswordForEmail(email, {
                         redirectTo: window.location.origin + '/dashboard.html'
                     });
                     if (error) throw error;
 
                     showMessage('📬 تم إرسال رابط الاستعادة إلى بريدك.', true);
-                    setTimeout(() => {
-                        currentMode = 'login';
-                        updateUIMode();
-                        emailInput.value = '';
-                    }, 2500);
+                    setTimeout(() => { currentMode = 'login'; updateUIMode(); emailInput.value = ''; }, 2500);
                 }
             } catch (err) {
-                console.error("❌ خطأ:", err);
                 let errorMsg = err.message;
                 if (errorMsg.includes('Invalid login credentials')) errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';
                 else if (errorMsg.includes('User already registered')) errorMsg = '⚠️ هذا البريد مسجل مسبقاً';
                 else if (errorMsg.includes('Password should be at least 6 characters')) errorMsg = 'كلمة المرور 6 أحرف فأكثر';
                 else if (errorMsg.includes('Database error')) errorMsg = '⚠️ خطأ في قاعدة البيانات، حاول مرة أخرى';
-                else if (errorMsg.includes('Network')) errorMsg = '⚠️ مشكلة في الاتصال، تأكد من الإنترنت';
+                else if (errorMsg.includes('Network')) errorMsg = '⚠️ مشكلة في الاتصال';
                 showMessage(errorMsg, false);
             } finally {
                 actionBtn.disabled = false;
@@ -575,6 +548,7 @@
         async function checkSessionAndRedirect() {
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
+                await fetchAndStoreProfile(session.user.id, session.user.email);
                 window.location.href = "dashboard.html";
             }
         }
@@ -582,6 +556,7 @@
         // ========== مراقبة تغييرات المصادقة ==========
         sb.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session) {
+                fetchAndStoreProfile(session.user.id, session.user.email);
                 window.location.href = "dashboard.html";
             }
         });
@@ -609,7 +584,7 @@
         fullNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
         phoneInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
 
-        // منع إدخال غير أرقام في حقل الهاتف
+        // منع إدخال غير أرقام في الهاتف
         phoneInput.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
@@ -617,7 +592,7 @@
         // ========== بدء التشغيل ==========
         checkSessionAndRedirect();
         updateUIMode();
-        console.log("✅ تم تهيئة الصفحة بالكامل (ديف أكاديمي)");
+        console.log("✅ تم تهيئة الصفحة بالكامل");
     })();
 </script>
 
