@@ -9,42 +9,35 @@
     </script>
     
     <!-- ============================================================
-    🔒 الحماية الشاملة - منع جميع محاولات الاختراق
+    🔒 الحماية الشاملة - مع السماح بالكتابة في الحقول
     ============================================================ -->
     <script>
-        // ============================================================
-        // الجزء 1: منع جميع مفاتيح الاختراق
-        // ============================================================
-        
         (function() {
             'use strict';
             
-            // قائمة المفاتيح الممنوعة
-            const forbiddenKeys = {
-                'F12': 123,
-                'Ctrl+Shift+I': 73,
-                'Ctrl+Shift+J': 74,
-                'Ctrl+U': 85,
-                'Ctrl+S': 83,
-                'Ctrl+Shift+C': 67,
-                'Ctrl+Shift+U': 85,
-                'Ctrl+Shift+S': 83,
-                'Ctrl+E': 69,
-                'Ctrl+Shift+E': 69,
-                'Ctrl+Alt+I': 73,
-                'Ctrl+Alt+J': 74,
-                'Ctrl+Alt+U': 85,
-                'Ctrl+Alt+C': 67,
-                'Ctrl+Alt+S': 83,
-                'Ctrl+Shift+Alt+I': 73,
-                'Ctrl+Shift+Alt+J': 74,
-                'Ctrl+Shift+Alt+U': 85,
-                'Ctrl+Shift+Alt+C': 67,
-                'Ctrl+Shift+Alt+S': 83
-            };
+            // ============================================================
+            // دالة للتحقق إذا كان العنصر هو حقل إدخال
+            // ============================================================
+            function isInputField(element) {
+                if (!element) return false;
+                const tag = element.tagName.toLowerCase();
+                const type = element.type || '';
+                return tag === 'input' || 
+                       tag === 'textarea' || 
+                       tag === 'select' ||
+                       element.contentEditable === 'true' ||
+                       (tag === 'input' && (type === 'text' || type === 'password' || type === 'email' || type === 'number' || type === 'tel' || type === 'url' || type === 'search'));
+            }
 
-            // منع المفاتيح
+            // ============================================================
+            // 1) منع F12 و Ctrl+Shift+I و Ctrl+Shift+J و Ctrl+U (مع استثناء الحقول)
+            // ============================================================
             document.addEventListener('keydown', function(e) {
+                // استثناء الحقول - السماح بالكتابة
+                if (isInputField(e.target)) {
+                    return true;
+                }
+
                 // F12
                 if (e.key === 'F12' || e.keyCode === 123) {
                     e.preventDefault();
@@ -101,55 +94,7 @@
                     return false;
                 }
                 
-                // Ctrl+Shift+E
-                if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.key === 'e' || e.keyCode === 69)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // Ctrl+Alt+I
-                if (e.ctrlKey && e.altKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // Ctrl+Alt+J
-                if (e.ctrlKey && e.altKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // Ctrl+Alt+U
-                if (e.ctrlKey && e.altKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // Ctrl+Alt+C
-                if (e.ctrlKey && e.altKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // Ctrl+Alt+S
-                if (e.ctrlKey && e.altKey && (e.key === 'S' || e.key === 's' || e.keyCode === 83)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                
-                // منع أي تركيبة تحتوي على Ctrl+Shift مع أي حرف
+                // منع Ctrl+Shift+أي حرف (ما عدا الحقول)
                 if (e.ctrlKey && e.shiftKey) {
                     const key = e.key.toUpperCase();
                     if (key.length === 1 && key >= 'A' && key <= 'Z') {
@@ -164,156 +109,143 @@
             }, true);
 
             // ============================================================
-            // الجزء 2: منع زر الفأرة الأيمن وجميع أحداث السياق
+            // 2) منع زر الفأرة الأيمن (مع استثناء الحقول)
             // ============================================================
-            
             document.addEventListener('contextmenu', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
+                if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'CANVAS') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
                 return false;
             }, true);
 
-            // منع قائمة السياق على جميع العناصر
-            document.querySelectorAll('*').forEach(el => {
-                el.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }, true);
-            });
-
             // ============================================================
-            // الجزء 3: منع تحديد النص ونسخه وقصه ولصقه
+            // 3) منع تحديد النص (مع استثناء الحقول)
             // ============================================================
-            
             document.addEventListener('selectstart', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
             document.addEventListener('selectionchange', function(e) {
+                if (document.activeElement && isInputField(document.activeElement)) {
+                    return;
+                }
                 if (window.getSelection) {
                     window.getSelection().removeAllRanges();
                 }
             }, true);
 
+            // ============================================================
+            // 4) منع نسخ النص (مع استثناء الحقول)
+            // ============================================================
             document.addEventListener('copy', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
                 return false;
             }, true);
 
+            // ============================================================
+            // 5) منع قص النص (مع استثناء الحقول)
+            // ============================================================
             document.addEventListener('cut', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
                 return false;
             }, true);
 
+            // ============================================================
+            // 6) منع لصق النص (مع استثناء الحقول - اختياري)
+            // ============================================================
             document.addEventListener('paste', function(e) {
+                // السماح باللصق في الحقول (يمكنك تغيير إلى false إذا أردت المنع)
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
-                e.stopImmediatePropagation();
                 return false;
             }, true);
 
-            // منع النسخ من خلال Ctrl+C
-            document.addEventListener('keydown', function(e) {
-                if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'X' || e.key === 'x' || e.keyCode === 88)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'V' || e.key === 'v' || e.keyCode === 86)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'A' || e.key === 'a' || e.keyCode === 65)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-            }, true);
-
             // ============================================================
-            // الجزء 4: منع سحب الصور والملفات
+            // 7) منع سحب الصور (مع استثناء الحقول)
             // ============================================================
-            
             document.addEventListener('dragstart', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 return false;
             }, true);
 
             document.addEventListener('drop', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 return false;
             }, true);
 
             document.addEventListener('dragover', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 return false;
             }, true);
 
             // ============================================================
-            // الجزء 5: منع حفظ الصور
+            // 8) منع Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A (مع استثناء الحقول)
             // ============================================================
-            
-            document.addEventListener('contextmenu', function(e) {
-                if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || 
-                    e.target.tagName === 'AUDIO' || e.target.tagName === 'CANVAS') {
+            document.addEventListener('keydown', function(e) {
+                if (isInputField(e.target)) {
+                    return true;
+                }
+                
+                if (e.ctrlKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
+                    return false;
+                }
+                if (e.ctrlKey && (e.key === 'X' || e.key === 'x' || e.keyCode === 88)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                if (e.ctrlKey && (e.key === 'V' || e.key === 'v' || e.keyCode === 86)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                if (e.ctrlKey && (e.key === 'A' || e.key === 'a' || e.keyCode === 65)) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     return false;
                 }
             }, true);
 
-            // منع سحب الصور
-            document.querySelectorAll('img, video, audio, canvas').forEach(el => {
-                el.addEventListener('dragstart', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }, true);
-                el.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }, true);
-            });
-
             // ============================================================
-            // الجزء 6: كشف أدوات المطور وإغلاقها
+            // 9) كشف أدوات المطور وإغلاقها
             // ============================================================
-            
-            // الطريقة 1: كشف عبر تغيير حجم النافذة
             let devtoolsOpen = false;
-            const element = new Image();
-            
-            Object.defineProperty(element, 'id', {
-                get: function() {
-                    devtoolsOpen = true;
-                    closeDevTools();
-                    return '';
-                }
-            });
             
             function closeDevTools() {
                 if (devtoolsOpen) {
@@ -334,11 +266,12 @@
                 }
             }
 
-            // الطريقة 2: كشف عبر console.log
+            // طريقة الكشف عبر console.log
             let devtools = /./;
             devtools.toString = function() {
                 if (!this._started) {
                     this._started = true;
+                    devtoolsOpen = true;
                     closeDevTools();
                 }
                 return '';
@@ -348,25 +281,25 @@
                 console.log('%c', devtools);
             } catch(e) {}
 
-            // الطريقة 3: كشف عبر الـ Debugger
+            // طريقة الكشف عبر تغيير الحجم
             function checkDevTools() {
                 const threshold = 100;
                 const widthThreshold = window.outerWidth - window.innerWidth > threshold;
                 const heightThreshold = window.outerHeight - window.innerHeight > threshold;
                 
                 if (widthThreshold || heightThreshold) {
+                    devtoolsOpen = true;
                     closeDevTools();
                 }
                 
-                setTimeout(checkDevTools, 1000);
+                setTimeout(checkDevTools, 2000);
             }
             
-            setTimeout(checkDevTools, 500);
+            setTimeout(checkDevTools, 1000);
 
             // ============================================================
-            // الجزء 7: تعطيل جميع دوال الكونسول
+            // 10) تعطيل دوال الكونسول
             // ============================================================
-            
             const noop = function() {};
             const consoleMethods = [
                 'log', 'warn', 'error', 'info', 'debug', 'trace', 
@@ -382,116 +315,17 @@
             });
 
             // ============================================================
-            // الجزء 8: تعطيل الدوال الخطيرة
+            // 11) تعطيل الدوال الخطيرة
             // ============================================================
-            
-            // تعطيل eval
             window.eval = function() { return null; };
-            
-            // تعطيل Function constructor
-            const originalFunction = window.Function;
-            window.Function = function() { return null; };
-            window.Function.prototype = null;
-            
-            // تعطيل setTimeout و setInterval الخطيرة
-            const originalSetTimeout = window.setTimeout;
-            const originalSetInterval = window.setInterval;
-            
-            window.setTimeout = function(fn, delay) {
-                if (typeof fn === 'string') {
-                    return null;
-                }
-                return originalSetTimeout(fn, delay);
-            };
-            
-            window.setInterval = function(fn, delay) {
-                if (typeof fn === 'string') {
-                    return null;
-                }
-                return originalSetInterval(fn, delay);
-            };
-
-            // ============================================================
-            // الجزء 9: تعطيل window.open
-            // ============================================================
-            
             window.open = function() { return null; };
-
-            // ============================================================
-            // الجزء 10: تعطيل alert, confirm, prompt
-            // ============================================================
-            
             window.alert = function() {};
             window.confirm = function() { return false; };
             window.prompt = function() { return null; };
 
             // ============================================================
-            // الجزء 11: منع الروابط من الفتح في نافذة جديدة
+            // 12) منع إعادة توجيه الصفحة
             // ============================================================
-            
-            document.addEventListener('click', function(e) {
-                const target = e.target.closest('a');
-                if (target && target.target === '_blank') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }, true);
-
-            // ============================================================
-            // الجزء 12: إخفاء الكود عن أدوات المطور
-            // ============================================================
-            
-            // منع عرض الكود في Elements
-            document.querySelectorAll('script, style, link').forEach(el => {
-                el.setAttribute('data-protected', 'true');
-            });
-
-            // ============================================================
-            // الجزء 13: منع استخدام الـ Debugger
-            // ============================================================
-            
-            function blockDebugger() {
-                const start = new Date();
-                debugger;
-                const end = new Date();
-                if (end - start > 100) {
-                    closeDevTools();
-                    window.location.reload();
-                }
-                setTimeout(blockDebugger, 500);
-            }
-            
-            setTimeout(blockDebugger, 1000);
-
-            // ============================================================
-            // الجزء 14: حماية الصفحة من التعديل
-            // ============================================================
-            
-            // منع تعديل DOM
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'childList') {
-                        // السماح فقط بإضافة عناصر معينة
-                        mutation.addedNodes.forEach(function(node) {
-                            if (node.nodeType === 1 && 
-                                !node.classList.contains('allowed')) {
-                                node.remove();
-                            }
-                        });
-                    }
-                });
-            });
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-
-            // ============================================================
-            // الجزء 15: منع إعادة توجيه الصفحة
-            // ============================================================
-            
             window.onbeforeunload = function(e) {
                 e.preventDefault();
                 e.returnValue = '';
@@ -499,16 +333,22 @@
             };
 
             // ============================================================
-            // الجزء 16: إخفاء شريط العناوين في المتصفحات
+            // 13) منع استخدام الـ Debugger
             // ============================================================
-            
-            try {
-                if (window.screen) {
-                    window.scrollTo(0, 0);
+            function blockDebugger() {
+                const start = new Date();
+                debugger;
+                const end = new Date();
+                if (end - start > 100) {
+                    devtoolsOpen = true;
+                    closeDevTools();
                 }
-            } catch(e) {}
+                setTimeout(blockDebugger, 1000);
+            }
+            
+            setTimeout(blockDebugger, 2000);
 
-            console.log('🔒 تم تفعيل الحماية الكاملة بنجاح');
+            console.log('🔒 تم تفعيل الحماية مع السماح بالكتابة في الحقول');
 
         })();
     </script>
@@ -519,10 +359,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
         }
 
         :root {
@@ -567,6 +403,14 @@
             --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
             --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
             --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.2);
+        }
+
+        /* ===== السماح بتحديد النص في الحقول فقط ===== */
+        input, textarea, select, [contenteditable="true"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
         }
 
         /* ===== شريط علوي ===== */
@@ -2198,12 +2042,12 @@
             }
         }
 
-        /* منع تحديد النص في جميع العناصر */
-        * {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
+        /* ===== السماح بتحديد النص في الحقول فقط ===== */
+        input, textarea, select, [contenteditable="true"] {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
         }
     </style>
 </head>
@@ -2221,7 +2065,7 @@
         </div>
 
         <div class="search-box">
-            <input type="text" id="searchInput" placeholder="🔍 بحث..." />
+            <input type="text" id="searchInput" placeholder="🔍 بحث...">
             <button id="searchBtn"><i class="fas fa-search"></i></button>
         </div>
 
@@ -2238,7 +2082,7 @@
     <!-- ===== البانر ===== -->
     <div class="banner-section" id="bannerSection">
         <div class="banner-container" id="bannerContainer">
-            <img id="mainBannerImage" src="" alt="صورة الإعلان" style="display:none;width:100%;height:100%;object-fit:cover;" />
+            <img id="mainBannerImage" src="" alt="صورة الإعلان" style="display:none;width:100%;height:100%;object-fit:cover;">
             <div id="mainBannerPlaceholder" class="banner-placeholder">
                 📚 ديف أكاديمي - منصتك التعليمية
             </div>
@@ -2393,11 +2237,11 @@
             <form id="editLectureForm" class="admin-form">
                 <div class="form-group">
                     <label>📝 العنوان *</label>
-                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required />
+                    <input type="text" id="editLectureTitle" placeholder="عنوان المحاضرة" required>
                 </div>
                 <div class="form-group">
                     <label>📹 رابط الفيديو *</label>
-                    <input type="url" id="editLectureUrl" placeholder="https://player.mediadelivery.net/play/..." required />
+                    <input type="url" id="editLectureUrl" placeholder="https://player.mediadelivery.net/play/..." required>
                     <small style="color:var(--text-light);font-size:.65rem;display:block;margin-top:2px;">يدعم mediadelivery و YouTube</small>
                 </div>
                 <div class="form-group">
@@ -2454,7 +2298,7 @@
                     <h3>📚 إضافة قسم</h3>
                     <div class="form-group">
                         <label>📝 اسم القسم *</label>
-                        <input type="text" id="sectionName" placeholder="أول متوسط" required />
+                        <input type="text" id="sectionName" placeholder="أول متوسط" required>
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
                 </form>
@@ -2470,15 +2314,15 @@
                     </div>
                     <div class="form-group">
                         <label>📝 اسم المدرس *</label>
-                        <input type="text" id="teacherName" placeholder="اسم المدرس" required />
+                        <input type="text" id="teacherName" placeholder="اسم المدرس" required>
                     </div>
                     <div class="form-group">
                         <label>😊 رمز تعبيري</label>
-                        <input type="text" id="teacherEmoji" value="🧑‍🏫" maxlength="2" />
+                        <input type="text" id="teacherEmoji" value="🧑‍🏫" maxlength="2">
                     </div>
                     <div class="form-group">
                         <label>📚 التخصص</label>
-                        <input type="text" id="teacherSubject" placeholder="مدرس رياضيات" />
+                        <input type="text" id="teacherSubject" placeholder="مدرس رياضيات">
                     </div>
                     <div class="form-group">
                         <label>📄 وصف</label>
@@ -2486,7 +2330,7 @@
                     </div>
                     <div class="form-group">
                         <label>🖼️ رابط الصورة</label>
-                        <input type="url" id="teacherImage" placeholder="https://..." />
+                        <input type="url" id="teacherImage" placeholder="https://...">
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
                 </form>
@@ -2506,11 +2350,11 @@
                     </div>
                     <div class="form-group">
                         <label>🔢 رقم الفصل *</label>
-                        <input type="number" id="semesterNumber" placeholder="1" min="1" required />
+                        <input type="number" id="semesterNumber" placeholder="1" min="1" required>
                     </div>
                     <div class="form-group">
                         <label>📄 وصف الفصل</label>
-                        <input type="text" id="semesterDesc" placeholder="الفصل الأول" />
+                        <input type="text" id="semesterDesc" placeholder="الفصل الأول">
                     </div>
                     <button type="submit" class="btn-submit"><i class="fas fa-plus"></i> إضافة</button>
                 </form>
@@ -2534,15 +2378,15 @@
                     </div>
                     <div class="form-group">
                         <label>🔢 رقم المحاضرة *</label>
-                        <input type="number" id="lectureNumber" placeholder="1" min="1" required />
+                        <input type="number" id="lectureNumber" placeholder="1" min="1" required>
                     </div>
                     <div class="form-group">
                         <label>📝 العنوان *</label>
-                        <input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" required />
+                        <input type="text" id="lectureTitle" placeholder="عنوان المحاضرة" required>
                     </div>
                     <div class="form-group">
                         <label>📹 رابط الفيديو *</label>
-                        <input type="url" id="lectureUrl" placeholder="https://player.mediadelivery.net/play/..." required />
+                        <input type="url" id="lectureUrl" placeholder="https://player.mediadelivery.net/play/..." required>
                         <small style="color:var(--text-light);font-size:.6rem;display:block;margin-top:2px;">يدعم mediadelivery و YouTube</small>
                     </div>
                     <div class="form-group">
@@ -2571,7 +2415,7 @@
                     <div class="manual-code-section">
                         <h4>✏️ إضافة كود</h4>
                         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:100px;padding:0.4rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:.85rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                            <input type="text" id="manualCodeInput" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:100px;padding:0.4rem;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:.85rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;">
                             <button onclick="addManualCode()" style="padding:0.3rem 0.8rem;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">➕ إضافة</button>
                         </div>
                         <div id="manualCodeMessage"></div>
@@ -2605,11 +2449,11 @@
                         </div>
                         <div class="form-group">
                             <label>📝 الاسم *</label>
-                            <input type="text" id="editTeacherName" placeholder="اسم المدرس" required />
+                            <input type="text" id="editTeacherName" placeholder="اسم المدرس" required>
                         </div>
                         <div class="form-group">
                             <label>📚 التخصص</label>
-                            <input type="text" id="editTeacherSubject" placeholder="مدرس رياضيات" />
+                            <input type="text" id="editTeacherSubject" placeholder="مدرس رياضيات">
                         </div>
                         <div class="form-group">
                             <label>📄 الوصف</label>
@@ -2617,7 +2461,7 @@
                         </div>
                         <div class="form-group">
                             <label>🖼️ رابط الصورة</label>
-                            <input type="url" id="editTeacherImage" placeholder="https://..." />
+                            <input type="url" id="editTeacherImage" placeholder="https://...">
                         </div>
                         <button type="submit" class="btn-submit" style="background:var(--primary-gradient);">
                             <i class="fas fa-save"></i> حفظ
@@ -2794,7 +2638,7 @@
                     <p style="color:var(--text-light);font-size:.75rem;margin-bottom:0.5rem;">أدخل البريد الإلكتروني</p>
                     <div class="form-group">
                         <label>📧 البريد</label>
-                        <input type="email" id="adminEmailInput" placeholder="example@gmail.com" />
+                        <input type="email" id="adminEmailInput" placeholder="example@gmail.com">
                     </div>
                     <button onclick="addNewAdmin()" class="btn-submit" style="background:var(--primary-gradient);">
                         <i class="fas fa-user-plus"></i> إضافة
@@ -2817,7 +2661,7 @@
                     <p style="color:var(--text-light);font-size:.75rem;margin-bottom:0.5rem;">أضف أو غيّر صورة البانر</p>
 
                     <div class="banner-url-input-group" style="display:flex;gap:0.4rem;margin-bottom:0.5rem;">
-                        <input type="url" id="bannerImageInput" placeholder="https://example.com/image.jpg" style="flex:1;padding:0.4rem;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.85rem;outline:none;" />
+                        <input type="url" id="bannerImageInput" placeholder="https://example.com/image.jpg" style="flex:1;padding:0.4rem;border:2px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.85rem;outline:none;">
                         <button onclick="updateBannerImage()" style="padding:0.4rem 0.8rem;background:var(--primary-gradient);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;"><i class="fas fa-save"></i> حفظ</button>
                     </div>
                     <div id="bannerMessage" style="text-align:center;font-weight:600;margin-top:0.3rem;font-size:.8rem;"></div>
@@ -2826,7 +2670,7 @@
 
                     <h3 style="font-size:.9rem;margin-bottom:0.3rem;">📋 معاينة الصورة</h3>
                     <div class="banner-preview-box" id="bannerPreviewBox" style="border:2px dashed var(--border);border-radius:12px;padding:0.5rem;text-align:center;min-height:100px;display:flex;align-items:center;justify-content:center;">
-                        <img id="adminBannerImage" src="" alt="صورة البانر" style="display:none;max-width:100%;max-height:200px;border-radius:8px;" />
+                        <img id="adminBannerImage" src="" alt="صورة البانر" style="display:none;max-width:100%;max-height:200px;border-radius:8px;">
                         <span class="no-image" id="adminBannerPlaceholder" style="color:var(--text-light);font-size:.85rem;">لا توجد صورة</span>
                     </div>
                     <button onclick="removeBannerImage()" style="margin-top:0.5rem;padding:0.3rem 0.8rem;background:#ef4444;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:0.65rem;">
@@ -4092,7 +3936,7 @@
                                         <div class="code-box-mini" style="margin-top:0.8rem;background:var(--bg);padding:0.8rem;border-radius:8px;">
                                             <p style="font-size:0.85rem;margin-bottom:0.3rem;">🔑 أدخل كود التفعيل لفتح جميع المحاضرات</p>
                                             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                                                <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:120px;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                                                <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:120px;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;">
                                                 <button onclick="activateCodeFromTeacher()" style="padding:0.5rem 1.2rem;background:var(--primary-gradient);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">تفعيل</button>
                                             </div>
                                             <div id="codeMessageTeacher" style="margin-top:0.3rem;font-size:0.85rem;"></div>
