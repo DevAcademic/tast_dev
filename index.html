@@ -1,1 +1,625 @@
-<!DOCTYPE html><html lang="ar" dir="rtl"><head>    <meta charset="UTF-8">    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">    <title>ديف أكاديمي | تسجيل الدخول</title>    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 3L1 9l11 6 11-6-11-6zm0 11.5L5.5 12 12 8.5 18.5 12 12 14.5zM5 13.5v4L12 22l7-4.5v-4L12 18l-7-4.5z'/%3E%3C/svg%3E">        <script src="https://cdn.tailwindcss.com"></script>    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">        <script>        tailwind.config = {            theme: {                extend: {                     fontFamily: { sans: ['Cairo', 'sans-serif'] },                     colors: { primary: '#2563eb', secondary: '#f97316' }                 }            }        }    </script>    <style>        body {            font-family: 'Cairo', sans-serif;            min-height: 100vh;            display: flex;            background-image: url(1357323.jpeg);            background-size: cover;            background-position: center;            align-items: center;            justify-content: center;            padding: 20px;            position: relative;        }        /* طبقة شفافة لتحسين وضوح البطاقة */        body::before {            content: '';            position: fixed;            inset: 0;            background: rgba(255,255,255,0.2);            backdrop-filter: blur(4px);            z-index: 0;        }        .auth-card {            background: #ffffff;            border-radius: 2rem;            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);            border: 1px solid rgba(255,255,255,0.5);            width: 100%;            max-width: 440px;            padding: 2.5rem 2rem;            transition: all 0.2s ease;            position: relative;            z-index: 1;        }        .auth-card:hover {            box-shadow: 0 25px 60px -15px rgba(37, 99, 235, 0.25);        }        .auth-title {            text-align: center;            margin-bottom: 2rem;        }        .auth-title .brand {            font-size: 2.2rem;            font-weight: 800;            color: #2563eb;            display: flex;            align-items: center;            justify-content: center;            gap: 0.6rem;        }        .auth-title .brand i {            font-size: 2.2rem;        }        .auth-title .mode-text {            font-size: 1.1rem;            font-weight: 600;            color: #64748b;            margin-top: 0.3rem;            display: block;        }        .input-group {            margin-bottom: 1.25rem;        }        .input-field {            width: 100%;            padding: 0.85rem 1.25rem;            background: #f8fafc;            border: 2px solid #e2e8f0;            border-radius: 1rem;            font-size: 1rem;            font-family: 'Cairo', sans-serif;            transition: all 0.2s ease;            outline: none;            color: #1e293b;        }        .input-field:focus {            border-color: #2563eb;            background: #ffffff;            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);        }        .input-field::placeholder {            color: #94a3b8;        }        .password-wrapper {            position: relative;        }        .toggle-pw {            position: absolute;            left: 1.25rem;            top: 50%;            transform: translateY(-50%);            background: none;            border: none;            color: #94a3b8;            font-size: 1.2rem;            cursor: pointer;            transition: color 0.2s;            padding: 0.25rem;        }        .toggle-pw:hover {            color: #2563eb;        }        .btn-primary {            background: #2563eb;            border: none;            width: 100%;            padding: 0.9rem;            border-radius: 1rem;            font-size: 1.05rem;            font-weight: 700;            color: #ffffff;            cursor: pointer;            transition: all 0.2s ease;            box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.3);            display: flex;            align-items: center;            justify-content: center;            gap: 0.75rem;            margin-top: 0.5rem;        }        .btn-primary:hover {            background: #1d4ed8;            transform: translateY(-2px);            box-shadow: 0 12px 28px -10px rgba(37, 99, 235, 0.4);        }        .btn-primary:active {            transform: scale(0.97);        }        .btn-primary:disabled {            opacity: 0.7;            cursor: not-allowed;            transform: none;        }        .action-links {            display: flex;            justify-content: space-between;            align-items: center;            margin-top: 1.75rem;            gap: 0.75rem;            flex-wrap: wrap;        }        .action-link {            background: transparent;            padding: 0.4rem 0.8rem;            border-radius: 2rem;            font-size: 0.9rem;            font-weight: 600;            color: #2563eb;            cursor: pointer;            transition: all 0.2s ease;            text-decoration: none;            border: 1.5px solid transparent;            display: inline-flex;            align-items: center;            gap: 0.4rem;        }        .action-link:hover {            background: #eff6ff;            border-color: #bfdbfe;        }        .action-link i {            font-size: 0.9rem;        }        #message {            margin-top: 1.25rem;            padding: 0.75rem 1rem;            border-radius: 1rem;            font-weight: 600;            font-size: 0.95rem;            text-align: center;            display: none;        }        #message.show {            display: block;        }        .message-success {            background: #f0fdf4;            color: #166534;            border: 1px solid #bbf7d0;        }        .message-error {            background: #fef2f2;            color: #991b1b;            border: 1px solid #fecaca;        }        .hidden {            display: none !important;        }        @media (max-width: 480px) {            .auth-card {                padding: 1.75rem 1.25rem;            }            .auth-title .brand {                font-size: 1.8rem;            }            .action-link {                font-size: 0.8rem;                padding: 0.3rem 0.6rem;            }        }    </style></head><body><div class="auth-card">    <div class="auth-title">        <div class="brand">            <i class="fas fa-graduation-cap"></i>            <span>ديف أكاديمي </span>        </div>        <span class="mode-text" id="modeText">تسجيل الدخول</span>    </div>    <div class="input-group">        <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" autocomplete="email">    </div>    <div class="input-group" id="passwordGroup">        <div class="password-wrapper">            <input type="password" id="password" class="input-field" placeholder="كلمة المرور" autocomplete="current-password">            <button type="button" class="toggle-pw" id="togglePasswordBtn">                <i class="far fa-eye-slash"></i>            </button>        </div>    </div>    <button id="actionBtn" class="btn-primary">        <i class="fas fa-arrow-left"></i> دخول    </button>    <div id="message"></div>    <div class="action-links">        <a id="toggleModeLink" class="action-link">            <i class="fas fa-user-plus"></i> حساب جديد        </a>        <a id="forgotLink" class="action-link">            <i class="fas fa-key"></i> نسيت كلمة المرور        </a>    </div></div><script>(function() {    console.log("✅ بدء تشغيل الصفحة (ديف أكاديمي )");        const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';    const SUPABASE_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';        if (typeof supabase === 'undefined') {        console.error("❌ Supabase غير محمل");        const msg = document.getElementById('message');        msg.textContent = 'خطأ في تحميل المكتبة';        msg.className = 'show message-error';        return;    }    console.log("✅ Supabase محمل بنجاح");        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);    console.log("✅ تم إنشاء عميل Supabase");    const modeText = document.getElementById('modeText');    const emailInput = document.getElementById('email');    const passwordInput = document.getElementById('password');    const passwordGroup = document.getElementById('passwordGroup');    const actionBtn = document.getElementById('actionBtn');    const toggleModeLink = document.getElementById('toggleModeLink');    const forgotLink = document.getElementById('forgotLink');    const messageDiv = document.getElementById('message');    const togglePwBtn = document.getElementById('togglePasswordBtn');    let currentMode = 'login';    function showMessage(msg, isSuccess = false) {        console.log("📢 رسالة:", msg, isSuccess ? "(نجاح)" : "(خطأ)");        messageDiv.textContent = msg;        messageDiv.className = 'show';        messageDiv.classList.add(isSuccess ? 'message-success' : 'message-error');    }    function clearMessage() {        messageDiv.textContent = '';        messageDiv.className = '';    }    function updateUIMode() {        console.log("🔄 تغيير الوضع إلى:", currentMode);                if (currentMode === 'login') {            modeText.textContent = 'تسجيل الدخول';            actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';            toggleModeLink.innerHTML = '<i class="fas fa-user-plus"></i> حساب جديد';            forgotLink.classList.remove('hidden');            passwordGroup.classList.remove('hidden');        } else if (currentMode === 'signup') {            modeText.textContent = 'إنشاء حساب';            actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';            toggleModeLink.innerHTML = '<i class="fas fa-sign-in-alt"></i> لدي حساب بالفعل';            forgotLink.classList.add('hidden');            passwordGroup.classList.remove('hidden');        } else if (currentMode === 'forgot') {            modeText.textContent = 'استعادة كلمة المرور';            actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';            toggleModeLink.innerHTML = '<i class="fas fa-arrow-right"></i> العودة للدخول';            forgotLink.classList.add('hidden');            passwordGroup.classList.add('hidden');        }        clearMessage();    }    // إظهار/إخفاء كلمة المرور    if (togglePwBtn && passwordInput) {        togglePwBtn.addEventListener('click', () => {            const type = passwordInput.type === 'password' ? 'text' : 'password';            passwordInput.type = type;            const icon = togglePwBtn.querySelector('i');            if (type === 'text') {                icon.classList.remove('fa-eye-slash');                icon.classList.add('fa-eye');            } else {                icon.classList.remove('fa-eye');                icon.classList.add('fa-eye-slash');            }        });    }    // دالة إنشاء بروفايل تلقائي    async function ensureProfileExists(userId, email) {        console.log("📝 التحقق من وجود بروفايل للمستخدم:", userId);        try {            const { data: existingProfile } = await sb                .from('profiles')                .select('id')                .eq('id', userId)                .maybeSingle();                        if (!existingProfile) {                console.log("📝 إنشاء بروفايل جديد");                const { error } = await sb                    .from('profiles')                    .insert({                        id: userId,                        full_name: email.split('@')[0] || 'مستخدم جديد',                        role: 'user'                    });                if (error) console.error("❌ خطأ في إنشاء البروفايل:", error);                else console.log("✅ تم إنشاء البروفايل بنجاح");            } else {                console.log("✅ البروفايل موجود مسبقاً");            }        } catch (err) {            console.error("❌ خطأ في ensureProfileExists:", err);        }    }    // معالج النموذج الرئيسي    window.handleAuth = async function() {        console.log("🔘 تم الضغط على زر", currentMode);                const email = emailInput.value.trim();        const password = passwordInput.value;                console.log("📧 البريد:", email);        console.log("🔑 كلمة المرور:", password ? "تم إدخالها" : "فارغة");                if (!email) {             console.log("⚠️ البريد فارغ");            showMessage('الرجاء إدخال البريد الإلكتروني', false);             return;         }                actionBtn.disabled = true;        actionBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> جاري ...';                try {            if (currentMode === 'signup') {                console.log("📝 محاولة إنشاء حساب جديد...");                if (!password || password.length < 6) {                    throw new Error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');                }                                const { data, error } = await sb.auth.signUp({                     email,                     password                });                                if (error) {                    console.error("❌ خطأ في التسجيل:", error);                    throw error;                }                                console.log("✅ تم إنشاء الحساب:", data);                showMessage('✅ تم إنشاء الحساب! يمكنك الآن تسجيل الدخول', true);                                setTimeout(() => {                    currentMode = 'login';                    updateUIMode();                    emailInput.value = '';                    passwordInput.value = '';                }, 2200);                            } else if (currentMode === 'login') {                console.log("🔐 محاولة تسجيل الدخول...");                if (!password) {                    throw new Error('أدخل كلمة المرور');                }                                const { data, error } = await sb.auth.signInWithPassword({                     email,                     password                 });                                if (error) {                    console.error("❌ خطأ في تسجيل الدخول:", error);                    throw error;                }                                console.log("✅ تم تسجيل الدخول بنجاح:", data.user);                await ensureProfileExists(data.user.id, email);                showMessage('✅ مرحباً بك! جاري التوجيه...', true);                                setTimeout(() => {                    window.location.href = "profile.html";                }, 1000);                            } else if (currentMode === 'forgot') {                console.log("📧 طلب استعادة كلمة المرور...");                const { error } = await sb.auth.resetPasswordForEmail(email, {                     redirectTo: window.location.origin + '/profile.html'                });                                if (error) {                    console.error("❌ خطأ في استعادة كلمة المرور:", error);                    throw error;                }                                console.log("✅ تم إرسال رابط الاستعادة");                showMessage('📬 تم إرسال رابط الاستعادة إلى بريدك.', true);                                setTimeout(() => {                     currentMode = 'login';                     updateUIMode();                     emailInput.value = '';                 }, 2500);            }        } catch (err) {            console.error("❌ خطأ عام:", err);            let errorMsg = err.message;            if (errorMsg.includes('Invalid login credentials')) errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';            else if (errorMsg.includes('User already registered')) errorMsg = '⚠️ هذا البريد مسجل مسبقاً';            else if (errorMsg.includes('Password should be at least 6 characters')) errorMsg = 'كلمة المرور 6 أحرف فأكثر';            else if (errorMsg.includes('Database error')) errorMsg = '⚠️ خطأ في قاعدة البيانات، حاول مرة أخرى';            showMessage(errorMsg, false);        } finally {            actionBtn.disabled = false;            if (currentMode === 'login') actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';            else if (currentMode === 'signup') actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';            else actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';        }    };    // التحقق من الجلسة الحالية    async function checkSessionAndRedirect() {        console.log("🔍 التحقق من الجلسة الحالية...");        const { data: { session } } = await sb.auth.getSession();        if (session) {            console.log("✅ جلسة موجودة، التوجيه إلى profile.html");            window.location.href = "profile.html";        } else {            console.log("❌ لا توجد جلسة");        }    }    // مراقبة تغييرات المصادقة    sb.auth.onAuthStateChange((event, session) => {        console.log("🔄 تغيير في حالة المصادقة:", event);        if (event === 'SIGNED_IN' && session) {            console.log("✅ تم تسجيل الدخول، التوجيه...");            window.location.href = "profile.html";        }    });    // ربط الأحداث    toggleModeLink.onclick = (e) => {        e.preventDefault();        console.log("🔄 تبديل الوضع");        if (currentMode === 'forgot') {             currentMode = 'login';         } else if (currentMode === 'login') {             currentMode = 'signup';         } else if (currentMode === 'signup') {             currentMode = 'login';         }        updateUIMode();    };        forgotLink.onclick = (e) => {         e.preventDefault();         console.log("🔑 الانتقال لوضع استعادة كلمة المرور");        currentMode = 'forgot';         updateUIMode();     };        actionBtn.onclick = window.handleAuth;        // مفتاح Enter    emailInput.addEventListener('keypress', (e) => {         if(e.key === 'Enter') {            console.log("⌨️ Enter على البريد الإلكتروني");            window.handleAuth();         }    });        passwordInput.addEventListener('keypress', (e) => {         if(e.key === 'Enter') {            console.log("⌨️ Enter على كلمة المرور");            window.handleAuth();         }    });        // بدء التشغيل    checkSessionAndRedirect();    updateUIMode();        console.log("✅ تم تهيئة الصفحة بالكامل (ديف أكاديمي )");})();</script></body></html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>ديف أكاديمي | تسجيل الدخول</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 3L1 9l11 6 11-6-11-6zm0 11.5L5.5 12 12 8.5 18.5 12 12 14.5zM5 13.5v4L12 22l7-4.5v-4L12 18l-7-4.5z'/%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { 
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] }, 
+                    colors: { primary: '#2563eb', secondary: '#f97316' } 
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background-image: url(1357323.jpeg);
+            background-size: cover;
+            background-position: center;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            z-index: 0;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255,255,255,0.5);
+            width: 100%;
+            max-width: 440px;
+            padding: 2.5rem 2rem;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .auth-card:hover {
+            box-shadow: 0 25px 60px -15px rgba(37, 99, 235, 0.25);
+        }
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-title .brand {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+        .auth-title .brand i {
+            font-size: 2.2rem;
+        }
+        .auth-title .mode-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-top: 0.3rem;
+            display: block;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.85rem 1.25rem;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.2s ease;
+            outline: none;
+            color: #1e293b;
+        }
+        .input-field:focus {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        .input-field::placeholder {
+            color: #94a3b8;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .toggle-pw {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0.25rem;
+        }
+        .toggle-pw:hover {
+            color: #2563eb;
+        }
+        .btn-primary {
+            background: #2563eb;
+            border: none;
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 1rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -10px rgba(37, 99, 235, 0.4);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .action-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.75rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .action-link {
+            background: transparent;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2563eb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: 1.5px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .action-link:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .action-link i {
+            font-size: 0.9rem;
+        }
+        #message {
+            margin-top: 1.25rem;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-align: center;
+            display: none;
+        }
+        #message.show {
+            display: block;
+        }
+        .message-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .message-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* تنسيق خاص بحقل الهاتف مع +964 ثابت */
+        .phone-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            transition: all 0.2s ease;
+        }
+        .phone-wrapper:focus-within {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        .phone-prefix {
+            padding-right: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1rem;
+            background: transparent;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .phone-wrapper .input-field {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding-right: 0.25rem;
+            padding-left: 1.25rem;
+            border-radius: 1rem;
+            direction: ltr;
+            text-align: left;
+            font-family: 'Cairo', sans-serif;
+        }
+        .phone-wrapper .input-field:focus {
+            box-shadow: none !important;
+            border: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 1.75rem 1.25rem;
+            }
+            .auth-title .brand {
+                font-size: 1.8rem;
+            }
+            .action-link {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <div class="auth-title">
+        <div class="brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>ديف أكاديمي</span>
+        </div>
+        <span class="mode-text" id="modeText">تسجيل الدخول</span>
+    </div>
+
+    <!-- الترتيب الجديد: الاسم ← البريد ← كلمة المرور ← الهاتف (للتسجيل) -->
+
+    <!-- حقل الاسم الثلاثي (يظهر فقط في التسجيل) -->
+    <div class="input-group extra-field hidden" id="fullNameGroup">
+        <input type="text" id="fullName" class="input-field" placeholder="الاسم الثلاثي (بالعربية)">
+    </div>
+
+    <!-- البريد الإلكتروني -->
+    <div class="input-group">
+        <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" autocomplete="email">
+    </div>
+
+    <!-- كلمة المرور -->
+    <div class="input-group" id="passwordGroup">
+        <div class="password-wrapper">
+            <input type="password" id="password" class="input-field" placeholder="كلمة المرور" autocomplete="current-password">
+            <button type="button" class="toggle-pw" id="togglePasswordBtn">
+                <i class="far fa-eye-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- حقل رقم الهاتف (يظهر فقط في التسجيل) مع +964 ثابت -->
+    <div class="input-group extra-field hidden" id="phoneGroup">
+        <div class="phone-wrapper">
+            <span class="phone-prefix">+964</span>
+            <input type="tel" id="phone" class="input-field" placeholder="7xx xxx xxxx" dir="ltr" maxlength="10" inputmode="numeric">
+        </div>
+        <div class="text-xs text-gray-500 mt-1 pr-2">أدخل 10 أرقام بعد +964</div>
+    </div>
+
+    <button id="actionBtn" class="btn-primary">
+        <i class="fas fa-arrow-left"></i> دخول
+    </button>
+
+    <div id="message"></div>
+
+    <div class="action-links">
+        <a id="toggleModeLink" class="action-link">
+            <i class="fas fa-user-plus"></i> حساب جديد
+        </a>
+        <a id="forgotLink" class="action-link">
+            <i class="fas fa-key"></i> نسيت كلمة المرور
+        </a>
+    </div>
+</div>
+
+<script>
+    (function() {
+        console.log("✅ بدء تشغيل الصفحة (ديف أكاديمي)");
+
+        // ========== حماية بسيطة ضد F12 ==========
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // ========== تهيئة Supabase ==========
+        const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
+
+        if (typeof supabase === 'undefined') {
+            console.error("❌ Supabase غير محمل");
+            const msg = document.getElementById('message');
+            msg.textContent = 'خطأ في تحميل المكتبة';
+            msg.className = 'show message-error';
+            return;
+        }
+        console.log("✅ Supabase محمل بنجاح");
+
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log("✅ تم إنشاء عميل Supabase");
+
+        // ========== عناصر DOM ==========
+        const modeText = document.getElementById('modeText');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const passwordGroup = document.getElementById('passwordGroup');
+        const fullNameInput = document.getElementById('fullName');
+        const phoneInput = document.getElementById('phone');
+        const fullNameGroup = document.getElementById('fullNameGroup');
+        const phoneGroup = document.getElementById('phoneGroup');
+        const actionBtn = document.getElementById('actionBtn');
+        const toggleModeLink = document.getElementById('toggleModeLink');
+        const forgotLink = document.getElementById('forgotLink');
+        const messageDiv = document.getElementById('message');
+        const togglePwBtn = document.getElementById('togglePasswordBtn');
+
+        let currentMode = 'login'; // 'login' | 'signup' | 'forgot'
+
+        // ========== دالة عرض الرسائل ==========
+        function showMessage(msg, isSuccess = false) {
+            console.log("📢 رسالة:", msg, isSuccess ? "(نجاح)" : "(خطأ)");
+            messageDiv.textContent = msg;
+            messageDiv.className = 'show';
+            messageDiv.classList.add(isSuccess ? 'message-success' : 'message-error');
+        }
+
+        function clearMessage() {
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+        }
+
+        // ========== تحديث واجهة المستخدم حسب الوضع ==========
+        function updateUIMode() {
+            console.log("🔄 تغيير الوضع إلى:", currentMode);
+
+            // إظهار/إخفاء الحقول الإضافية (الاسم والهاتف) في وضع التسجيل فقط
+            if (currentMode === 'signup') {
+                fullNameGroup.classList.remove('hidden');
+                phoneGroup.classList.remove('hidden');
+            } else {
+                fullNameGroup.classList.add('hidden');
+                phoneGroup.classList.add('hidden');
+            }
+
+            if (currentMode === 'login') {
+                modeText.textContent = 'تسجيل الدخول';
+                actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
+                toggleModeLink.innerHTML = '<i class="fas fa-user-plus"></i> حساب جديد';
+                forgotLink.classList.remove('hidden');
+                passwordGroup.classList.remove('hidden');
+            } else if (currentMode === 'signup') {
+                modeText.textContent = 'إنشاء حساب';
+                actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
+                toggleModeLink.innerHTML = '<i class="fas fa-sign-in-alt"></i> لدي حساب بالفعل';
+                forgotLink.classList.add('hidden');
+                passwordGroup.classList.remove('hidden');
+            } else if (currentMode === 'forgot') {
+                modeText.textContent = 'استعادة كلمة المرور';
+                actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
+                toggleModeLink.innerHTML = '<i class="fas fa-arrow-right"></i> العودة للدخول';
+                forgotLink.classList.add('hidden');
+                passwordGroup.classList.add('hidden');
+            }
+            clearMessage();
+        }
+
+        // ========== إظهار/إخفاء كلمة المرور ==========
+        if (togglePwBtn && passwordInput) {
+            togglePwBtn.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                const icon = togglePwBtn.querySelector('i');
+                if (type === 'text') {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                } else {
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                }
+            });
+        }
+
+        // ========== دالة إنشاء/تحديث البروفايل ==========
+        async function upsertProfile(userId, fullName, phone, email) {
+            console.log("📝 تحديث البروفايل للمستخدم:", userId);
+            try {
+                const { data: existing, error: selectError } = await sb
+                    .from('profiles')
+                    .select('id')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (selectError && selectError.code !== 'PGRST116') {
+                    console.error("❌ خطأ في الاستعلام عن البروفايل:", selectError);
+                    throw selectError;
+                }
+
+                if (existing) {
+                    const { error: updateError } = await sb
+                        .from('profiles')
+                        .update({ full_name: fullName, phone: phone, role: 'user' })
+                        .eq('id', userId);
+                    if (updateError) throw updateError;
+                    console.log("✅ تم تحديث البروفايل");
+                } else {
+                    const { error: insertError } = await sb
+                        .from('profiles')
+                        .insert({ id: userId, full_name: fullName, phone: phone, role: 'user' });
+                    if (insertError) throw insertError;
+                    console.log("✅ تم إنشاء البروفايل");
+                }
+            } catch (err) {
+                console.error("❌ خطأ في upsertProfile:", err);
+                throw err;
+            }
+        }
+
+        // ========== معالج النموذج الرئيسي ==========
+        window.handleAuth = async function() {
+            console.log("🔘 تم الضغط على زر", currentMode);
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const fullName = fullNameInput.value.trim();
+            const phoneRaw = phoneInput.value.trim(); // سيحتوي فقط على الأرقام (بسبب maxlength والـ placeholder)
+
+            // التحقق من البريد
+            if (!email) {
+                showMessage('الرجاء إدخال البريد الإلكتروني', false);
+                return;
+            }
+            if (currentMode !== 'forgot' && !password) {
+                showMessage('الرجاء إدخال كلمة المرور', false);
+                return;
+            }
+
+            if (currentMode === 'signup') {
+                // الاسم الثلاثي عربي
+                const arabicRegex = /^[\u0600-\u06FF\s]+$/;
+                if (!fullName) {
+                    showMessage('الرجاء إدخال الاسم الثلاثي', false);
+                    return;
+                }
+                if (!arabicRegex.test(fullName)) {
+                    showMessage('الاسم يجب أن يكون بالعربية فقط', false);
+                    return;
+                }
+                // رقم الهاتف: يجب أن يكون 10 أرقام (لأننا أضفنا +964 ثابت)
+                if (!phoneRaw) {
+                    showMessage('الرجاء إدخال رقم الهاتف', false);
+                    return;
+                }
+                if (!/^\d{10}$/.test(phoneRaw)) {
+                    showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false);
+                    return;
+                }
+                if (password.length < 6) {
+                    showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false);
+                    return;
+                }
+            }
+
+            actionBtn.disabled = true;
+            actionBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> جاري ...';
+
+            try {
+                if (currentMode === 'signup') {
+                    console.log("📝 محاولة إنشاء حساب جديد...");
+                    const { data, error } = await sb.auth.signUp({ email, password });
+                    if (error) throw error;
+
+                    const fullPhone = '+964' + phoneRaw;
+                    await upsertProfile(data.user.id, fullName, fullPhone, email);
+
+                    showMessage('✅ تم إنشاء الحساب بنجاح! جاري التوجيه...', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1200);
+
+                } else if (currentMode === 'login') {
+                    console.log("🔐 محاولة تسجيل الدخول...");
+                    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+
+                    showMessage('✅ مرحباً بك! جاري التوجيه...', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
+
+                } else if (currentMode === 'forgot') {
+                    console.log("📧 طلب استعادة كلمة المرور...");
+                    const { error } = await sb.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin + '/dashboard.html'
+                    });
+                    if (error) throw error;
+
+                    showMessage('📬 تم إرسال رابط الاستعادة إلى بريدك.', true);
+                    setTimeout(() => {
+                        currentMode = 'login';
+                        updateUIMode();
+                        emailInput.value = '';
+                    }, 2500);
+                }
+            } catch (err) {
+                console.error("❌ خطأ:", err);
+                let errorMsg = err.message;
+                if (errorMsg.includes('Invalid login credentials')) errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';
+                else if (errorMsg.includes('User already registered')) errorMsg = '⚠️ هذا البريد مسجل مسبقاً';
+                else if (errorMsg.includes('Password should be at least 6 characters')) errorMsg = 'كلمة المرور 6 أحرف فأكثر';
+                else if (errorMsg.includes('Database error')) errorMsg = '⚠️ خطأ في قاعدة البيانات، حاول مرة أخرى';
+                else if (errorMsg.includes('Network')) errorMsg = '⚠️ مشكلة في الاتصال، تأكد من الإنترنت';
+                showMessage(errorMsg, false);
+            } finally {
+                actionBtn.disabled = false;
+                if (currentMode === 'login') actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
+                else if (currentMode === 'signup') actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
+                else actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
+            }
+        };
+
+        // ========== التحقق من الجلسة ==========
+        async function checkSessionAndRedirect() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                window.location.href = "dashboard.html";
+            }
+        }
+
+        // ========== مراقبة تغييرات المصادقة ==========
+        sb.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                window.location.href = "dashboard.html";
+            }
+        });
+
+        // ========== ربط الأحداث ==========
+        toggleModeLink.onclick = (e) => {
+            e.preventDefault();
+            if (currentMode === 'forgot') currentMode = 'login';
+            else if (currentMode === 'login') currentMode = 'signup';
+            else if (currentMode === 'signup') currentMode = 'login';
+            updateUIMode();
+        };
+
+        forgotLink.onclick = (e) => {
+            e.preventDefault();
+            currentMode = 'forgot';
+            updateUIMode();
+        };
+
+        actionBtn.onclick = window.handleAuth;
+
+        // Enter
+        emailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
+        fullNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
+        phoneInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.handleAuth(); });
+
+        // منع إدخال غير أرقام في حقل الهاتف
+        phoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+
+        // ========== بدء التشغيل ==========
+        checkSessionAndRedirect();
+        updateUIMode();
+        console.log("✅ تم تهيئة الصفحة بالكامل (ديف أكاديمي)");
+    })();
+</script>
+
+</body>
+</html>
