@@ -2478,16 +2478,16 @@
             }
 
             // ============================================================
-            // تفعيل الكود عبر Supabase
+            // تفعيل الكود عبر Supabase - باستخدام activate_code_v3
             // ============================================================
-            async function activateCodeInSupabase(code) {
+            async function activateCodeInSupabaseV3(code) {
                 try {
                     if (!supabaseClient || !currentUser) {
                         return { success: false, message: 'يجب تسجيل الدخول أولاً' };
                     }
 
                     const { data, error } = await supabaseClient
-                        .rpc('activate_code_v2', {
+                        .rpc('activate_code_v3', {
                             p_code: code,
                             p_device_id: deviceId
                         });
@@ -3058,6 +3058,7 @@
                         try {
                             updateAllAdminSelects();
                             updateAllSemesterLists();
+                            updateLectureLists();
                         } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
                     }, 500);
 
@@ -3439,7 +3440,7 @@
             };
 
             // ============================================================
-            // تفعيل الكود - عبر Supabase
+            // تفعيل الكود - باستخدام activate_code_v3
             // ============================================================
             window.activateCodeFromTeacher = async function() {
                 try {
@@ -3457,8 +3458,8 @@
                         msg.style.color = '#ef4444';
                         showToast('error', '⚠️ سجل الدخول أولاً'); return; }
 
-                    // تفعيل الكود عبر Supabase
-                    const result = await activateCodeInSupabase(code);
+                    // تفعيل الكود عبر Supabase باستخدام activate_code_v3
+                    const result = await activateCodeInSupabaseV3(code);
 
                     if (!result.success) {
                         msg.innerHTML = '❌ ' + result.message;
@@ -3502,7 +3503,7 @@
 
                     msg.innerHTML = `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`;
                     msg.style.color = '#22c55e';
-                    showToast('success', '✅ تم التفعيل بنجاح!');
+                    showToast('success', `✅ تم التفعيل بنجاح! مرحباً ${result.user_name || 'مستخدم'}`);
 
                     setTimeout(() => {
                         if (activeSectionIndex !== null && activeTeacherIndex !== null) {
@@ -4280,6 +4281,7 @@
                                     // تحديث الأكواد
                                     setTimeout(updateCodesDisplay, 300);
                                     setTimeout(updateAllSemesterLists, 300);
+                                    setTimeout(updateLectureLists, 300);
                                     showToast('info', '🔓 مرحباً بك في لوحة التحكم');
                                 }
                             }
@@ -4374,8 +4376,14 @@
                             if (this.dataset.tab === 'edit-lecture') {
                                 updateAllAdminSelects();
                                 setTimeout(updateAllSemesterLists, 300);
+                                setTimeout(updateLectureLists, 300);
                             }
-                            if (this.dataset.tab === 'delete' || this.dataset.tab === 'add-lecture' ||
+                            if (this.dataset.tab === 'delete') {
+                                updateAllAdminSelects();
+                                setTimeout(updateAllSemesterLists, 300);
+                                setTimeout(updateLectureLists, 300);
+                            }
+                            if (this.dataset.tab === 'add-lecture' ||
                                 this.dataset.tab === 'add-semester' || this.dataset.tab === 'add-teacher' ||
                                 this.dataset.tab === 'edit-teacher') {
                                 updateAllAdminSelects();
@@ -4394,7 +4402,7 @@
             });
 
             // ============================================================
-            // دوال تحديث القوائم (مختصرة)
+            // تحديث قوائم الفصول والمحاضرات
             // ============================================================
             function updateAllSemesterLists() {
                 try {
@@ -4449,9 +4457,116 @@
                             select.value = currentValue;
                         }
                     });
-                } catch (e) { console.warn('⚠️ فشل تحديث قوائم الفصول:', e); }
+
+                    // تحديث قوائم المحاضرات بعد تحديث الفصول
+                    updateLectureLists();
+
+                } catch (e) {
+                    console.warn('⚠️ فشل تحديث قوائم الفصول:', e);
+                }
             }
 
+            // ============================================================
+            // دالة تحديث قوائم المحاضرات
+            // ============================================================
+            function updateLectureLists() {
+                try {
+                    console.log('🔄 تحديث قوائم المحاضرات...');
+
+                    // 1. تحديث قائمة المحاضرات في تعديل محاضرة
+                    const editLectureSelect = document.getElementById('editLectureSelect');
+                    const editSectionSelect = document.getElementById('editLectureSection');
+                    const editTeacherSelect = document.getElementById('editLectureTeacher');
+                    const editSemesterSelect = document.getElementById('editLectureSemester');
+
+                    if (editLectureSelect && editSectionSelect && editTeacherSelect && editSemesterSelect) {
+                        const sectionIndex = parseInt(editSectionSelect.value);
+                        const teacherIndex = parseInt(editTeacherSelect.value);
+                        const semesterIndex = parseInt(editSemesterSelect.value);
+                        const currentValue = editLectureSelect.value;
+
+                        let options = '<option value="">اختر المحاضرة...</option>';
+
+                        if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                            !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                            !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures) {
+
+                            const lectures = data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex]
+                                .lectures;
+                            if (lectures.length === 0) {
+                                options += '<option value="" disabled>⚠️ لا توجد محاضرات في هذا الفصل</option>';
+                            } else {
+                                lectures.forEach((l, i) => {
+                                    options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                                });
+                            }
+                        } else {
+                            options += '<option value="" disabled>⚠️ اختر القسم والمدرس والفصل أولاً</option>';
+                        }
+
+                        editLectureSelect.innerHTML = options;
+
+                        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                            !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                            !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[
+                                parseInt(currentValue)]) {
+                            editLectureSelect.value = currentValue;
+                        }
+                    }
+
+                    // 2. تحديث قائمة المحاضرات في حذف محاضرة
+                    const deleteLectureSelect = document.getElementById('deleteLectureSelect');
+                    const deleteSectionSelect = document.getElementById('deleteLectureSection');
+                    const deleteTeacherSelect = document.getElementById('deleteLectureTeacher');
+                    const deleteSemesterSelect = document.getElementById('deleteLectureSemester');
+
+                    if (deleteLectureSelect && deleteSectionSelect && deleteTeacherSelect && deleteSemesterSelect) {
+                        const sectionIndex = parseInt(deleteSectionSelect.value);
+                        const teacherIndex = parseInt(deleteTeacherSelect.value);
+                        const semesterIndex = parseInt(deleteSemesterSelect.value);
+                        const currentValue = deleteLectureSelect.value;
+
+                        let options = '<option value="">اختر المحاضرة...</option>';
+
+                        if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
+                            !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                            !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures) {
+
+                            const lectures = data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex]
+                                .lectures;
+                            if (lectures.length === 0) {
+                                options += '<option value="" disabled>⚠️ لا توجد محاضرات في هذا الفصل</option>';
+                            } else {
+                                lectures.forEach((l, i) => {
+                                    options += `<option value="${i}">#${l.number} - ${l.title}</option>`;
+                                });
+                            }
+                        } else {
+                            options += '<option value="" disabled>⚠️ اختر القسم والمدرس والفصل أولاً</option>';
+                        }
+
+                        deleteLectureSelect.innerHTML = options;
+
+                        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+                            !isNaN(teacherIndex) && teacherIndex >= 0 &&
+                            !isNaN(semesterIndex) && semesterIndex >= 0 &&
+                            data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[
+                                parseInt(currentValue)]) {
+                            deleteLectureSelect.value = currentValue;
+                        }
+                    }
+
+                } catch (e) {
+                    console.warn('⚠️ فشل تحديث قوائم المحاضرات:', e);
+                }
+            }
+
+            // ============================================================
+            // تحديث المدرسين حسب القسم
+            // ============================================================
             function updateTeachersForSection(sectionIndex) {
                 try {
                     console.log('🔄 تحديث قوائم المدرسين للقسم:', sectionIndex);
@@ -4498,9 +4613,15 @@
                     });
 
                     setTimeout(updateAllSemesterLists, 150);
-                } catch (e) { console.warn('⚠️ فشل تحديث المدرسين:', e); }
+                    setTimeout(updateLectureLists, 200);
+                } catch (e) {
+                    console.warn('⚠️ فشل تحديث المدرسين:', e);
+                }
             }
 
+            // ============================================================
+            // تحديث جميع القوائم
+            // ============================================================
             function updateAllAdminSelects() {
                 try {
                     console.log('🔄 تحديث جميع القوائم...');
@@ -4572,9 +4693,15 @@
                     });
 
                     setTimeout(updateAllSemesterLists, 200);
-                } catch (e) { console.warn('⚠️ فشل تحديث القوائم:', e); }
+                    setTimeout(updateLectureLists, 250);
+                } catch (e) {
+                    console.warn('⚠️ فشل تحديث القوائم:', e);
+                }
             }
 
+            // ============================================================
+            // إعداد مستمعات الأحداث للتغيير
+            // ============================================================
             function setupChangeListeners() {
                 try {
                     console.log('🔗 ربط أحداث التغيير...');
@@ -4592,6 +4719,7 @@
                                 console.log('📌 تغيير القسم:', id, this.value);
                                 updateTeachersForSection(this.value);
                                 setTimeout(updateAllSemesterLists, 200);
+                                setTimeout(updateLectureLists, 250);
                             });
                         }
                     });
@@ -4608,10 +4736,29 @@
                             el.addEventListener('change', function() {
                                 console.log('📌 تغيير المدرس:', id, this.value);
                                 setTimeout(updateAllSemesterLists, 150);
+                                setTimeout(updateLectureLists, 200);
                             });
                         }
                     });
-                } catch (e) { console.warn('⚠️ فشل ربط أحداث التغيير:', e); }
+
+                    // مستمعات لتحديث المحاضرات عند تغيير الفصل
+                    const semesterIds = [
+                        'editLectureSemester', 'deleteLectureSemester'
+                    ];
+
+                    semesterIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.addEventListener('change', function() {
+                                console.log('📌 تغيير الفصل:', id, this.value);
+                                setTimeout(updateLectureLists, 150);
+                            });
+                        }
+                    });
+
+                } catch (e) {
+                    console.warn('⚠️ فشل ربط أحداث التغيير:', e);
+                }
             }
 
             // ============================================================
@@ -4791,7 +4938,7 @@
             });
 
             // ============================================================
-            // دوال الحذف والأخرى (مختصرة)
+            // دوال الحذف
             // ============================================================
             window.deleteSelectedSection = function() {
                 try {
@@ -4898,7 +5045,7 @@
             };
 
             // ============================================================
-            // المشرفين (مختصر)
+            // المشرفين
             // ============================================================
             async function loadAdminsList() {
                 try {
