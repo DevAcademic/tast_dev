@@ -7,16 +7,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
     </script>
-    
+
     <!-- ============================================================
-    🔒 حماية شاملة - منع سرقة الملفات وF12 وجميع محاولات الاختراق
+    🔒 الحماية الشاملة - متطورة ودقيقة
     ============================================================ -->
     <script>
         (function() {
             'use strict';
 
             // ============================================================
-            // دالة للتحقق من الحقول (للاستثناء)
+            // دالة للتحقق من الحقول (للسماح بالكتابة)
             // ============================================================
             function isInputField(element) {
                 if (!element) return false;
@@ -26,93 +26,58 @@
                     tag === 'textarea' ||
                     tag === 'select' ||
                     element.contentEditable === 'true' ||
-                    (tag === 'input' && (type === 'text' || type === 'password' || type === 'email' || type === 'number' || type === 'tel' || type === 'url' || type === 'search'));
+                    (tag === 'input' && (type === 'text' || type === 'password' || type === 'email' || type ===
+                        'number' || type === 'tel' || type === 'url' || type === 'search'));
             }
 
             // ============================================================
-            // 1) منع جميع مفاتيح الاختراق (مع استثناء الحقول)
+            // 1) منع مفاتيح الاختراق (مع استثناء الحقول)
             // ============================================================
             document.addEventListener('keydown', function(e) {
-                // استثناء الحقول
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
 
                 // F12
                 if (e.key === 'F12' || e.keyCode === 123) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
                 // Ctrl+Shift+I
                 if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
                 // Ctrl+Shift+J
                 if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
                 // Ctrl+U
                 if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
                 // Ctrl+S
                 if (e.ctrlKey && (e.key === 'S' || e.key === 's' || e.keyCode === 83)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
                 // Ctrl+Shift+C
                 if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
-                // Ctrl+E
-                if (e.ctrlKey && (e.key === 'E' || e.key === 'e' || e.keyCode === 69)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
-
-                // Ctrl+A (منع تحديد الكل)
+                // Ctrl+A
                 if (e.ctrlKey && (e.key === 'A' || e.key === 'a' || e.keyCode === 65)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
                     return false;
                 }
-
-                // منع Ctrl+Shift+أي حرف
-                if (e.ctrlKey && e.shiftKey) {
-                    const key = e.key.toUpperCase();
-                    if (key.length === 1 && key >= 'A' && key <= 'Z') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        return false;
-                    }
-                }
-
                 return true;
             }, true);
 
@@ -120,109 +85,63 @@
             // 2) منع زر الفأرة الأيمن (مع استثناء الحقول)
             // ============================================================
             document.addEventListener('contextmenu', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.tagName === 'CANVAS') {
                     e.preventDefault();
-                    e.stopPropagation();
                     return false;
                 }
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
             // ============================================================
-            // 3) منع تحديد النص (مع استثناء الحقول)
+            // 3) منع تحديد النص ونسخه (مع استثناء الحقول)
             // ============================================================
             document.addEventListener('selectstart', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
                 return false;
             }, true);
 
-            document.addEventListener('selectionchange', function(e) {
-                if (document.activeElement && isInputField(document.activeElement)) {
-                    return;
-                }
-                if (window.getSelection) {
-                    window.getSelection().removeAllRanges();
-                }
-            }, true);
-
-            // ============================================================
-            // 4) منع نسخ النص (مع استثناء الحقول)
-            // ============================================================
             document.addEventListener('copy', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
-            // ============================================================
-            // 5) منع قص النص (مع استثناء الحقول)
-            // ============================================================
             document.addEventListener('cut', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
-            // ============================================================
-            // 6) منع لصق النص (مع استثناء الحقول)
-            // ============================================================
+            // السماح باللصق في الحقول
             document.addEventListener('paste', function(e) {
-                if (isInputField(e.target)) {
-                    return true; // السماح باللصق في الحقول
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
             // ============================================================
-            // 7) منع سحب الصور والملفات
+            // 4) منع سحب الصور والملفات
             // ============================================================
             document.addEventListener('dragstart', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
             document.addEventListener('drop', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
+                if (isInputField(e.target)) return true;
                 e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }, true);
-
-            document.addEventListener('dragover', function(e) {
-                if (isInputField(e.target)) {
-                    return true;
-                }
-                e.preventDefault();
-                e.stopPropagation();
                 return false;
             }, true);
 
             // ============================================================
-            // 8) كشف أدوات المطور وإغلاقها
+            // 5) كشف أدوات المطور - دقيق وحساسية منخفضة
             // ============================================================
             let devtoolsOpen = false;
+            let devtoolsCheckCount = 0;
 
             function closeDevTools() {
                 if (devtoolsOpen) {
@@ -243,13 +162,17 @@
                 }
             }
 
-            // كشف عبر console.log
+            // طريقة الكشف عبر console.log (حساسة لكنها لا تظهر إلا عند فتح الـ Console فعلاً)
             let devtools = /./;
             devtools.toString = function() {
                 if (!this._started) {
                     this._started = true;
-                    devtoolsOpen = true;
-                    closeDevTools();
+                    // نتحقق من أن المستخدم فتح الـ Console عن قصد وليس خطأ
+                    if (devtoolsCheckCount > 2) {
+                        devtoolsOpen = true;
+                        closeDevTools();
+                    }
+                    devtoolsCheckCount++;
                 }
                 return '';
             };
@@ -258,24 +181,29 @@
                 console.log('%c', devtools);
             } catch (e) {}
 
-            // كشف عبر تغيير الحجم
+            // طريقة الكشف عبر تغيير الحجم (أقل حساسية)
             function checkDevTools() {
-                const threshold = 100;
+                const threshold = 150; // زيادة العتبة لتقليل الحساسية
                 const widthThreshold = window.outerWidth - window.innerWidth > threshold;
                 const heightThreshold = window.outerHeight - window.innerHeight > threshold;
 
                 if (widthThreshold || heightThreshold) {
-                    devtoolsOpen = true;
-                    closeDevTools();
+                    devtoolsCheckCount++;
+                    if (devtoolsCheckCount > 3) {
+                        devtoolsOpen = true;
+                        closeDevTools();
+                    }
+                } else {
+                    devtoolsCheckCount = 0;
                 }
 
-                setTimeout(checkDevTools, 2000);
+                setTimeout(checkDevTools, 3000);
             }
 
-            setTimeout(checkDevTools, 1000);
+            setTimeout(checkDevTools, 2000);
 
             // ============================================================
-            // 9) تعطيل دوال الكونسول
+            // 6) تعطيل دوال الكونسول (بعد التأكد من عدم استخدامها)
             // ============================================================
             const noop = function() {};
             const consoleMethods = [
@@ -292,7 +220,7 @@
             });
 
             // ============================================================
-            // 10) تعطيل الدوال الخطيرة
+            // 7) تعطيل الدوال الخطيرة
             // ============================================================
             window.eval = function() { return null; };
             window.open = function() { return null; };
@@ -301,7 +229,7 @@
             window.prompt = function() { return null; };
 
             // ============================================================
-            // 11) منع إعادة توجيه الصفحة
+            // 8) منع إعادة توجيه الصفحة
             // ============================================================
             window.onbeforeunload = function(e) {
                 e.preventDefault();
@@ -310,7 +238,7 @@
             };
 
             // ============================================================
-            // 12) منع استخدام الـ Debugger
+            // 9) منع استخدام الـ Debugger (مع تأخير)
             // ============================================================
             function blockDebugger() {
                 const start = new Date();
@@ -320,36 +248,36 @@
                     devtoolsOpen = true;
                     closeDevTools();
                 }
-                setTimeout(blockDebugger, 1000);
+                setTimeout(blockDebugger, 3000);
             }
 
-            setTimeout(blockDebugger, 2000);
+            setTimeout(blockDebugger, 3000);
 
             // ============================================================
-            // 13) منع الروابط من الفتح في نافذة جديدة
+            // 10) منع الروابط من الفتح في نافذة جديدة
             // ============================================================
             document.addEventListener('click', function(e) {
                 const target = e.target.closest('a');
                 if (target && target.target === '_blank') {
                     e.preventDefault();
-                    e.stopPropagation();
                     return false;
                 }
             }, true);
 
             // ============================================================
-            // 14) منع استخدام الـ iframe (لتجنب سرقة المحتوى)
+            // 11) منع الـ iframe (لتجنب سرقة المحتوى)
             // ============================================================
             if (window.top !== window.self) {
                 window.top.location = window.self.location;
             }
 
-            console.log('🔒 تم تفعيل الحماية الشاملة');
+            console.log('🔒 تم تفعيل الحماية الشاملة (نسخة متطورة)');
 
         })();
     </script>
 
     <style>
+        /* ===== RESET ===== */
         * {
             margin: 0;
             padding: 0;
@@ -410,6 +338,7 @@
             user-select: text !important;
         }
 
+        /* ===== شريط علوي ===== */
         .top-bar {
             position: sticky;
             top: 0;
@@ -602,6 +531,7 @@
             display: none;
         }
 
+        /* ===== البانر ===== */
         .banner-section {
             padding: 0.1rem 0.5rem 0.1rem;
             max-width: 600px;
@@ -639,6 +569,7 @@
             border-radius: 12px;
         }
 
+        /* ===== شبكة المدرسين ===== */
         .teachers-container {
             padding: 0.3rem 0.6rem 70px;
             max-width: 1200px;
@@ -833,6 +764,7 @@
             font-size: 0.7rem;
         }
 
+        /* ===== فلتر ===== */
         .filter-section {
             display: flex;
             gap: 0.3rem;
@@ -887,6 +819,7 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        /* ===== باقي الأنماط ===== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -1189,6 +1122,7 @@
             background: var(--primary-dark);
         }
 
+        /* ===== Admin Panel ===== */
         .admin-panel {
             position: fixed;
             top: 0;
@@ -1450,6 +1384,7 @@
             font-size: 0.7rem;
         }
 
+        /* ===== Toast ===== */
         .toast-container {
             position: fixed;
             bottom: 80px;
@@ -1493,6 +1428,7 @@
             color: #1E293B;
         }
 
+        /* ===== Modal ===== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -1564,6 +1500,7 @@
             transform: rotate(90deg);
         }
 
+        /* ===== Semester/Lecture Items ===== */
         .semester-item,
         .lecture-item {
             display: flex;
@@ -1626,6 +1563,7 @@
             font-size: 0.5rem;
         }
 
+        /* ===== Video Player ===== */
         .video-player-container {
             display: none;
             position: fixed;
@@ -1736,6 +1674,7 @@
             }
         }
 
+        /* ===== Notifications ===== */
         .notifications-list .notification-item {
             background: var(--bg);
             border-radius: 8px;
@@ -1825,6 +1764,7 @@
             color: #f59e0b;
         }
 
+        /* ===== نافذة تعديل المحاضرة ===== */
         .edit-lecture-modal .form-actions {
             display: flex;
             gap: 0.5rem;
@@ -1869,6 +1809,7 @@
             padding: 0.4rem 0.6rem;
         }
 
+        /* ===== Media Queries ===== */
         @media (max-width: 480px) {
             .top-bar {
                 flex-wrap: nowrap;
@@ -2720,6 +2661,7 @@
             let activeTeacherIndex = null;
             let activeSectionIndex = null;
             let deviceId = localStorage.getItem('deviceId') || 'DEV_' + Date.now();
+            let isAppInitialized = false;
 
             // ===== الأقسام الافتراضية =====
             const defaultSections = [
@@ -3410,9 +3352,15 @@
             };
 
             // ============================================================
-            // التهيئة
+            // التهيئة - مع منع التكرار
             // ============================================================
             async function initApp() {
+                if (isAppInitialized) {
+                    console.log('⚠️ التطبيق مهيأ مسبقاً، تجاهل');
+                    return;
+                }
+                isAppInitialized = true;
+
                 try {
                     console.log('🚀 جاري التحميل...');
                     if (loadingScreen) loadingScreen.style.display = 'flex';
@@ -4119,7 +4067,7 @@
             }
 
             // ============================================================
-            // الحساب
+            // الحساب - مع إصلاح عرض الاسم ورقم الهاتف
             // ============================================================
             function renderAccount() {
                 try {
@@ -4618,6 +4566,113 @@
             };
 
             // ============================================================
+            // دالة النشر - مع إصلاح تكرار العناصر
+            // ============================================================
+            async function publishData() {
+                try {
+                    if (pendingChanges === 0) {
+                        showToast('info', '📌 لا توجد تغييرات لنشرها');
+                        return;
+                    }
+
+                    if (!supabaseClient) {
+                        showToast('error', '❌ Supabase غير متاح');
+                        return;
+                    }
+
+                    showToast('info', '⏳ جاري النشر...');
+
+                    const dataToSave = {
+                        ...data,
+                        _updatedAt: new Date().toISOString()
+                    };
+
+                    const { error } = await supabaseClient
+                        .from('academy_data')
+                        .upsert({
+                            id: 'main',
+                            content: dataToSave,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'id',
+                            ignoreDuplicates: false
+                        });
+
+                    if (error) {
+                        console.error('❌ خطأ النشر:', error);
+
+                        if (error.message && error.message.includes('row-level security')) {
+                            showToast('warning', '⚠️ مشكلة في الصلاحيات، جاري المحاولة بطريقة بديلة...');
+
+                            const { error: insertError } = await supabaseClient
+                                .from('academy_data')
+                                .insert({
+                                    id: 'main',
+                                    content: dataToSave,
+                                    updated_at: new Date().toISOString()
+                                });
+
+                            if (insertError) {
+                                showToast('error', '❌ فشل النشر: ' + insertError.message);
+                                return;
+                            }
+                        } else {
+                            showToast('error', '❌ فشل النشر: ' + error.message);
+                            return;
+                        }
+                    }
+
+                    pendingChanges = 0;
+                    const span = document.getElementById('pendingChanges');
+                    if (span) span.textContent = '0';
+
+                    localStorage.setItem('academyData', JSON.stringify(data));
+
+                    // ============================================================
+                    // 🔧 إعادة تحميل البيانات وتحديث الواجهة بشكل صحيح (بدون تكرار)
+                    // ============================================================
+                    await loadData();
+                    await renderAllData();
+                    updateAllAdminSelects();
+                    updateAllSemesterLists();
+                    updateLectureLists();
+                    updateCodesManagement();
+                    renderMyCourses();
+                    renderAccount();
+                    updateBadge();
+                    buildFilterButtons();
+                    updateClassFilter();
+
+                    // إعادة تعيين علامات التبويب في لوحة التحكم
+                    document.querySelectorAll('.admin-tabs .tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    const firstTab = document.querySelector('.admin-tabs .tab-btn');
+                    if (firstTab) {
+                        firstTab.classList.add('active');
+                        const tabId = document.getElementById('tab-' + firstTab.dataset.tab);
+                        if (tabId) {
+                            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                            tabId.classList.add('active');
+                        }
+                    }
+
+                    const msg = document.getElementById('publishMessage');
+                    if (msg) {
+                        msg.innerHTML = '✅ تم النشر بنجاح وتحديث الواجهة';
+                        msg.style.color = '#22c55e';
+                        setTimeout(() => msg.innerHTML = '', 5000);
+                    }
+
+                    showToast('success', '✅ تم نشر التغييرات وتحديث الواجهة بنجاح');
+
+                } catch (e) {
+                    console.error('❌ خطأ:', e);
+                    showToast('error', '❌ فشل النشر: ' + e.message);
+                }
+            }
+
+            // ============================================================
             // ربط الأحداث
             // ============================================================
             document.addEventListener('DOMContentLoaded', function() {
@@ -5114,84 +5169,6 @@
 
                 } catch (e) {
                     console.warn('⚠️ فشل ربط أحداث التغيير:', e);
-                }
-            }
-
-            // ============================================================
-            // دوال النشر
-            // ============================================================
-            async function publishData() {
-                try {
-                    if (pendingChanges === 0) {
-                        showToast('info', '📌 لا توجد تغييرات لنشرها');
-                        return;
-                    }
-
-                    if (!supabaseClient) {
-                        showToast('error', '❌ Supabase غير متاح');
-                        return;
-                    }
-
-                    showToast('info', '⏳ جاري النشر...');
-
-                    const dataToSave = {
-                        ...data,
-                        _updatedAt: new Date().toISOString()
-                    };
-
-                    const { error } = await supabaseClient
-                        .from('academy_data')
-                        .upsert({
-                            id: 'main',
-                            content: dataToSave,
-                            updated_at: new Date().toISOString()
-                        }, {
-                            onConflict: 'id',
-                            ignoreDuplicates: false
-                        });
-
-                    if (error) {
-                        console.error('❌ خطأ النشر:', error);
-
-                        if (error.message && error.message.includes('row-level security')) {
-                            showToast('warning', '⚠️ مشكلة في الصلاحيات، جاري المحاولة بطريقة بديلة...');
-
-                            const { error: insertError } = await supabaseClient
-                                .from('academy_data')
-                                .insert({
-                                    id: 'main',
-                                    content: dataToSave,
-                                    updated_at: new Date().toISOString()
-                                });
-
-                            if (insertError) {
-                                showToast('error', '❌ فشل النشر: ' + insertError.message);
-                                return;
-                            }
-                        } else {
-                            showToast('error', '❌ فشل النشر: ' + error.message);
-                            return;
-                        }
-                    }
-
-                    pendingChanges = 0;
-                    const span = document.getElementById('pendingChanges');
-                    if (span) span.textContent = '0';
-
-                    const msg = document.getElementById('publishMessage');
-                    if (msg) {
-                        msg.innerHTML = '✅ تم النشر بنجاح';
-                        msg.style.color = '#22c55e';
-                        setTimeout(() => msg.innerHTML = '', 5000);
-                    }
-
-                    localStorage.setItem('academyData', JSON.stringify(data));
-
-                    showToast('success', '✅ تم نشر التغييرات بنجاح');
-
-                } catch (e) {
-                    console.error('❌ خطأ:', e);
-                    showToast('error', '❌ فشل النشر: ' + e.message);
                 }
             }
 
