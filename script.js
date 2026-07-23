@@ -134,6 +134,9 @@
 
     let editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
+    // ===== قائمة المشرفين المحددة (للحل البديل) =====
+    const ADMIN_EMAILS = ['sajadsarmd200@gmail.com', 'wisaamhs90@gmail.com', 'zzccvc99@gmail.com'];
+
     // ============================================================
     // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
     // ============================================================
@@ -299,23 +302,32 @@
         return hasAccess;
     }
 
-    // ===== ADMIN VERIFICATION =====
+    // ===== ADMIN VERIFICATION - نسخة محسنة مع حل بديل =====
     async function isUserAdmin(email) {
-        if (!supabaseClient || !email) return false;
+        if (!supabaseClient || !email) {
+            console.log('⚠️ Supabase أو البريد غير متاح، نتحقق من القائمة المحددة');
+            return ADMIN_EMAILS.includes(email);
+        }
+        
         try {
             const { data, error } = await supabaseClient
                 .from('admins')
                 .select('email')
                 .eq('email', email)
                 .maybeSingle();
+            
             if (error) {
-                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error);
-                return false;
+                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error.message);
+                return ADMIN_EMAILS.includes(email);
             }
-            return !!data;
+            
+            const isAdmin = !!data;
+            console.log('🔍 نتيجة التحقق من قاعدة البيانات:', email, '→', isAdmin);
+            return isAdmin;
+            
         } catch (e) {
-            console.warn('⚠️ خطأ في التحقق من المشرف:', e);
-            return false;
+            console.warn('⚠️ خطأ في التحقق من المشرف:', e.message);
+            return ADMIN_EMAILS.includes(email);
         }
     }
 
@@ -622,7 +634,6 @@
                     }
                 } catch (e) { console.warn('⚠️ بيانات localStorage تالفة'); }
             }
-            // بيانات افتراضية مع الأقسام
             data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
             normalizeDataStructure(data);
             localStorage.setItem('academyData', JSON.stringify(data));
@@ -704,7 +715,6 @@
         return getTeachersBySection(currentFilter);
     }
 
-    // ===== بناء أزرار الفلتر =====
     function buildFilterButtons(container, countContainer) {
         if (!container) return;
 
@@ -730,17 +740,14 @@
         }
     }
 
-    // ===== تعيين الفلتر =====
     window.setFilter = function(sectionId) {
         currentFilter = sectionId;
         renderAllData();
-        // تحديث الأزرار
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.section === sectionId);
         });
     };
 
-    // ===== عرض المدرسين =====
     function renderTeachers(teachers, container) {
         if (!container) return;
 
@@ -794,15 +801,12 @@
     function renderAllData() {
         const filteredTeachers = getFilteredTeachers();
 
-        // تحديث العداد
         if (teachersCount) teachersCount.textContent = filteredTeachers.length;
         if (teachersCount2) teachersCount2.textContent = filteredTeachers.length;
 
-        // عرض المدرسين
         renderTeachers(filteredTeachers, teachersGridContainer);
         renderTeachers(filteredTeachers, teachersGridContainer2);
 
-        // بناء أزرار الفلتر
         buildFilterButtons(sectionFilter, teachersCount);
         buildFilterButtons(sectionFilter2, teachersCount2);
     }
@@ -1020,7 +1024,7 @@
         container.innerHTML = html;
     }
 
-    // ===== ACCOUNT =====
+    // ===== ACCOUNT - تم إصلاحها بالكامل =====
     function renderAccount() {
         if (!currentUser) {
             accountName.textContent = 'غير مسجل';
@@ -1054,13 +1058,33 @@
         });
         accountCodes.textContent = codesCount;
 
-        isUserAdmin(currentUser.email).then(isAdmin => {
+        // ✅ الحل النهائي: التحقق المباشر من قائمة المشرفين + قاعدة البيانات
+        const userEmail = currentUser.email;
+        
+        // أولاً: التحقق من القائمة المحددة مباشرة
+        if (ADMIN_EMAILS.includes(userEmail)) {
+            adminPanelBtn.style.display = 'flex';
+            console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من القائمة المحددة)');
+            return;
+        }
+        
+        // ثانياً: محاولة التحقق من قاعدة البيانات
+        isUserAdmin(userEmail).then(isAdmin => {
             if (isAdmin) {
                 adminPanelBtn.style.display = 'flex';
-                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر');
+                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من قاعدة البيانات)');
             } else {
                 adminPanelBtn.style.display = 'none';
                 console.log('👤 مستخدم عادي، زر الإدارة مخفي');
+            }
+        }).catch(err => {
+            console.warn('⚠️ خطأ في التحقق من المشرف:', err);
+            // في حالة الخطأ، نتحقق من القائمة مرة أخرى
+            if (ADMIN_EMAILS.includes(userEmail)) {
+                adminPanelBtn.style.display = 'flex';
+                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (حل بديل)');
+            } else {
+                adminPanelBtn.style.display = 'none';
             }
         });
     }
@@ -1187,6 +1211,18 @@
             showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
             return;
         }
+        
+        // التحقق المباشر أولاً
+        if (ADMIN_EMAILS.includes(currentUser.email)) {
+            adminPanel.classList.add('active');
+            updateAllAdminSelects();
+            updatePendingChanges();
+            loadAdminsList();
+            showToast('success', '🔓 مرحباً بك في لوحة التحكم');
+            return;
+        }
+        
+        // ثم التحقق من قاعدة البيانات
         isUserAdmin(currentUser.email).then(isAdmin => {
             if (isAdmin) {
                 adminPanel.classList.add('active');
@@ -1281,23 +1317,17 @@
     // دوال إدارة الأقسام والمدرسين في لوحة التحكم
     // ============================================================
 
-    // ===== تحديث جميع القوائم المنسدلة =====
     function updateAllAdminSelects() {
-        // تحديث جميع القوائم الأساسية
         updateBasicSelects();
-        // تحديث القوائم التابعة
         updateTeacherSelects();
         updateSemesterSelects();
         updateLectureSelects();
         updateDeleteSelects();
         updateEditSelects();
-        // تحديث قائمة الأكواد
         updateCodeSelects();
-        // تحديث الأكواد المعروضة
         updateCodesManagement();
     }
 
-    // ===== تحديث القوائم الأساسية =====
     function updateBasicSelects() {
         const selectIds = [
             'teacherSection', 'semesterSection', 'lectureSection',
@@ -1321,7 +1351,6 @@
         });
     }
 
-    // ===== تحديث قوائم المدرسين =====
     function updateTeacherSelects() {
         const teacherSelects = [
             { selectId: 'semesterTeacher', sectionId: 'semesterSection' },
@@ -1356,9 +1385,7 @@
         });
     }
 
-    // ===== تحديث قوائم الفصول =====
     function updateSemesterSelects() {
-        // للفصول في إضافة محاضرة
         const semesterSelects = [
             { selectId: 'lectureSemester', teacherId: 'lectureTeacher', sectionId: 'lectureSection' },
             { selectId: 'deleteSemesterSelect', teacherId: 'deleteSemesterTeacher', sectionId: 'deleteSemesterSection' },
@@ -1397,9 +1424,7 @@
         });
     }
 
-    // ===== تحديث قوائم المحاضرات =====
     function updateLectureSelects() {
-        // لمحاضرات التعديل والحذف
         const lectureSelects = [
             { selectId: 'editLectureSelect', semesterId: 'editLectureSemester', sectionId: 'editLectureSection', teacherId: 'editLectureTeacher' },
             { selectId: 'deleteLectureSelect', semesterId: 'deleteLectureSemester', sectionId: 'deleteLectureSection', teacherId: 'deleteLectureTeacher' }
@@ -1438,9 +1463,7 @@
         });
     }
 
-    // ===== تحديث قوائم الحذف =====
     function updateDeleteSelects() {
-        // تحديث قوائم الحذف بشكل خاص
         const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
         const deleteTeacherSection = document.getElementById('deleteTeacherSection');
         if (deleteTeacherSelect && deleteTeacherSection) {
@@ -1460,9 +1483,7 @@
         }
     }
 
-    // ===== تحديث قوائم التعديل =====
     function updateEditSelects() {
-        // تحديث قوائم تعديل المدرس
         const editTeacherSelect = document.getElementById('editTeacherSelect');
         const editTeacherSection = document.getElementById('editTeacherSection');
         if (editTeacherSelect && editTeacherSection) {
@@ -1479,12 +1500,10 @@
                 data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
                 editTeacherSelect.value = currentValue;
             }
-            // تحديث بيانات المدرس
             updateEditTeacherData();
         }
     }
 
-    // ===== تحديث قوائم الأكواد =====
     function updateCodeSelects() {
         const sectionSelect = document.getElementById('codeSection');
         const teacherSelect = document.getElementById('codeTeacherSelect');
@@ -1507,7 +1526,6 @@
         }
     }
 
-    // ===== تحديث بيانات تعديل المدرس =====
     function updateEditTeacherData() {
         const sectionSelect = document.getElementById('editTeacherSection');
         const teacherSelect = document.getElementById('editTeacherSelect');
@@ -1534,14 +1552,10 @@
         document.getElementById('editTeacherMessage').innerHTML = '';
     }
 
-    // ===== تحديث عدد التغييرات =====
     function updatePendingChanges() {
         if (pendingChangesSpan) pendingChangesSpan.textContent = pendingChanges;
     }
 
-    // ============================================================
-    // ===== إضافة تغيير =====
-    // ============================================================
     function addChange() {
         pendingChanges++;
         updatePendingChanges();
@@ -1572,6 +1586,7 @@
         addChange();
         addSectionForm.reset();
         showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
+        adminPanel.classList.add('active');
     });
 
     // ============================================================
@@ -1615,6 +1630,7 @@
         addChange();
         addTeacherForm.reset();
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+        adminPanel.classList.add('active');
     });
 
     // ============================================================
@@ -1647,6 +1663,7 @@
         addChange();
         addSemesterForm.reset();
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+        adminPanel.classList.add('active');
     });
 
     // ============================================================
@@ -1691,6 +1708,7 @@
         addChange();
         addLectureForm.reset();
         showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+        adminPanel.classList.add('active');
     });
 
     // ============================================================
@@ -2557,7 +2575,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
     };
 
     // ============================================================
-    // ===== PUBLISH =====
+    // ===== PUBLISH - تم إصلاحها =====
     // ============================================================
     publishBtn?.addEventListener('click', async function() {
         if (pendingChanges === 0) {
@@ -2570,10 +2588,13 @@ grant execute on function add_user_and_admin(text) to authenticated;
             return;
         }
 
-        const isAdmin = await isUserAdmin(currentUser?.email);
-        if (!(isAdminLoggedIn || isAdmin)) {
-            showToast('error', '❌ يجب تسجيل الدخول كمشرف');
-            return;
+        // التحقق المباشر من المشرف
+        if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+            const isAdmin = await isUserAdmin(currentUser?.email);
+            if (!isAdmin) {
+                showToast('error', '❌ يجب تسجيل الدخول كمشرف');
+                return;
+            }
         }
 
         const result = await saveSupabaseAcademyData();
@@ -2643,7 +2664,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         let html = '';
         let index = 1;
         usersMap.forEach((user, email) => {
-            const isAdmin = email === 'zzccvc99@gmail.com' || email === 'sajadsarmd200@gmail.com' || email === 'wisaamhs90@gmail.com';
+            const isAdmin = ADMIN_EMAILS.includes(email);
             html += `
                 <tr>
                     <td>${index++}</td>
@@ -2697,7 +2718,6 @@ grant execute on function add_user_and_admin(text) to authenticated;
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
     // ============================================================
 
-    // تحديث القوائم عند تغيير القسم
     document.getElementById('teacherSection')?.addEventListener('change', function() {
         updateAllAdminSelects();
     });
@@ -2734,7 +2754,6 @@ grant execute on function add_user_and_admin(text) to authenticated;
         updateAllAdminSelects();
     });
 
-    // تحديث القوائم عند تغيير المدرس
     document.getElementById('semesterTeacher')?.addEventListener('change', function() {
         updateAllAdminSelects();
     });
@@ -2763,7 +2782,6 @@ grant execute on function add_user_and_admin(text) to authenticated;
         updateAllAdminSelects();
     });
 
-    // تحديث القوائم عند تغيير الفصل
     document.getElementById('lectureSemester')?.addEventListener('change', function() {
         updateAllAdminSelects();
     });
@@ -2826,6 +2844,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
                     navigateTo('home');
                     showToast('success', '✅ مرحباً بعودتك');
                     console.log('👤 المستخدم:', currentUser.email);
+                    console.log('👑 قائمة المشرفين:', ADMIN_EMAILS);
                 } else {
                     window.location.href = 'index.html';
                 }
