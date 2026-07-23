@@ -2016,7 +2016,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         tbody.innerHTML = html;
     }
 
-    // ===== FORM EVENTS =====
+    // ===== FORM EVENTS - تم الإصلاح =====
     addTeacherForm?.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = document.getElementById('teacherName').value.trim();
@@ -2045,6 +2045,8 @@ grant execute on function add_user_and_admin(text) to authenticated;
         updatePendingChanges();
         addTeacherForm.reset();
         showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+        // ✅ البقاء في لوحة التحكم
+        adminPanel.classList.add('active');
     });
 
     addSemesterForm?.addEventListener('submit', function(e) {
@@ -2070,6 +2072,8 @@ grant execute on function add_user_and_admin(text) to authenticated;
         updatePendingChanges();
         addSemesterForm.reset();
         showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+        // ✅ البقاء في لوحة التحكم
+        adminPanel.classList.add('active');
     });
 
     addLectureForm?.addEventListener('submit', function(e) {
@@ -2108,6 +2112,8 @@ grant execute on function add_user_and_admin(text) to authenticated;
         updatePendingChanges();
         addLectureForm.reset();
         showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+        // ✅ البقاء في لوحة التحكم
+        adminPanel.classList.add('active');
     });
 
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
