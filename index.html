@@ -1,670 +1,778 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>تسجيل الدخول / إنشاء حساب</title>
-
-    <!-- ===== Supabase SDK (مرة واحدة فقط) ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>ديف أكاديمي | تسجيل الدخول</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 3L1 9l11 6 11-6-11-6zm0 11.5L5.5 12 12 8.5 18.5 12 12 14.5zM5 13.5v4L12 22l7-4.5v-4L12 18l-7-4.5z'/%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: { 
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] }, 
+                    colors: { primary: '#2563eb', secondary: '#f97316' } 
+                }
+            }
+        }
+    </script>
     <style>
-        /* ========== RESET & BASE ========== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
         body {
+            font-family: 'Cairo', sans-serif;
             min-height: 100vh;
+            display: flex;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.3);
+            backdrop-filter: blur(2px);
+            z-index: 0;
+        }
+        .auth-card {
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 25px 60px -15px rgba(37, 99, 235, 0.2);
+            border: 1px solid rgba(255,255,255,0.6);
+            width: 100%;
+            max-width: 440px;
+            padding: 2.5rem 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .auth-card:hover {
+            box-shadow: 0 30px 70px -15px rgba(37, 99, 235, 0.3);
+            transform: translateY(-2px);
+        }
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-title .brand {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #2563eb;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            padding: 20px;
+            gap: 0.6rem;
         }
-
-        /* ========== CARD ========== */
-        .auth-card {
-            width: 100%;
-            max-width: 460px;
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 32px;
-            padding: 40px 32px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: 0.3s ease;
+        .auth-title .brand i {
+            font-size: 2.2rem;
         }
-
-        .auth-card h1 {
-            text-align: center;
-            font-size: 28px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-        }
-
-        .auth-card .subtitle {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 14px;
-            margin-bottom: 12px;
-        }
-
-        .auth-card .supabase-info {
-            text-align: center;
-            color: rgba(165, 180, 252, 0.9);
-            font-size: 13px;
-            margin-bottom: 24px;
-        }
-
-        /* ========== TABS ========== */
-        .tabs {
-            display: flex;
-            background: rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
-            padding: 4px;
-            margin-bottom: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px 0;
-            border: none;
-            background: transparent;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 16px;
+        .auth-title .mode-text {
+            font-size: 1.1rem;
             font-weight: 600;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: 0.3s ease;
-        }
-
-        .tab-btn.active {
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .tab-btn:hover:not(.active) {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        /* ========== FORMS ========== */
-        .form-container {
-            display: none;
-            animation: fadeUp 0.35s ease;
-        }
-
-        .form-container.active {
+            color: #64748b;
+            margin-top: 0.3rem;
             display: block;
         }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .input-group {
+            margin-bottom: 1.25rem;
         }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 6px;
-        }
-
-        .form-group input {
+        .input-field {
             width: 100%;
-            padding: 14px 18px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1.5px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            color: #fff;
-            font-size: 15px;
+            padding: 0.85rem 1.25rem;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            font-size: 1rem;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.2s ease;
             outline: none;
-            transition: 0.25s ease;
+            color: #1e293b;
         }
-
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+        .input-field:focus {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
-
-        .form-group input:focus {
-            border-color: rgba(139, 92, 246, 0.6);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+        .input-field::placeholder {
+            color: #94a3b8;
         }
-
-        .form-group input.error {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
-        }
-
-        /* ========== SUBMIT BTN ========== */
-        .submit-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 14px;
-            font-size: 17px;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            cursor: pointer;
-            transition: 0.3s ease;
-            margin-top: 6px;
+        .password-wrapper {
             position: relative;
-            overflow: hidden;
         }
-
-        .submit-btn:hover:not(:disabled) {
+        .toggle-pw {
+            position: absolute;
+            left: 1.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0.25rem;
+        }
+        .toggle-pw:hover {
+            color: #2563eb;
+        }
+        .btn-primary {
+            background: #2563eb;
+            border: none;
+            width: 100%;
+            padding: 0.9rem;
+            border-radius: 1rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .btn-primary:hover {
+            background: #1d4ed8;
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(139, 92, 246, 0.35);
+            box-shadow: 0 12px 28px -10px rgba(37, 99, 235, 0.4);
         }
-
-        .submit-btn:active:not(:disabled) {
+        .btn-primary:active {
             transform: scale(0.97);
         }
-
-        .submit-btn:disabled {
-            opacity: 0.6;
+        .btn-primary:disabled {
+            opacity: 0.7;
             cursor: not-allowed;
             transform: none;
         }
-
-        .submit-btn .spinner {
-            display: none;
-            width: 22px;
-            height: 22px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top: 3px solid #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto;
+        .action-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.75rem;
+            gap: 0.75rem;
+            flex-wrap: wrap;
         }
-
-        .submit-btn.loading .spinner {
+        .action-link {
+            background: transparent;
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2563eb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: 1.5px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .action-link:hover {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .action-link i {
+            font-size: 0.9rem;
+        }
+        #message {
+            margin-top: 1.25rem;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-align: center;
+            display: none;
+        }
+        #message.show {
             display: block;
         }
-        .submit-btn.loading .btn-text {
-            display: none;
+        .message-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .message-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .hidden {
+            display: none !important;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ========== MESSAGES ========== */
-        .message {
-            padding: 14px 18px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            margin-top: 16px;
-            display: none;
+        .phone-wrapper {
+            position: relative;
+            display: flex;
             align-items: center;
-            gap: 8px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 1rem;
+            transition: all 0.2s ease;
+        }
+        .phone-wrapper:focus-within {
+            border-color: #2563eb;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        .phone-prefix {
+            padding-right: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1rem;
+            background: transparent;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .phone-wrapper .input-field {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding-right: 0.25rem;
+            padding-left: 1.25rem;
+            border-radius: 1rem;
+            direction: ltr;
+            text-align: left;
+            font-family: 'Cairo', sans-serif;
+        }
+        .phone-wrapper .input-field:focus {
+            box-shadow: none !important;
+            border: none !important;
         }
 
-        .message.error {
-            display: flex;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #fca5a5;
-        }
-
-        .message.success {
-            display: flex;
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.25);
-            color: #86efac;
-        }
-
-        .message.info {
-            display: flex;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.25);
-            color: #93c5fd;
-        }
-
-        /* ========== FOOTER ========== */
-        .auth-footer {
-            text-align: center;
-            margin-top: 24px;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 13px;
-        }
-
-        .auth-footer a {
-            color: rgba(139, 92, 246, 0.8);
-            text-decoration: none;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .auth-footer a:hover {
-            color: #8b5cf6;
-            text-decoration: underline;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 500px) {
+        @media (max-width: 480px) {
             .auth-card {
-                padding: 28px 18px;
-                border-radius: 24px;
+                padding: 1.75rem 1.25rem;
             }
-            .auth-card h1 {
-                font-size: 24px;
+            .auth-title .brand {
+                font-size: 1.8rem;
             }
-            .tab-btn {
-                font-size: 14px;
-                padding: 10px 0;
-            }
-            .form-group input {
-                padding: 12px 14px;
-                font-size: 14px;
-            }
-            .submit-btn {
-                padding: 14px;
-                font-size: 15px;
+            .action-link {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.6rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- ============================================================ -->
-    <!--                     CARD تسجيل الدخول / إنشاء حساب             -->
-    <!-- ============================================================ -->
-    <div class="auth-card" id="authCard">
-
-        <h1>مرحباً بك</h1>
-        <p class="subtitle">سجل الدخول أو أنشئ حساباً جديداً</p>
-        <p class="supabase-info" id="supabaseInfo">جارِ الاتصال بالخدمة...</p>
-
-        <!-- ===== TABS ===== -->
-        <div class="tabs" role="tablist">
-            <button class="tab-btn active" data-tab="login" role="tab">تسجيل الدخول</button>
-            <button class="tab-btn" data-tab="signup" role="tab">إنشاء حساب</button>
+<div class="auth-card">
+    <div class="auth-title">
+        <div class="brand">
+            <i class="fas fa-graduation-cap"></i>
+            <span>ديف أكاديمي</span>
         </div>
+        <span class="mode-text" id="modeText">تسجيل الدخول</span>
+    </div>
 
-        <!-- ===== FORM: تسجيل الدخول ===== -->
-        <div class="form-container active" id="loginForm" role="tabpanel">
-            <form id="loginFormElement" novalidate>
-                <div class="form-group">
-                    <label for="loginEmail">البريد الإلكتروني</label>
-                    <input type="email" id="loginEmail" placeholder="example@email.com" required autocomplete="email" />
-                </div>
-                <div class="form-group">
-                    <label for="loginPassword">كلمة المرور</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
-                </div>
-                <button type="submit" class="submit-btn" id="loginBtn">
-                    <span class="btn-text">تسجيل الدخول</span>
-                    <span class="spinner"></span>
-                </button>
-            </form>
-            <div class="message" id="loginMessage"></div>
-        </div>
+    <!-- حقل الاسم الثلاثي (يظهر فقط في التسجيل) -->
+    <div class="input-group extra-field hidden" id="fullNameGroup">
+        <input type="text" id="fullName" class="input-field" placeholder="الاسم الثلاثي (بالعربية)">
+        <div class="text-xs text-gray-500 mt-1 pr-2">مثال: أحمد محمد علي</div>
+    </div>
 
-        <!-- ===== FORM: إنشاء حساب ===== -->
-        <div class="form-container" id="signupForm" role="tabpanel">
-            <form id="signupFormElement" novalidate>
-                <div class="form-group">
-                    <label for="signupName">الاسم الكامل</label>
-                    <input type="text" id="signupName" placeholder="أحمد محمد" required autocomplete="name" />
-                </div>
-                <div class="form-group">
-                    <label for="signupEmail">البريد الإلكتروني</label>
-                    <input type="email" id="signupEmail" placeholder="example@email.com" required autocomplete="email" />
-                </div>
-                <div class="form-group">
-                    <label for="signupPassword">كلمة المرور</label>
-                    <input type="password" id="signupPassword" placeholder="•••••••• (٦ أحرف على الأقل)" required autocomplete="new-password" minlength="6" />
-                </div>
-                <button type="submit" class="submit-btn" id="signupBtn">
-                    <span class="btn-text">إنشاء حساب</span>
-                    <span class="spinner"></span>
-                </button>
-            </form>
-            <div class="message" id="signupMessage"></div>
-        </div>
+    <!-- البريد الإلكتروني -->
+    <div class="input-group">
+        <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" autocomplete="email">
+    </div>
 
-        <div class="auth-footer">
-            <span id="footerText">لديك حساب بالفعل؟ <a href="#" id="switchToLogin">سجل الدخول</a></span>
+    <!-- كلمة المرور -->
+    <div class="input-group" id="passwordGroup">
+        <div class="password-wrapper">
+            <input type="password" id="password" class="input-field" placeholder="كلمة المرور" autocomplete="current-password">
+            <button type="button" class="toggle-pw" id="togglePasswordBtn">
+                <i class="far fa-eye-slash"></i>
+            </button>
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!--                     JAVASCRIPT                                 -->
-    <!-- ============================================================ -->
-    <script>
-        /* ===================================================================
-               ⚠️  استبدل القيمتين أدناه بـ بيانات مشروعك من الخدمة
-               =================================================================== */
+    <!-- حقل رقم الهاتف (يظهر فقط في التسجيل) -->
+    <div class="input-group extra-field hidden" id="phoneGroup">
+        <div class="phone-wrapper">
+            <span class="phone-prefix">+964</span>
+            <input type="tel" id="phone" class="input-field" placeholder="7xx xxx xxxx" dir="ltr" maxlength="10" inputmode="numeric">
+        </div>
+        <div class="text-xs text-gray-500 mt-1 pr-2">أدخل 10 أرقام بعد +964</div>
+    </div>
+
+    <button id="actionBtn" class="btn-primary">
+        <i class="fas fa-arrow-left"></i> دخول
+    </button>
+
+    <div id="message"></div>
+
+    <div class="action-links">
+        <a id="toggleModeLink" class="action-link">
+            <i class="fas fa-user-plus"></i> حساب جديد
+        </a>
+        <a id="forgotLink" class="action-link">
+            <i class="fas fa-key"></i> نسيت كلمة المرور
+        </a>
+    </div>
+</div>
+
+<script>
+    (function() {
+        console.log("✅ بدء تشغيل الصفحة (ديف أكاديمي)");
+
+        // ========== حماية ضد F12 ==========
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                (e.ctrlKey && e.key === 'U')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // ========== تهيئة Supabase ==========
         const SUPABASE_URL = 'https://mgcljgrkxhyjjmxqjkti.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
+        const SUPABASE_KEY = 'sb_publishable_TE4fMQARKZb0XcjhAnEJhA_ws6AUxoi';
 
-        /* ===================================================================
-               🔒  تهيئة Supabase – مرة واحدة فقط
-               =================================================================== */
-        let supabaseClient = null;
-        if (window.supabase) {
-            if (!window._supabaseClient) {
-                window._supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-            supabaseClient = window._supabaseClient;
+        if (typeof supabase === 'undefined') {
+            console.error("❌ Supabase غير محمل");
+            const msg = document.getElementById('message');
+            msg.textContent = 'خطأ في تحميل المكتبة';
+            msg.className = 'show message-error';
+            return;
         }
-        const supabaseInfo = document.getElementById('supabaseInfo');
-        if (supabaseInfo) {
-            if (supabaseClient) {
-                supabaseInfo.textContent = '✅ الخدمة جاهزة';
+
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log("✅ تم إنشاء عميل Supabase");
+
+        // ========== عناصر DOM ==========
+        const modeText = document.getElementById('modeText');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const passwordGroup = document.getElementById('passwordGroup');
+        const fullNameInput = document.getElementById('fullName');
+        const phoneInput = document.getElementById('phone');
+        const fullNameGroup = document.getElementById('fullNameGroup');
+        const phoneGroup = document.getElementById('phoneGroup');
+        const actionBtn = document.getElementById('actionBtn');
+        const toggleModeLink = document.getElementById('toggleModeLink');
+        const forgotLink = document.getElementById('forgotLink');
+        const messageDiv = document.getElementById('message');
+        const togglePwBtn = document.getElementById('togglePasswordBtn');
+
+        let currentMode = 'login';
+
+        // ========== دالة عرض الرسائل ==========
+        function showMessage(msg, isSuccess = false) {
+            console.log("📢 رسالة:", msg);
+            messageDiv.textContent = msg;
+            messageDiv.className = 'show';
+            messageDiv.classList.add(isSuccess ? 'message-success' : 'message-error');
+        }
+
+        function clearMessage() {
+            messageDiv.textContent = '';
+            messageDiv.className = '';
+        }
+
+        // ========== تحديث واجهة المستخدم ==========
+        function updateUIMode() {
+            if (currentMode === 'signup') {
+                fullNameGroup.classList.remove('hidden');
+                phoneGroup.classList.remove('hidden');
             } else {
-                supabaseInfo.textContent = '⚠️ لم يتم تحميل الخدمة';
-            }
-        }
-
-        /* ===================================================================
-               📦  عناصر DOM
-               =================================================================== */
-        const tabs = document.querySelectorAll('.tab-btn');
-        const loginContainer = document.getElementById('loginForm');
-        const signupContainer = document.getElementById('signupForm');
-        const loginForm = document.getElementById('loginFormElement');
-        const signupForm = document.getElementById('signupFormElement');
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const loginMsg = document.getElementById('loginMessage');
-        const signupMsg = document.getElementById('signupMessage');
-        const switchToLoginLink = document.getElementById('switchToLogin');
-        const footerText = document.getElementById('footerText');
-
-        /* ===================================================================
-               🔄  تبديل التبويبات
-               =================================================================== */
-        function switchTab(tabId) {
-            tabs.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
-
-            loginContainer.classList.toggle('active', tabId === 'login');
-            signupContainer.classList.toggle('active', tabId === 'signup');
-
-            loginMsg.className = 'message';
-            loginMsg.textContent = '';
-            signupMsg.className = 'message';
-            signupMsg.textContent = '';
-
-            if (tabId === 'login') {
-                footerText.innerHTML =
-                    'ليس لديك حساب؟ <a href="#" id="switchToSignup">أنشئ حساباً</a>';
-                document.getElementById('switchToSignup')?.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    switchTab('signup');
-                });
-            } else {
-                footerText.innerHTML =
-                    'لديك حساب بالفعل؟ <a href="#" id="switchToLogin">سجل الدخول</a>';
-                document.getElementById('switchToLogin')?.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    switchTab('login');
-                });
-            }
-        }
-
-        tabs.forEach(btn => {
-            btn.addEventListener('click', () => {
-                switchTab(btn.dataset.tab);
-            });
-        });
-
-        switchToLoginLink?.addEventListener('click', (e) => {
-            e.preventDefault();
-            switchTab('login');
-        });
-
-        /* ===================================================================
-               💬  عرض الرسائل
-               =================================================================== */
-        function showMessage(element, message, type = 'error') {
-            element.className = `message ${type}`;
-            element.textContent = message;
-        }
-
-        function clearMessage(element) {
-            element.className = 'message';
-            element.textContent = '';
-        }
-
-        /* ===================================================================
-               ⏳  حالة الزر (تحميل / عادي)
-               =================================================================== */
-        function setLoading(btn, loading) {
-            if (loading) {
-                btn.classList.add('loading');
-                btn.disabled = true;
-            } else {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
-        }
-
-        /* ===================================================================
-               ✅  التحقق من صحة البريد الإلكتروني
-               =================================================================== */
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        /* ===================================================================
-               🔐  تسجيل الدخول
-               =================================================================== */
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearMessage(loginMsg);
-
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            if (!email || !password) {
-                showMessage(loginMsg, 'يرجى ملء جميع الحقول.', 'error');
-                return;
-            }
-            if (!isValidEmail(email)) {
-                showMessage(loginMsg, 'البريد الإلكتروني غير صحيح.', 'error');
-                return;
-            }
-            if (password.length < 6) {
-                showMessage(loginMsg, 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.', 'error');
-                return;
+                fullNameGroup.classList.add('hidden');
+                phoneGroup.classList.add('hidden');
             }
 
-            setLoading(loginBtn, true);
+            if (currentMode === 'login') {
+                modeText.textContent = 'تسجيل الدخول';
+                actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
+                toggleModeLink.innerHTML = '<i class="fas fa-user-plus"></i> حساب جديد';
+                forgotLink.classList.remove('hidden');
+                passwordGroup.classList.remove('hidden');
+            } else if (currentMode === 'signup') {
+                modeText.textContent = 'إنشاء حساب';
+                actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
+                toggleModeLink.innerHTML = '<i class="fas fa-sign-in-alt"></i> لدي حساب بالفعل';
+                forgotLink.classList.add('hidden');
+                passwordGroup.classList.remove('hidden');
+            } else if (currentMode === 'forgot') {
+                modeText.textContent = 'استعادة كلمة المرور';
+                actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
+                toggleModeLink.innerHTML = '<i class="fas fa-arrow-right"></i> العودة للدخول';
+                forgotLink.classList.add('hidden');
+                passwordGroup.classList.add('hidden');
+            }
+            clearMessage();
+        }
 
-            try {
-                if (!supabaseClient) {
-                    showMessage(loginMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
-                    setLoading(loginBtn, false);
-                    return;
-                }
-
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-
-                if (error) throw error;
-
-                if (data?.user) {
-                    localStorage.setItem('devAcademicUser', JSON.stringify({
-                        email,
-                        name: data.user.user_metadata?.full_name || null
-                    }));
-                    showMessage(loginMsg, '✅ تم تسجيل الدخول بنجاح، جارِ استعادة اشتراكاتك...', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1000);
+        // ========== إظهار/إخفاء كلمة المرور ==========
+        if (togglePwBtn && passwordInput) {
+            togglePwBtn.addEventListener('click', () => {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                const icon = togglePwBtn.querySelector('i');
+                if (type === 'text') {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
                 } else {
-                    showMessage(loginMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
                 }
+            });
+        }
+
+        // ============================================================
+        // الحل الجذري: حفظ المستخدم في جدول users مع full_name
+        // ============================================================
+        async function saveUserToUsersTable(userId, email, fullName, phone) {
+            try {
+                console.log("📝 حفظ المستخدم في جدول users:", userId);
+                console.log("📝 الاسم:", fullName);
+                console.log("📝 البريد:", email);
+                console.log("📝 الهاتف:", phone);
+
+                // محاولة إدراج أو تحديث المستخدم
+                const { data, error } = await sb
+                    .from('users')
+                    .upsert({
+                        id: userId,
+                        email: email,
+                        full_name: fullName,
+                        phone: phone,
+                        registered_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'id'
+                    });
+
+                if (error) {
+                    console.error("❌ خطأ في upsert:", error);
+                    throw error;
+                }
+
+                console.log("✅ تم حفظ المستخدم بنجاح");
+
+                // تخزين في localStorage
+                localStorage.setItem('user_full_name', fullName);
+                localStorage.setItem('user_email', email);
+                localStorage.setItem('user_phone', phone);
+                localStorage.setItem('user_id', userId);
+
+                return true;
             } catch (err) {
-                console.error('Login error:', err);
-                if (err.message.includes('Invalid login credentials')) {
-                    showMessage(loginMsg, '❌ البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'error');
-                } else if (err.message.includes('Email not confirmed')) {
-                    showMessage(loginMsg, '⚠️ يرجى تأكيد بريدك الإلكتروني أولاً.', 'info');
-                } else {
-                    showMessage(loginMsg, `❌ ${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
-                }
-            } finally {
-                setLoading(loginBtn, false);
+                console.error("❌ خطأ في saveUserToUsersTable:", err);
+                throw err;
             }
-        });
+        }
 
-        /* ===================================================================
-               📝  إنشاء حساب
-               =================================================================== */
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearMessage(signupMsg);
-
-            const name = document.getElementById('signupName').value.trim();
-            const email = document.getElementById('signupEmail').value.trim();
-            const password = document.getElementById('signupPassword').value;
-
-            if (!name || !email || !password) {
-                showMessage(signupMsg, 'يرجى ملء جميع الحقول.', 'error');
-                return;
-            }
-            if (name.length < 2) {
-                showMessage(signupMsg, 'الاسم يجب أن يكون حرفين على الأقل.', 'error');
-                return;
-            }
-            if (!isValidEmail(email)) {
-                showMessage(signupMsg, 'البريد الإلكتروني غير صحيح.', 'error');
-                return;
-            }
-            if (password.length < 6) {
-                showMessage(signupMsg, 'كلمة المرور يجب أن تكون ٦ أحرف على الأقل.', 'error');
-                return;
-            }
-
-            setLoading(signupBtn, true);
-
+        // ============================================================
+        // جلب بيانات المستخدم من جدول users
+        // ============================================================
+        async function fetchUserFromUsersTable(userId, email) {
             try {
-                if (!supabaseClient) {
-                    showMessage(signupMsg, '⚠️ الخدمة غير متوفرة. تأكد من اتصال الإنترنت.', 'error');
-                    setLoading(signupBtn, false);
-                    return;
+                console.log("🔍 جلب بيانات المستخدم من users:", userId);
+
+                const { data, error } = await sb
+                    .from('users')
+                    .select('full_name, phone')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error("❌ خطأ في جلب المستخدم:", error);
+                    // حفظ البريد كاسم مؤقت
+                    localStorage.setItem('user_full_name', email);
+                    localStorage.setItem('user_email', email);
+                    return email;
                 }
 
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: name,
-                        },
-                    },
-                });
+                console.log("📊 البيانات المسترجعة:", data);
 
-                if (error) throw error;
+                if (data && data.full_name) {
+                    console.log("✅ تم جلب الاسم:", data.full_name);
+                    localStorage.setItem('user_full_name', data.full_name);
+                    localStorage.setItem('user_email', email);
+                    if (data.phone) localStorage.setItem('user_phone', data.phone);
+                    return data.full_name;
+                } else {
+                    // إذا لم يوجد full_name، نحاول تحديثه
+                    console.log("⚠️ لا يوجد full_name، محاولة التحديث...");
+                    
+                    // محاولة جلب الاسم من metadata
+                    const { data: authData } = await sb.auth.getUser();
+                    const metaName = authData?.user?.user_metadata?.full_name || email;
+                    
+                    // تحديث جدول users
+                    const { error: updateError } = await sb
+                        .from('users')
+                        .update({ full_name: metaName })
+                        .eq('id', userId);
 
-                if (data?.user) {
-                    if (data.user.confirmed_at === null) {
-                        localStorage.setItem('devAcademicUser', JSON.stringify({
-                            email,
-                            name
-                        }));
-                        showMessage(
-                            signupMsg,
-                            '📧 تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني عبر الرابط الذي أرسلناه لك.',
-                            'info'
-                        );
-                    } else {
-                        localStorage.setItem('devAcademicUser', JSON.stringify({
-                            email,
-                            name
-                        }));
-                        showMessage(
-                            signupMsg,
-                            '✅ تم إنشاء الحساب بنجاح! جارِ التوجيه إلى لوحة التحكم...',
-                            'success'
-                        );
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html';
-                        }, 1000);
+                    if (!updateError) {
+                        localStorage.setItem('user_full_name', metaName);
+                        localStorage.setItem('user_email', email);
+                        return metaName;
                     }
-                } else {
-                    showMessage(signupMsg, 'حدث خطأ غير متوقع. حاول مجدداً.', 'error');
+
+                    localStorage.setItem('user_full_name', email);
+                    localStorage.setItem('user_email', email);
+                    return email;
                 }
             } catch (err) {
-                console.error('Signup error:', err);
-                if (err.message.includes('User already registered')) {
-                    showMessage(signupMsg, '⚠️ هذا البريد الإلكتروني مسجل بالفعل.', 'error');
-                } else {
-                    showMessage(signupMsg, `❌ ${err.message || 'حدث خطأ، حاول مجدداً.'}`, 'error');
-                }
-            } finally {
-                setLoading(signupBtn, false);
+                console.error("❌ خطأ في fetchUserFromUsersTable:", err);
+                localStorage.setItem('user_full_name', email);
+                localStorage.setItem('user_email', email);
+                return email;
             }
-        });
+        }
 
-        /* ===================================================================
-               ⚡  التحقق من جلسة المستخدم عند تحميل الصفحة
-               =================================================================== */
-        (async function checkSession() {
+        // ============================================================
+        // معالج النموذج الرئيسي
+        // ============================================================
+        window.handleAuth = async function() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const fullName = fullNameInput.value.trim();
+            const phoneRaw = phoneInput.value.trim();
+
+            // التحقق الأساسي
+            if (!email) {
+                showMessage('الرجاء إدخال البريد الإلكتروني', false);
+                return;
+            }
+
+            if (currentMode !== 'forgot' && !password) {
+                showMessage('الرجاء إدخال كلمة المرور', false);
+                return;
+            }
+
+            // التحقق من التسجيل
+            if (currentMode === 'signup') {
+                const nameParts = fullName.trim().split(/\s+/);
+                
+                if (!fullName) {
+                    showMessage('الرجاء إدخال الاسم الثلاثي', false);
+                    return;
+                }
+                
+                if (!/^[\u0600-\u06FF\s]+$/.test(fullName)) {
+                    showMessage('الاسم يجب أن يكون بالعربية فقط', false);
+                    return;
+                }
+                
+                if (nameParts.length < 3) {
+                    showMessage('الرجاء إدخال الاسم الثلاثي كاملاً (ثلاث كلمات)', false);
+                    return;
+                }
+
+                if (!phoneRaw) {
+                    showMessage('الرجاء إدخال رقم الهاتف', false);
+                    return;
+                }
+                
+                if (!/^\d{10}$/.test(phoneRaw)) {
+                    showMessage('رقم الهاتف يجب أن يتكون من 10 أرقام', false);
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showMessage('كلمة المرور يجب أن تكون 6 أحرف على الأقل', false);
+                    return;
+                }
+            }
+
+            actionBtn.disabled = true;
+            actionBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> جاري ...';
+
             try {
-                const storedUser = localStorage.getItem('devAcademicUser');
-
-                if (!supabaseClient && storedUser) {
-                    try {
-                        const user = JSON.parse(storedUser);
-                        if (user && user.email) {
-                            window.location.href = 'dashboard.html';
-                            return;
+                if (currentMode === 'signup') {
+                    console.log("📝 إنشاء حساب جديد...");
+                    console.log("📝 الاسم:", fullName);
+                    console.log("📝 البريد:", email);
+                    
+                    // إنشاء الحساب في Auth مع حفظ الاسم في metadata
+                    const { data, error } = await sb.auth.signUp({ 
+                        email, 
+                        password,
+                        options: {
+                            data: {
+                                full_name: fullName
+                            }
                         }
-                    } catch (e) {
-                        localStorage.removeItem('devAcademicUser');
-                    }
-                    return;
+                    });
+                    
+                    if (error) throw error;
+
+                    console.log("✅ تم إنشاء الحساب في Auth:", data.user.id);
+
+                    const fullPhone = '+964' + phoneRaw;
+                    
+                    // حفظ في جدول users
+                    await saveUserToUsersTable(data.user.id, email, fullName, fullPhone);
+
+                    showMessage('✅ تم إنشاء الحساب بنجاح!', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1500);
+
+                } else if (currentMode === 'login') {
+                    console.log("🔐 تسجيل الدخول...");
+                    
+                    const { data, error } = await sb.auth.signInWithPassword({ 
+                        email, 
+                        password 
+                    });
+                    
+                    if (error) throw error;
+
+                    console.log("✅ تم تسجيل الدخول:", data.user.id);
+                    
+                    // جلب الاسم من جدول users
+                    await fetchUserFromUsersTable(data.user.id, email);
+
+                    // التحقق من وجود الاسم في localStorage
+                    const storedName = localStorage.getItem('user_full_name');
+                    console.log("📝 الاسم المخزن:", storedName);
+
+                    showMessage('✅ مرحباً بك!', true);
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1000);
+
+                } else if (currentMode === 'forgot') {
+                    console.log("📧 استعادة كلمة المرور...");
+                    
+                    const { error } = await sb.auth.resetPasswordForEmail(email, {
+                        redirectTo: window.location.origin + '/dashboard.html'
+                    });
+                    
+                    if (error) throw error;
+
+                    showMessage('📬 تم إرسال رابط الاستعادة إلى بريدك.', true);
+                    setTimeout(() => {
+                        currentMode = 'login';
+                        updateUIMode();
+                        emailInput.value = '';
+                    }, 2500);
                 }
-
-                if (!supabaseClient) return;
-
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session?.user) {
-                    window.location.href = 'dashboard.html';
+            } catch (err) {
+                console.error("❌ خطأ:", err);
+                let errorMsg = err.message;
+                
+                if (errorMsg.includes('Invalid login credentials')) {
+                    errorMsg = '❌ البريد أو كلمة المرور غير صحيحة';
+                } else if (errorMsg.includes('User already registered')) {
+                    errorMsg = '⚠️ هذا البريد مسجل مسبقاً';
+                } else if (errorMsg.includes('Password should be at least 6 characters')) {
+                    errorMsg = 'كلمة المرور 6 أحرف فأكثر';
+                } else if (errorMsg.includes('Database error') || errorMsg.includes('relation')) {
+                    errorMsg = '⚠️ خطأ في قاعدة البيانات، تأكد من وجود جدول users';
+                } else if (errorMsg.includes('Network')) {
+                    errorMsg = '⚠️ مشكلة في الاتصال، تأكد من الإنترنت';
+                }
+                
+                showMessage(errorMsg, false);
+            } finally {
+                actionBtn.disabled = false;
+                if (currentMode === 'login') {
+                    actionBtn.innerHTML = '<i class="fas fa-arrow-left"></i> دخول';
+                } else if (currentMode === 'signup') {
+                    actionBtn.innerHTML = '<i class="fas fa-user-check"></i> تسجيل';
                 } else {
-                    localStorage.removeItem('devAcademicUser');
+                    actionBtn.innerHTML = '<i class="fas fa-envelope"></i> إرسال رابط الاستعادة';
                 }
-            } catch (_) {
-                localStorage.removeItem('devAcademicUser');
             }
-        })();
+        };
 
-        switchTab('login');
+        // ========== التحقق من الجلسة ==========
+        async function checkSessionAndRedirect() {
+            console.log("🔍 التحقق من الجلسة...");
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                
+                if (session) {
+                    console.log("✅ جلسة موجودة للمستخدم:", session.user.email);
+                    await fetchUserFromUsersTable(session.user.id, session.user.email);
+                    
+                    const name = localStorage.getItem('user_full_name');
+                    console.log("📝 الاسم المسترجع:", name);
+                    
+                    window.location.href = "dashboard.html";
+                } else {
+                    console.log("❌ لا توجد جلسة");
+                }
+            } catch (err) {
+                console.error("❌ خطأ في التحقق من الجلسة:", err);
+            }
+        }
 
-        console.log('✅ Auth page ready – Supabase initialized once.');
-    </script>
+        // ========== مراقبة تغييرات المصادقة ==========
+        sb.auth.onAuthStateChange((event, session) => {
+            console.log("🔄 تغيير في حالة المصادقة:", event);
+            if (event === 'SIGNED_IN' && session) {
+                console.log("✅ تم تسجيل الدخول");
+                fetchUserFromUsersTable(session.user.id, session.user.email);
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 500);
+            }
+        });
+
+        // ========== ربط الأحداث ==========
+        toggleModeLink.onclick = (e) => {
+            e.preventDefault();
+            if (currentMode === 'forgot') {
+                currentMode = 'login';
+            } else if (currentMode === 'login') {
+                currentMode = 'signup';
+            } else if (currentMode === 'signup') {
+                currentMode = 'login';
+            }
+            updateUIMode();
+        };
+
+        forgotLink.onclick = (e) => {
+            e.preventDefault();
+            currentMode = 'forgot';
+            updateUIMode();
+        };
+
+        actionBtn.onclick = window.handleAuth;
+
+        // مفتاح Enter
+        emailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        fullNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+        phoneInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') window.handleAuth();
+        });
+
+        // منع إدخال غير أرقام في الهاتف
+        phoneInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+
+        // ========== بدء التشغيل ==========
+        updateUIMode();
+        checkSessionAndRedirect();
+        console.log("✅ تم تهيئة الصفحة بالكامل");
+    })();
+</script>
 
 </body>
 </html>
