@@ -1,6 +1,30 @@
 (function() {
     'use strict';
 
+    // ===== منع التوجيه المتكرر =====
+    let isRedirecting = false;
+
+    // ===== حماية العناصر المفقودة =====
+    function safeGetElement(id) {
+        const el = document.getElementById(id);
+        if (!el) console.warn(`⚠️ عنصر مفقود: #${id}`);
+        return el;
+    }
+
+    function safeSetDisplay(id, value) {
+        const el = document.getElementById(id);
+        if (el) { el.style.display = value; return true; }
+        console.warn(`⚠️ فشل تعيين display للعنصر: #${id}`);
+        return false;
+    }
+
+    function safeSetStyle(id, property, value) {
+        const el = document.getElementById(id);
+        if (el) { el.style[property] = value; return true; }
+        console.warn(`⚠️ فشل تعيين style للعنصر: #${id}`);
+        return false;
+    }
+
     // ===== حماية F12 وأدوات المطور =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12' ||
@@ -58,87 +82,125 @@
         { id: 'sixth-literary', name: 'سادس أدبي', teachers: [] }
     ];
 
-    // ===== DOM Elements =====
-    const loadingScreen = document.getElementById('loadingScreen');
-    const navbar = document.getElementById('navbar');
-    const bottomNav = document.getElementById('bottomNav');
-    const footer = document.getElementById('footer');
-    const teachersContainer = document.getElementById('teachersContainer');
-    const teachersGridContainer = document.getElementById('teachersGridContainer');
-    const teachersGridContainer2 = document.getElementById('teachersGridContainer2');
-    const sectionFilter = document.getElementById('sectionFilter');
-    const sectionFilter2 = document.getElementById('sectionFilter2');
-    const teachersCount = document.getElementById('teachersCount');
-    const teachersCount2 = document.getElementById('teachersCount2');
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const videoPlayer = document.getElementById('videoPlayer');
-    const closePlayer = document.getElementById('closePlayer');
-    const videoWrapper = document.getElementById('videoWrapper');
-    const themeToggle = document.getElementById('themeToggle');
-    const toastContainer = document.getElementById('toastContainer');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const userAvatar = document.getElementById('userAvatar');
+    // ===== نظام التواصل القديم (للتوافق) =====
+    let contactMessages = [];
+    let chatMessages = [];
+    let chatRecipient = '';
+    let chatRecipientImage = '';
+    let chatRecipientEmoji = '👤';
+    let chatTheme = 'light';
+    let chatAttachments = [];
+    let currentChatTeacher = null;
 
-    // ===== Admin Elements =====
-    const adminPanel = document.getElementById('adminPanel');
-    const adminClose = document.getElementById('adminClose');
+    let teacherAdmins = [];
+    let notifications = [];
+    let notificationsEnabled = true;
+
+    // ===== نظام التواصل المتطور (مثل TikTok) =====
+    let chatConversations = {};
+
+    // ===== DOM Elements مع حماية =====
+    const loadingScreen = safeGetElement('loadingScreen');
+    const navbar = safeGetElement('navbar');
+    const bottomNav = safeGetElement('bottomNav');
+    const footer = safeGetElement('footer');
+    const teachersContainer = safeGetElement('teachersContainer');
+    const teachersGridContainer = safeGetElement('teachersGridContainer');
+    const teachersGridContainer2 = safeGetElement('teachersGridContainer2');
+    const sectionFilter = safeGetElement('sectionFilter');
+    const sectionFilter2 = safeGetElement('sectionFilter2');
+    const teachersCount = safeGetElement('teachersCount');
+    const teachersCount2 = safeGetElement('teachersCount2');
+    const searchInput = safeGetElement('searchInput');
+    const searchBtn = safeGetElement('searchBtn');
+    const videoPlayer = safeGetElement('videoPlayer');
+    const closePlayer = safeGetElement('closePlayer');
+    const videoWrapper = safeGetElement('videoWrapper');
+    const themeToggle = safeGetElement('themeToggle');
+    const toastContainer = safeGetElement('toastContainer');
+    const userNameDisplay = safeGetElement('userNameDisplay');
+    const userAvatar = safeGetElement('userAvatar');
+
+    const adminPanel = safeGetElement('adminPanel');
+    const adminClose = safeGetElement('adminClose');
     const tabBtns = document.querySelectorAll('.tab-btn');
-    const publishBtn = document.getElementById('publishBtn');
-    const pendingChangesSpan = document.getElementById('pendingChanges');
-    const createTableBtn = document.getElementById('createTableBtn');
+    const publishBtn = safeGetElement('publishBtn');
+    const pendingChangesSpan = safeGetElement('pendingChanges');
+    const createTableBtn = safeGetElement('createTableBtn');
 
-    // ===== Forms =====
-    const addSectionForm = document.getElementById('addSectionForm');
-    const addTeacherForm = document.getElementById('addTeacherForm');
-    const addSemesterForm = document.getElementById('addSemesterForm');
-    const addLectureForm = document.getElementById('addLectureForm');
-    const editTeacherForm = document.getElementById('editTeacherForm');
+    const addSectionForm = safeGetElement('addSectionForm');
+    const addTeacherForm = safeGetElement('addTeacherForm');
+    const addSemesterForm = safeGetElement('addSemesterForm');
+    const addLectureForm = safeGetElement('addLectureForm');
+    const editTeacherForm = safeGetElement('editTeacherForm');
 
-    // ===== Modals =====
-    const teachersModal = document.getElementById('teachersModal');
-    const closeTeachersModal = document.getElementById('closeTeachersModal');
-    const teachersList = document.getElementById('teachersList');
-    const semestersModal = document.getElementById('semestersModal');
-    const closeSemestersModal = document.getElementById('closeSemestersModal');
-    const semestersList = document.getElementById('semestersList');
-    const modalTeacherTitle = document.getElementById('modalTeacherTitle');
-    const lecturesModal = document.getElementById('lecturesModal');
-    const closeLecturesModal = document.getElementById('closeLecturesModal');
-    const lecturesList = document.getElementById('lecturesList');
-    const modalSemesterTitle = document.getElementById('modalSemesterTitle');
+    const teachersModal = safeGetElement('teachersModal');
+    const closeTeachersModal = safeGetElement('closeTeachersModal');
+    const teachersList = safeGetElement('teachersList');
+    const semestersModal = safeGetElement('semestersModal');
+    const closeSemestersModal = safeGetElement('closeSemestersModal');
+    const semestersList = safeGetElement('semestersList');
+    const modalTeacherTitle = safeGetElement('modalTeacherTitle');
+    const lecturesModal = safeGetElement('lecturesModal');
+    const closeLecturesModal = safeGetElement('closeLecturesModal');
+    const lecturesList = safeGetElement('lecturesList');
+    const modalSemesterTitle = safeGetElement('modalSemesterTitle');
 
-    // ===== Bottom Navigation =====
     const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
 
-    // ===== Account Page =====
-    const accountName = document.getElementById('accountName');
-    const accountEmail = document.getElementById('accountEmail');
-    const accountAvatar = document.getElementById('accountAvatar');
-    const accountRegistered = document.getElementById('accountRegistered');
-    const accountCourses = document.getElementById('accountCourses');
-    const accountCodes = document.getElementById('accountCodes');
-    const logoutAccountBtn = document.getElementById('logoutAccountBtn');
-    const adminPanelBtn = document.getElementById('adminPanelBtn');
-    const coursesBadge = document.getElementById('coursesBadge');
+    const accountName = safeGetElement('accountName');
+    const accountEmail = safeGetElement('accountEmail');
+    const accountAvatar = safeGetElement('accountAvatar');
+    const accountRegistered = safeGetElement('accountRegistered');
+    const accountCourses = safeGetElement('accountCourses');
+    const accountCodes = safeGetElement('accountCodes');
+    const accountMessages = safeGetElement('accountMessages');
+    const logoutAccountBtn = safeGetElement('logoutAccountBtn');
+    const adminPanelBtn = safeGetElement('adminPanelBtn');
+    const coursesBadge = safeGetElement('coursesBadge');
+    const contactBadge = safeGetElement('contactBadge');
 
-    // ===== Edit Lecture =====
-    const editLectureModal = document.getElementById('editLectureModal');
-    const closeEditLecture = document.getElementById('closeEditLecture');
-    const cancelEditLecture = document.getElementById('cancelEditLecture');
-    const editLectureForm = document.getElementById('editLectureForm');
-    const editLectureTitle = document.getElementById('editLectureTitle');
-    const editLectureUrl = document.getElementById('editLectureUrl');
-    const editLectureIsFree = document.getElementById('editLectureIsFree');
-    const editLectureMessage = document.getElementById('editLectureMessage');
+    const editLectureModal = safeGetElement('editLectureModal');
+    const closeEditLecture = safeGetElement('closeEditLecture');
+    const cancelEditLecture = safeGetElement('cancelEditLecture');
+    const editLectureForm = safeGetElement('editLectureForm');
+    const editLectureTitle = safeGetElement('editLectureTitle');
+    const editLectureUrl = safeGetElement('editLectureUrl');
+    const editLectureIsFree = safeGetElement('editLectureIsFree');
+    const editLectureMessage = safeGetElement('editLectureMessage');
 
     let editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
-    // ===== قائمة المشرفين المحددة (للحل البديل) =====
     const ADMIN_EMAILS = ['sajadsarmd200@gmail.com', 'wisaamhs90@gmail.com', 'zzccvc99@gmail.com'];
 
     // ============================================================
-    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
+    // ===== دوال التحقق من الصور =====
+    // ============================================================
+
+    function isValidImageUrl(url) {
+        if (!url) return false;
+        if (typeof url !== 'string') return false;
+        if (url.startsWith('/storage/') || url.startsWith('file://') || url.startsWith('content://')) {
+            return false;
+        }
+        if (url.startsWith('data:image/')) {
+            return true;
+        }
+        if (url.startsWith('http://') || url.startsWith('https://')) {
+            return true;
+        }
+        return false;
+    }
+
+    function getSafeImageUrl(url) {
+        if (isValidImageUrl(url)) {
+            return url;
+        }
+        return null;
+    }
+
+    // ============================================================
+    // 🔥 دوال تشغيل الفيديو
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -182,18 +244,20 @@
             videoUrl = videoUrl.replace(/&?muted=true/g, '');
             videoUrl = videoUrl.replace(/&?muted=false/g, '');
 
-            videoWrapper.innerHTML = `
-                <iframe src="${videoUrl}" 
-                        loading="lazy" 
-                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
-                        allowfullscreen="true"
-                        webkitallowfullscreen="true"
-                        mozallowfullscreen="true">
-                </iframe>
-            `;
+            if (videoWrapper) {
+                videoWrapper.innerHTML = `
+                    <iframe src="${videoUrl}" 
+                            loading="lazy" 
+                            style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                            allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+                            allowfullscreen="true"
+                            webkitallowfullscreen="true"
+                            mozallowfullscreen="true">
+                    </iframe>
+                `;
+            }
 
-            videoPlayer.classList.add('active');
+            if (videoPlayer) videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
@@ -202,40 +266,46 @@
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
-            videoWrapper.innerHTML = `
-                <iframe src="${embedUrl}" 
-                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
-                        allowfullscreen>
-                </iframe>
-            `;
+            if (videoWrapper) {
+                videoWrapper.innerHTML = `
+                    <iframe src="${embedUrl}" 
+                            style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                            allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                            allowfullscreen>
+                    </iframe>
+                `;
+            }
 
-            videoPlayer.classList.add('active');
+            if (videoPlayer) videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
-            videoWrapper.innerHTML = `
-                <video controls autoplay 
-                       style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
-                       controlsList="nodownload"
-                       playsinline>
-                    <source src="${videoUrl}" type="video/mp4">
-                    متصفحك لا يدعم تشغيل الفيديو
-                </video>
-            `;
+            if (videoWrapper) {
+                videoWrapper.innerHTML = `
+                    <video controls autoplay 
+                           style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
+                           controlsList="nodownload"
+                           playsinline>
+                        <source src="${videoUrl}" type="video/mp4">
+                        متصفحك لا يدعم تشغيل الفيديو
+                    </video>
+                `;
+            }
 
             setTimeout(() => {
-                const video = videoWrapper.querySelector('video');
-                if (video) {
-                    video.volume = 1.0;
-                    video.muted = false;
+                if (videoWrapper) {
+                    const video = videoWrapper.querySelector('video');
+                    if (video) {
+                        video.volume = 1.0;
+                        video.muted = false;
+                    }
                 }
             }, 500);
 
-            videoPlayer.classList.add('active');
+            if (videoPlayer) videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
             showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
@@ -272,6 +342,10 @@
     // TOAST
     // ============================================================
     function showToast(type, message, duration = 4000) {
+        if (!toastContainer) {
+            console.warn('⚠️ Toast container غير موجود');
+            return;
+        }
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
@@ -302,31 +376,25 @@
         return hasAccess;
     }
 
-    // ===== ADMIN VERIFICATION - نسخة محسنة مع حل بديل =====
+    // ===== ADMIN VERIFICATION =====
     async function isUserAdmin(email) {
         if (!supabaseClient || !email) {
-            console.log('⚠️ Supabase أو البريد غير متاح، نتحقق من القائمة المحددة');
             return ADMIN_EMAILS.includes(email);
         }
-        
+
         try {
             const { data, error } = await supabaseClient
                 .from('admins')
                 .select('email')
                 .eq('email', email)
                 .maybeSingle();
-            
+
             if (error) {
-                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error.message);
                 return ADMIN_EMAILS.includes(email);
             }
-            
-            const isAdmin = !!data;
-            console.log('🔍 نتيجة التحقق من قاعدة البيانات:', email, '→', isAdmin);
-            return isAdmin;
-            
+
+            return !!data;
         } catch (e) {
-            console.warn('⚠️ خطأ في التحقق من المشرف:', e.message);
             return ADMIN_EMAILS.includes(email);
         }
     }
@@ -408,7 +476,6 @@
 
             const { error } = await supabaseClient.from('teacher_codes').upsert(record, { onConflict: 'code' });
             if (error) {
-                console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
                 return { success: false, error };
             }
 
@@ -424,10 +491,8 @@
                 console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
             }
 
-            console.log('✅ تم مزامنة الكود مع Supabase:', codeData.code);
             return { success: true };
         } catch (error) {
-            console.warn('⚠️ خطأ في مزامنة الكود:', error);
             return { success: false, error };
         }
     }
@@ -439,14 +504,12 @@
             const { data: codeRecord, error: codeError } = await supabaseClient
                 .from('codes').select('id').eq('code', code).single();
             if (codeError) {
-                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
                 return;
             }
 
             const { data: existing, error: checkError } = await supabaseClient
                 .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
             if (existing) {
-                console.log('✅ الكود موجود مسبقاً للمستخدم');
                 return;
             }
 
@@ -457,8 +520,6 @@
             });
             if (error) {
                 console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
-            } else {
-                console.log('✅ تم حفظ الكود في حساب المستخدم:', code);
             }
         } catch (error) {
             console.warn('⚠️ خطأ في حفظ الكود:', error);
@@ -522,7 +583,6 @@
             const { data: userCodes, error: codesError } = await supabaseClient
                 .from('user_codes').select('code_id').eq('user_id', currentUser.id);
             if (codesError) {
-                console.warn('⚠️ فشل جلب الأكواد:', codesError);
                 return;
             }
             if (!userCodes || userCodes.length === 0) return;
@@ -530,7 +590,6 @@
             const { data: codesData, error: codesDataError } = await supabaseClient
                 .from('codes').select('*').in('id', codeIds);
             if (codesDataError) {
-                console.warn('⚠️ فشل جلب تفاصيل الأكواد:', codesDataError);
                 return;
             }
 
@@ -563,7 +622,6 @@
                 renderAccount();
                 updateBadge();
                 console.log('✅ تم استعادة', restoredCount, 'كود من Supabase');
-                showToast('success', `✅ تم استعادة ${restoredCount} اشتراك محفوظ`);
             }
         } catch (error) {
             console.warn('⚠️ خطأ في تحميل الأكواد:', error);
@@ -579,11 +637,1972 @@
         return { total, used, available: total - used, locked };
     }
 
-    // ===== DATA FUNCTIONS =====
+    // ============================================================
+    // ===== نظام التواصل والرسائل (القديم) =====
+    // ============================================================
+
+    function loadContactMessages() {
+        try {
+            const saved = localStorage.getItem('contactMessages');
+            if (saved) {
+                contactMessages = JSON.parse(saved);
+            }
+        } catch (e) {
+            contactMessages = [];
+        }
+    }
+
+    function saveContactMessages() {
+        try {
+            localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
+        } catch (e) {
+            console.warn('فشل حفظ الرسائل');
+        }
+    }
+
+    function loadTeacherAdmins() {
+        try {
+            const saved = localStorage.getItem('teacherAdmins');
+            if (saved) {
+                teacherAdmins = JSON.parse(saved);
+            } else {
+                teacherAdmins = [];
+            }
+        } catch (e) {
+            teacherAdmins = [];
+        }
+    }
+
+    function saveTeacherAdmins() {
+        try {
+            localStorage.setItem('teacherAdmins', JSON.stringify(teacherAdmins));
+        } catch (e) {
+            console.warn('فشل حفظ مدرسين المسؤولين');
+        }
+    }
+
+    function loadNotifications() {
+        try {
+            const saved = localStorage.getItem('notifications');
+            if (saved) {
+                notifications = JSON.parse(saved);
+            } else {
+                notifications = [];
+            }
+        } catch (e) {
+            notifications = [];
+        }
+        const notifEnabled = localStorage.getItem('notificationsEnabled');
+        if (notifEnabled !== null) {
+            notificationsEnabled = notifEnabled === 'true';
+        }
+        updateNotificationToggleUI();
+    }
+
+    function saveNotifications() {
+        try {
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+        } catch (e) {
+            console.warn('فشل حفظ الإشعارات');
+        }
+    }
+
+    function saveNotificationSettings() {
+        try {
+            localStorage.setItem('notificationsEnabled', String(notificationsEnabled));
+        } catch (e) {
+            console.warn('فشل حفظ إعدادات الإشعارات');
+        }
+    }
+
+    function addNotification(title, description, type = 'info') {
+        if (!notificationsEnabled) {
+            return;
+        }
+        const notif = {
+            id: Date.now(),
+            title: title,
+            description: description,
+            type: type,
+            read: false,
+            createdAt: new Date().toISOString()
+        };
+        notifications.unshift(notif);
+        if (notifications.length > 50) {
+            notifications = notifications.slice(0, 50);
+        }
+        saveNotifications();
+        renderNotifications();
+        updateNotificationBadge();
+
+        if (type === 'message') {
+            showToast('info', '💬 ' + title + ': ' + description);
+        } else if (type === 'lecture') {
+            showToast('success', '📚 ' + title + ': ' + description);
+        } else {
+            showToast('info', '🔔 ' + title);
+        }
+    }
+
+    function renderNotifications() {
+        const container = safeGetElement('notifList');
+        if (!container) return;
+
+        if (notifications.length === 0) {
+            container.innerHTML = '<div class="notif-empty">لا توجد إشعارات</div>';
+            return;
+        }
+
+        let html = '';
+        notifications.forEach(notif => {
+            const time = new Date(notif.createdAt).toLocaleString('ar');
+            const isRead = notif.read ? '' : 'style="background:var(--bg-hover);"';
+            const icon = notif.type === 'message' ? '💬' : notif.type === 'lecture' ? '📚' : '🔔';
+            html += `
+                <div class="notif-item" ${isRead} onclick="markNotificationRead(${notif.id})">
+                    <div class="notif-title">${icon} ${notif.title}</div>
+                    <div class="notif-desc">${notif.description}</div>
+                    <div class="notif-time">${time}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.markNotificationRead = function(id) {
+        const notif = notifications.find(n => n.id === id);
+        if (notif) {
+            notif.read = true;
+            saveNotifications();
+            renderNotifications();
+            updateNotificationBadge();
+        }
+    };
+
+    function updateNotificationBadge() {
+        const unread = notifications.filter(n => !n.read).length;
+        const badge = safeGetElement('notifCount');
+        if (badge) {
+            if (unread > 0 && notificationsEnabled) {
+                badge.style.display = 'inline';
+                badge.textContent = unread;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    window.toggleNotificationSettings = function() {
+        notificationsEnabled = !notificationsEnabled;
+        saveNotificationSettings();
+        updateNotificationToggleUI();
+        if (notificationsEnabled) {
+            showToast('success', '🔔 تم تفعيل الإشعارات');
+            updateNotificationBadge();
+        } else {
+            showToast('warning', '🔕 تم تعطيل الإشعارات');
+            const badge = safeGetElement('notifCount');
+            if (badge) badge.style.display = 'none';
+        }
+    };
+
+    function updateNotificationToggleUI() {
+        const btn = safeGetElement('notifToggleBtn');
+        const text = safeGetElement('notifToggleText');
+        if (!btn || !text) return;
+        if (notificationsEnabled) {
+            btn.classList.add('active');
+            text.textContent = 'مفعلة';
+            btn.style.borderColor = '#22c55e';
+            btn.style.color = '#22c55e';
+        } else {
+            btn.classList.remove('active');
+            text.textContent = 'معطلة';
+            btn.style.borderColor = '#ef4444';
+            btn.style.color = '#ef4444';
+        }
+        updateNotificationBadge();
+    }
+
+    window.toggleNotifications = function() {
+        const dropdown = safeGetElement('notificationDropdown');
+        if (!dropdown) return;
+        dropdown.classList.toggle('active');
+
+        if (dropdown.classList.contains('active')) {
+            renderNotifications();
+            if (notificationsEnabled) {
+                notifications.forEach(n => n.read = true);
+                saveNotifications();
+                updateNotificationBadge();
+            }
+        }
+    };
+
+    // ============================================================
+    // ===== نظام التواصل المتطور (مثل TikTok) =====
+    // ============================================================
+
+    // تحميل المحادثات
+    function loadConversations() {
+        try {
+            const saved = localStorage.getItem('chatConversations');
+            if (saved) {
+                chatConversations = JSON.parse(saved);
+            } else {
+                chatConversations = {};
+            }
+        } catch (e) {
+            chatConversations = {};
+        }
+        // تنظيف الرسائل القديمة عند التحميل
+        cleanOldMessages();
+    }
+
+    // حفظ المحادثات
+    function saveConversations() {
+        try {
+            localStorage.setItem('chatConversations', JSON.stringify(chatConversations));
+        } catch (e) {
+            console.warn('فشل حفظ المحادثات');
+        }
+    }
+
+    // تنظيف الرسائل القديمة (أكثر من 3 أيام)
+    function cleanOldMessages() {
+        const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+        let cleaned = false;
+        
+        Object.keys(chatConversations).forEach(chatId => {
+            const conv = chatConversations[chatId];
+            if (conv.messages && conv.messages.length > 0) {
+                const filtered = conv.messages.filter(msg => {
+                    const msgTime = new Date(msg.timestamp).getTime();
+                    return msgTime > threeDaysAgo;
+                });
+                if (filtered.length !== conv.messages.length) {
+                    conv.messages = filtered;
+                    cleaned = true;
+                }
+            }
+        });
+        
+        if (cleaned) {
+            saveConversations();
+        }
+    }
+
+    // الحصول على اسم المستخدم الثلاثي
+    function getUserFullName(user) {
+        if (!user) return 'مستخدم';
+        if (user.user_metadata?.full_name) {
+            return user.user_metadata.full_name;
+        }
+        if (user.user_metadata?.name) {
+            return user.user_metadata.name;
+        }
+        if (user.email) {
+            return user.email.split('@')[0];
+        }
+        return 'مستخدم';
+    }
+
+    // الحصول على صورة المستخدم
+    function getUserImage(user) {
+        if (!user) return '';
+        if (user.user_metadata?.avatar_url) {
+            return user.user_metadata.avatar_url;
+        }
+        if (user.user_metadata?.picture) {
+            return user.user_metadata.picture;
+        }
+        return '';
+    }
+
+    // إرسال رسالة (النظام المتطور)
+    function sendMessage(recipientId, recipientName, recipientImage, message) {
+        if (!currentUser) {
+            showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
+            return;
+        }
+        
+        if (!message || message.trim() === '') {
+            showToast('warning', '⚠️ يرجى كتابة رسالة');
+            return;
+        }
+        
+        const userId = currentUser.id || currentUser.email;
+        const userName = getUserFullName(currentUser);
+        const userImage = getUserImage(currentUser);
+        
+        // إنشاء معرف المحادثة (ترتيب أبجدي لضمان نفس المعرف لكلا الطرفين)
+        const participants = [userId, recipientId].sort();
+        const chatId = participants.join('_');
+        
+        if (!chatConversations[chatId]) {
+            chatConversations[chatId] = {
+                participants: [userId, recipientId],
+                messages: [],
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        const msgData = {
+            id: Date.now() + Math.random().toString(36).substr(2, 4),
+            senderId: userId,
+            senderName: userName,
+            senderImage: userImage,
+            recipientId: recipientId,
+            recipientName: recipientName || 'مستخدم',
+            recipientImage: recipientImage || '',
+            message: message.trim(),
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+        
+        chatConversations[chatId].messages.push(msgData);
+        chatConversations[chatId].lastUpdated = new Date().toISOString();
+        
+        saveConversations();
+        
+        // إضافة إشعار
+        addNotification(
+            `💬 رسالة من ${userName}`,
+            message.trim().substring(0, 50) + (message.trim().length > 50 ? '...' : ''),
+            'message'
+        );
+        
+        // تحديث واجهة المستخدم
+        renderChatList();
+        renderPopupMessages(chatId);
+        updateChatBadge();
+        
+        showToast('success', '✅ تم إرسال الرسالة');
+        
+        // تنظيف الرسائل القديمة
+        cleanOldMessages();
+    }
+
+    // الحصول على محادثات المستخدم الحالي
+    function getUserConversations() {
+        if (!currentUser) return [];
+        const userId = currentUser.id || currentUser.email;
+        const conversations = [];
+        
+        Object.keys(chatConversations).forEach(chatId => {
+            const conv = chatConversations[chatId];
+            if (conv.participants && conv.participants.includes(userId)) {
+                const otherId = conv.participants.find(id => id !== userId);
+                
+                // البحث عن معلومات الطرف الآخر من الرسائل
+                let otherName = 'مستخدم';
+                let otherImage = '';
+                let otherEmail = '';
+                
+                // البحث في الرسائل للحصول على اسم الطرف الآخر
+                const messages = conv.messages || [];
+                if (messages.length > 0) {
+                    // البحث عن آخر رسالة من الطرف الآخر
+                    const lastOtherMsg = messages.filter(m => m.senderId === otherId).pop();
+                    if (lastOtherMsg) {
+                        otherName = lastOtherMsg.senderName || 'مستخدم';
+                        otherImage = lastOtherMsg.senderImage || '';
+                        otherEmail = lastOtherMsg.senderId || '';
+                    } else {
+                        // إذا لم توجد رسائل من الطرف الآخر، استخدم معلومات من الرسائل المرسلة
+                        const lastSentMsg = messages.filter(m => m.senderId === userId).pop();
+                        if (lastSentMsg) {
+                            otherName = lastSentMsg.recipientName || 'مستخدم';
+                            otherImage = lastSentMsg.recipientImage || '';
+                            otherEmail = lastSentMsg.recipientId || '';
+                        }
+                    }
+                }
+                
+                // حساب عدد الرسائل غير المقروءة
+                const unreadCount = messages.filter(m => 
+                    m.recipientId === userId && !m.read
+                ).length;
+                
+                const lastMsg = messages[messages.length - 1];
+                
+                conversations.push({
+                    chatId: chatId,
+                    otherId: otherId,
+                    otherName: otherName,
+                    otherEmail: otherEmail,
+                    otherImage: otherImage,
+                    lastMessage: lastMsg?.message || 'لا توجد رسائل',
+                    lastTime: lastMsg?.timestamp || conv.lastUpdated || new Date().toISOString(),
+                    unreadCount: unreadCount,
+                    messages: messages
+                });
+            }
+        });
+        
+        // ترتيب حسب آخر تحديث (الأحدث أولاً)
+        conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+        
+        return conversations;
+    }
+
+    // عرض قائمة المحادثات
+    function renderChatList() {
+        const container = safeGetElement('contactChatsList');
+        if (!container) return;
+        
+        const conversations = getUserConversations();
+        
+        if (conversations.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;padding:2rem 1rem;color:var(--text-light);">
+                    <i class="fas fa-comments" style="font-size:2.5rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+                    <p style="font-size:1rem;font-weight:600;">لا توجد محادثات</p>
+                    <p style="font-size:0.75rem;">تواصل مع مدرس لبدء المحادثة</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="contact-chats-list">';
+        conversations.forEach(conv => {
+            const time = new Date(conv.lastTime).toLocaleString('ar', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                day: '2-digit',
+                month: '2-digit'
+            });
+            
+            const unreadBadge = conv.unreadCount > 0 
+                ? `<span class="chat-unread">${conv.unreadCount}</span>` 
+                : '';
+            
+            const avatarContent = conv.otherImage 
+                ? `<img src="${conv.otherImage}" />` 
+                : conv.otherName.charAt(0).toUpperCase();
+            
+            html += `
+                <div class="contact-chat-item" onclick="openChatPopup('${conv.chatId}', '${conv.otherName.replace(/'/g, "\\'")}', '${conv.otherImage || ''}', '${conv.otherId || conv.otherEmail || ''}')">
+                    <div class="chat-avatar">
+                        ${avatarContent}
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">${conv.otherName}</div>
+                        <div class="chat-last-msg">${conv.lastMessage}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem;">
+                        <div class="chat-time">${time}</div>
+                        ${unreadBadge}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // فتح نافذة المحادثة المنبثقة
+    let currentPopupChatId = null;
+
+    window.openChatPopup = function(chatId, otherName, otherImage, otherId) {
+        currentPopupChatId = chatId;
+        
+        const popup = safeGetElement('chatPopup');
+        if (!popup) return;
+        
+        // تعيين معلومات الطرف الآخر
+        const nameEl = safeGetElement('popupName');
+        if (nameEl) nameEl.textContent = otherName;
+        
+        const avatarEl = safeGetElement('popupAvatar');
+        if (avatarEl) {
+            if (otherImage) {
+                avatarEl.innerHTML = `<img src="${otherImage}" />`;
+            } else {
+                avatarEl.textContent = otherName.charAt(0).toUpperCase();
+            }
+        }
+        
+        // حفظ معرف الطرف الآخر للرد
+        popup.dataset.otherId = otherId;
+        popup.dataset.otherName = otherName;
+        popup.dataset.otherImage = otherImage;
+        
+        // عرض الرسائل
+        renderPopupMessages(chatId);
+        
+        // إظهار النافذة
+        popup.classList.add('active');
+        const input = safeGetElement('popupInput');
+        if (input) {
+            setTimeout(() => input.focus(), 300);
+        }
+        
+        // تعليم الرسائل كمقروءة
+        markMessagesAsRead(chatId);
+    };
+
+    window.closeChatPopup = function() {
+        const popup = safeGetElement('chatPopup');
+        if (popup) popup.classList.remove('active');
+        currentPopupChatId = null;
+    };
+
+    function renderPopupMessages(chatId) {
+        const container = safeGetElement('popupMessages');
+        if (!container) return;
+        
+        const conv = chatConversations[chatId];
+        if (!conv || !conv.messages || conv.messages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:1.5rem 0;">
+                    <i class="fas fa-comment" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+                    لا توجد رسائل، ابدأ المحادثة!
+                </div>
+            `;
+            return;
+        }
+        
+        const userId = currentUser?.id || currentUser?.email;
+        let html = '';
+        
+        conv.messages.forEach(msg => {
+            const isSent = msg.senderId === userId;
+            const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+            
+            html += `
+                <div class="msg-bubble ${isSent ? 'sent' : 'received'}">
+                    ${!isSent ? `<strong>${msg.senderName}</strong><br>` : ''}
+                    ${msg.message}
+                    <span class="msg-time">${time}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function markMessagesAsRead(chatId) {
+        const conv = chatConversations[chatId];
+        if (!conv || !conv.messages) return;
+        
+        const userId = currentUser?.id || currentUser?.email;
+        let changed = false;
+        
+        conv.messages.forEach(msg => {
+            if (msg.recipientId === userId && !msg.read) {
+                msg.read = true;
+                changed = true;
+            }
+        });
+        
+        if (changed) {
+            saveConversations();
+            renderChatList();
+            updateChatBadge();
+        }
+    }
+
+    function updateChatBadge() {
+        const userId = currentUser?.id || currentUser?.email;
+        if (!userId) return;
+        
+        let totalUnread = 0;
+        Object.keys(chatConversations).forEach(chatId => {
+            const conv = chatConversations[chatId];
+            if (conv.messages) {
+                const unread = conv.messages.filter(m => m.recipientId === userId && !m.read).length;
+                totalUnread += unread;
+            }
+        });
+        
+        const badge = safeGetElement('chatBadge');
+        if (badge) {
+            if (totalUnread > 0) {
+                badge.style.display = 'inline';
+                badge.textContent = totalUnread;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    // إرسال رسالة من النافذة المنبثقة
+    window.sendPopupMessage = function() {
+        const input = safeGetElement('popupInput');
+        if (!input) return;
+        
+        const message = input.value.trim();
+        if (!message) {
+            showToast('warning', '⚠️ يرجى كتابة رسالة');
+            return;
+        }
+        
+        const popup = safeGetElement('chatPopup');
+        if (!popup) return;
+        
+        const otherId = popup.dataset.otherId;
+        const otherName = popup.dataset.otherName || 'مستخدم';
+        const otherImage = popup.dataset.otherImage || '';
+        
+        if (!otherId) {
+            showToast('error', '❌ لم يتم تحديد المستلم');
+            return;
+        }
+        
+        sendMessage(otherId, otherName, otherImage, message);
+        input.value = '';
+    };
+
+    // إرسال رسالة بالضغط على Enter
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.id === 'popupInput') {
+            e.preventDefault();
+            window.sendPopupMessage();
+        }
+    });
+
+    // ============================================================
+    // ===== التحقق من صلاحية المستخدم =====
+    // ============================================================
+
+    function canUserContact() {
+        if (!currentUser) return false;
+        return getMyCourses().length > 0;
+    }
+
+    function isTeacherAdminForTeacher(email, teacherName) {
+        if (!email || !teacherName) return false;
+        return teacherAdmins.some(admin =>
+            admin.email === email && admin.teacherName === teacherName
+        );
+    }
+
+    function isAnyTeacherAdmin(email) {
+        if (!email) return false;
+        return teacherAdmins.some(admin => admin.email === email);
+    }
+
+    function getMyManagedTeachers(email) {
+        if (!email) return [];
+        return teacherAdmins.filter(admin => admin.email === email);
+    }
+
+    window.addTeacherAdmin = function() {
+        const sectionSelect = safeGetElement('teacherAdminSection');
+        const teacherSelect = safeGetElement('teacherAdminTeacher');
+        const emailInput = safeGetElement('teacherAdminEmail');
+        const messageEl = safeGetElement('teacherAdminMessage');
+
+        if (!sectionSelect || !teacherSelect || !emailInput || !messageEl) return;
+
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const email = emailInput?.value.trim();
+
+        if (isNaN(sectionIndex) || sectionIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار القسم';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        if (isNaN(teacherIndex) || teacherIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        if (!email) {
+            messageEl.innerHTML = '⚠️ يرجى إدخال البريد الإلكتروني';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        if (!email.includes('@') || !email.includes('.')) {
+            messageEl.innerHTML = '⚠️ البريد الإلكتروني غير صحيح';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) {
+            messageEl.innerHTML = '❌ المدرس غير موجود';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+
+        if (teacherAdmins.some(t => t.sectionIndex === sectionIndex && t.teacherIndex === teacherIndex)) {
+            messageEl.innerHTML = '⚠️ هذا المدرس مضاف بالفعل كمسؤول';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
+
+        teacherAdmins.push({
+            sectionIndex: sectionIndex,
+            teacherIndex: teacherIndex,
+            teacherName: teacher.name,
+            sectionName: data.sections[sectionIndex].name,
+            email: email,
+            addedAt: new Date().toISOString()
+        });
+
+        saveTeacherAdmins();
+        renderTeacherAdminsList();
+        updateAllAdminSelects();
+
+        messageEl.innerHTML = `✅ تم إضافة ${teacher.name} كمسؤول للتواصل`;
+        messageEl.style.color = '#22c55e';
+        emailInput.value = '';
+        showToast('success', `✅ تم إضافة ${teacher.name} كمسؤول للتواصل`);
+    };
+
+    function renderTeacherAdminsList() {
+        const container = safeGetElement('teacherAdminsList');
+        if (!container) return;
+
+        if (teacherAdmins.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا يوجد مدرسين مسؤولين</p>';
+            return;
+        }
+
+        let html = '';
+        teacherAdmins.forEach((admin, index) => {
+            html += `
+                <div style="background:var(--bg);padding:0.5rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid var(--primary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.3rem;">
+                    <div>
+                        <span style="font-weight:700;">${admin.teacherName}</span>
+                        <span style="font-size:0.7rem;color:var(--text-light);margin-right:0.5rem;">${admin.sectionName}</span>
+                        <span style="font-size:0.65rem;color:var(--primary);display:block;">📧 ${admin.email}</span>
+                    </div>
+                    <button onclick="removeTeacherAdmin(${index})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.6rem;">🗑️ حذف</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.removeTeacherAdmin = function(index) {
+        if (!confirm('⚠️ هل أنت متأكد من حذف هذا المسؤول؟')) return;
+        teacherAdmins.splice(index, 1);
+        saveTeacherAdmins();
+        renderTeacherAdminsList();
+        showToast('success', '✅ تم حذف المسؤول');
+    };
+
+    // ============================================================
+    // ===== نظام المحادثة القديم (للتوافق) =====
+    // ============================================================
+
+    function loadChatMessages(teacherName) {
+        if (!currentUser) return [];
+        const key = 'chat_' + currentUser.email + '_' + teacherName;
+        try {
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                chatMessages = JSON.parse(saved);
+            } else {
+                chatMessages = [];
+            }
+        } catch (e) {
+            chatMessages = [];
+        }
+        return chatMessages;
+    }
+
+    function saveChatMessages(teacherName) {
+        if (!currentUser) return;
+        const key = 'chat_' + currentUser.email + '_' + teacherName;
+        try {
+            localStorage.setItem(key, JSON.stringify(chatMessages));
+        } catch (e) {
+            console.warn('فشل حفظ رسائل المحادثة');
+        }
+    }
+
+    window.openChat = function(teacherName, teacherEmoji, teacherSubject, teacherImage) {
+        if (!canUserContact()) {
+            showToast('warning', '⚠️ يجب الاشتراك في دورة أولاً');
+            return;
+        }
+
+        const myCourses = getMyCourses();
+        const isSubscribed = myCourses.some(c => c.teacherName === teacherName);
+
+        if (!isSubscribed) {
+            showToast('warning', '⚠️ أنت غير مشترك في دورة هذا المدرس');
+            return;
+        }
+
+        chatRecipient = teacherName;
+        chatRecipientImage = getSafeImageUrl(teacherImage) || '';
+        chatRecipientEmoji = teacherEmoji || '👤';
+
+        loadChatMessages(teacherName);
+
+        const chatPageName = safeGetElement('chatPageName');
+        if (chatPageName) chatPageName.textContent = teacherName;
+        
+        const avatarEl = safeGetElement('chatPageAvatar');
+        if (avatarEl) {
+            if (chatRecipientImage) {
+                avatarEl.innerHTML = `<img src="${chatRecipientImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+            } else {
+                avatarEl.textContent = chatRecipientEmoji;
+            }
+        }
+
+        const chatPageStatus = safeGetElement('chatPageStatus');
+        if (chatPageStatus) chatPageStatus.textContent = '🟢 متصل';
+        
+        renderChatPageMessages();
+
+        const chatPage = safeGetElement('chatPage');
+        if (chatPage) {
+            chatPage.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        setTimeout(() => {
+            const input = safeGetElement('chatPageInput');
+            if (input) input.focus();
+        }, 300);
+
+        chatAttachments = [];
+        const attachmentsList = safeGetElement('chatPageAttachmentsList');
+        if (attachmentsList) attachmentsList.innerHTML = '';
+    };
+
+    window.closeChatPage = function() {
+        const chatPage = safeGetElement('chatPage');
+        if (chatPage) chatPage.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        if (chatRecipient) {
+            saveChatMessages(chatRecipient);
+        }
+    };
+
+    function renderChatPageMessages() {
+        const container = safeGetElement('chatPageMessages');
+        if (!container) return;
+
+        if (!chatMessages || chatMessages.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:2rem 0;">
+                    <i class="fas fa-comment" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+                    لا توجد رسائل، ابدأ المحادثة!
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        chatMessages.forEach((msg) => {
+            const isSent = msg.sender === currentUser?.email;
+            const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+
+            html += `
+                <div class="chat-msg ${isSent ? 'sent' : 'received'}">
+                    <div>${msg.message}</div>
+                    ${msg.attachments && msg.attachments.length > 0 ? msg.attachments.map(att => `
+                        <div class="msg-attachment" onclick="previewAttachment('${att.url}', '${att.type}')">
+                            <i class="fas ${att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file'}"></i>
+                            ${att.name}
+                            ${att.type === 'image' ? `<br><img src="${att.url}" />` : ''}
+                            ${att.type === 'video' ? `<br><video src="${att.url}" controls style="max-width:100%;max-height:150px;border-radius:6px;"></video>` : ''}
+                        </div>
+                    `).join('') : ''}
+                    <span class="msg-time">${time}</span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    window.chatPageAttach = function(type) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        if (type === 'image') input.accept = 'image/*';
+        else if (type === 'video') input.accept = 'video/*';
+        else input.accept = '*/*';
+
+        input.onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const url = event.target.result;
+                chatAttachments.push({
+                    name: file.name,
+                    type: type,
+                    url: url,
+                    size: file.size
+                });
+                updateChatPageAttachmentsUI();
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    };
+
+    function updateChatPageAttachmentsUI() {
+        const container = safeGetElement('chatPageAttachmentsList');
+        if (!container) return;
+
+        if (chatAttachments.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        chatAttachments.forEach((att, index) => {
+            const icon = att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file';
+            html += `
+                <span class="chat-attach-item">
+                    <i class="fas ${icon}"></i>
+                    ${att.name.length > 15 ? att.name.substring(0, 12) + '...' : att.name}
+                    <span class="remove-attach" onclick="removeChatPageAttachment(${index})">✕</span>
+                </span>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.removeChatPageAttachment = function(index) {
+        chatAttachments.splice(index, 1);
+        updateChatPageAttachmentsUI();
+    };
+
+    window.sendChatPageMessage = function() {
+        const input = safeGetElement('chatPageInput');
+        if (!input) return;
+        const message = input.value.trim();
+
+        if (!message && chatAttachments.length === 0) {
+            showToast('warning', '⚠️ يرجى كتابة رسالة أو إرفاق ملف');
+            return;
+        }
+
+        if (!chatRecipient) {
+            showToast('error', '❌ لم يتم تحديد المستلم');
+            return;
+        }
+
+        const msgData = {
+            id: Date.now(),
+            sender: currentUser?.email || 'مستخدم',
+            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'مستخدم',
+            recipient: chatRecipient,
+            message: message || '📎 مرفق',
+            attachments: chatAttachments.length > 0 ? [...chatAttachments] : [],
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+
+        chatMessages.push(msgData);
+        saveChatMessages(chatRecipient);
+
+        contactMessages.push({
+            id: Date.now() + 1,
+            recipient: chatRecipient,
+            recipientImage: chatRecipientImage,
+            recipientEmoji: chatRecipientEmoji,
+            sender: currentUser?.email || 'مستخدم',
+            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'مستخدم',
+            subject: 'رسالة من المحادثة',
+            message: message || '📎 مرفق',
+            attachments: chatAttachments.map(a => a.name),
+            sentAt: new Date().toISOString(),
+            read: false,
+            isChat: true,
+            chatAttachments: [...chatAttachments]
+        });
+        saveContactMessages();
+
+        if (currentUser) {
+            addNotification(
+                'رسالة جديدة',
+                `${currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم'} أرسل لك رسالة: ${message || '📎 مرفق'}`,
+                'message'
+            );
+        }
+
+        input.value = '';
+        chatAttachments = [];
+        updateChatPageAttachmentsUI();
+
+        renderChatPageMessages();
+        updateContactBadge();
+        renderMyMessages();
+    };
+
+    window.toggleChatPageTheme = function() {
+        const page = safeGetElement('chatPage');
+        if (!page) return;
+        chatTheme = chatTheme === 'light' ? 'dark' : 'light';
+
+        if (chatTheme === 'dark') {
+            page.classList.add('chat-theme-dark');
+            const icon = safeGetElement('chatPageThemeIcon');
+            if (icon) icon.className = 'fas fa-sun';
+        } else {
+            page.classList.remove('chat-theme-dark');
+            const icon = safeGetElement('chatPageThemeIcon');
+            if (icon) icon.className = 'fas fa-moon';
+        }
+    };
+
+    window.previewAttachment = function(url, type) {
+        if (type === 'image') {
+            window.open(url, '_blank');
+        } else if (type === 'video') {
+            playVideo(url, 'مرفق فيديو');
+        } else {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'مرفق';
+            a.click();
+        }
+    };
+
+    // ============================================================
+    // ===== عرض المدرسين للتواصل =====
+    // ============================================================
+
+    function renderContactTeachers() {
+        const container = safeGetElement('contactTeachersGrid');
+        const countSpan = safeGetElement('contactTeachersCount');
+        if (!container) return;
+
+        const hasSubscription = canUserContact();
+        let contactTeachers = [];
+
+        if (hasSubscription) {
+            const myCourses = getMyCourses();
+            const allTeachers = getAllTeachers();
+
+            myCourses.forEach(course => {
+                const teacher = allTeachers.find(t =>
+                    t.name === course.teacherName &&
+                    t._sectionName === course.sectionName
+                );
+                if (teacher && !contactTeachers.some(t => t.name === teacher.name && t._sectionName === teacher._sectionName)) {
+                    contactTeachers.push(teacher);
+                }
+            });
+        }
+
+        if (countSpan) countSpan.textContent = contactTeachers.length;
+
+        if (!hasSubscription || contactTeachers.length === 0) {
+            container.innerHTML = `
+                <div class="empty-teachers" style="text-align:center;padding:3rem 1rem;background:var(--bg-card);border-radius:16px;border:2px dashed var(--border);">
+                    <span class="empty-icon" style="font-size:4rem;display:block;margin-bottom:0.5rem;">🔒</span>
+                    <h3 style="font-size:1.2rem;color:var(--text);">غير متاح</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;max-width:400px;margin:0 auto;">
+                        ${!currentUser ? '⚠️ يرجى تسجيل الدخول أولاً' : '⚠️ يجب الاشتراك في دورة تدريبية أولاً للتواصل مع المدرسين'}
+                    </p>
+                    <button onclick="navigateTo('teachers')" style="margin-top:1rem;padding:0.5rem 1.5rem;background:var(--primary-gradient);color:white;border:none;border-radius:30px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-book"></i> استعراض الدورات
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="contact-teachers-grid">';
+        contactTeachers.forEach(teacher => {
+            const name = teacher.name || 'موظف';
+            const emoji = teacher.emoji || '👤';
+            const subject = teacher.subject || '';
+            const image = getSafeImageUrl(teacher.image);
+            const sectionName = teacher._sectionName || '';
+
+            html += `
+                <div class="contact-teacher-card" onclick="openChat('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${image || ''}')">
+                    <div class="contact-avatar">
+                        ${image ? `<img src="${image}" alt="${name}" onerror="this.style.display='none'; this.parentElement.textContent='${emoji}';">` : emoji}
+                    </div>
+                    <div class="contact-name">${name}</div>
+                    ${subject ? `<div class="contact-subject">${subject}</div>` : ''}
+                    <div class="contact-section-name">${sectionName}</div>
+                    <button class="contact-btn" onclick="event.stopPropagation();openChat('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${image || ''}')">
+                        <i class="fas fa-comment"></i> محادثة
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // ============================================================
+    // ===== رسائل المدرس =====
+    // ============================================================
+
+    function getTeacherInbox(teacherName) {
+        if (!teacherName) {
+            const userFullName = currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '';
+            return contactMessages.filter(m => m.recipient === userFullName || m.recipient === currentUser?.email);
+        }
+        return contactMessages.filter(m => m.recipient === teacherName);
+    }
+
+    function renderTeacherInbox() {
+        const container = safeGetElement('teacherInboxMessages');
+        const section = safeGetElement('teacherInboxSection');
+        const countSpan = safeGetElement('teacherInboxCount');
+
+        if (!container) return;
+
+        const teacherName = currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '';
+        const isTeacherUser = isAnyTeacherAdmin(currentUser?.email) || getTeacherInbox(teacherName).length > 0;
+
+        if (!isTeacherUser) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+
+        if (section) section.style.display = 'block';
+
+        const inboxMessages = getTeacherInbox(teacherName);
+
+        if (countSpan) countSpan.textContent = inboxMessages.length;
+
+        if (inboxMessages.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">📭 لا توجد رسائل واردة</p>';
+            return;
+        }
+
+        let html = '';
+        inboxMessages.slice().reverse().forEach(msg => {
+            const isRead = msg.read || false;
+            const senderName = msg.senderName || msg.sender || 'مستخدم';
+            html += `
+                <div class="teacher-inbox-item">
+                    <div class="inbox-header">
+                        <span class="inbox-sender"><i class="fas fa-user"></i> ${senderName}</span>
+                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
+                    </div>
+                    <div class="inbox-subject">${msg.subject}</div>
+                    <div class="inbox-message">${msg.message}</div>
+                    ${msg.attachments && msg.attachments.length ? `<div class="inbox-attachments"><i class="fas fa-paperclip"></i> ${msg.attachments.length} مرفق</div>` : ''}
+                    <div class="inbox-status ${isRead ? 'read' : 'unread'}">
+                        ${isRead ? '✅ مقروءة' : '🕐 جديدة'}
+                    </div>
+                    <div class="inbox-actions">
+                        ${!isRead ? `<button class="btn-mark-read" onclick="markInboxMessageRead(${msg.id})">📖 تعليم كمقروءة</button>` : ''}
+                        <button class="btn-delete-inbox" onclick="deleteInboxMessage(${msg.id})">🗑️ حذف</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.markInboxMessageRead = function(id) {
+        const msg = contactMessages.find(m => m.id === id);
+        if (msg) {
+            msg.read = true;
+            saveContactMessages();
+            renderTeacherInbox();
+            renderAllMessages();
+            updateContactBadge();
+            showToast('success', '✅ تم تعليم الرسالة كمقروءة');
+        }
+    };
+
+    window.deleteInboxMessage = function(id) {
+        if (!confirm('⚠️ هل أنت متأكد من حذف هذه الرسالة؟')) return;
+        contactMessages = contactMessages.filter(m => m.id !== id);
+        saveContactMessages();
+        renderTeacherInbox();
+        renderAllMessages();
+        updateContactBadge();
+        showToast('success', '✅ تم حذف الرسالة');
+    };
+
+    function renderMyMessages() {
+        const container = safeGetElement('myMessagesList');
+        if (!container) return;
+
+        if (!currentUser) {
+            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">يرجى تسجيل الدخول</p>';
+            return;
+        }
+
+        const myMessages = contactMessages.filter(m => m.sender === currentUser.email);
+
+        if (myMessages.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">لا توجد رسائل مرسلة</p>';
+            return;
+        }
+
+        let html = '';
+        myMessages.slice().reverse().forEach(msg => {
+            const isRead = msg.read || false;
+            html += `
+                <div class="message-item">
+                    <div class="msg-header">
+                        <span><i class="fas fa-user"></i> ${msg.recipient}</span>
+                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
+                    </div>
+                    <div class="msg-subject">${msg.subject}</div>
+                    <div class="msg-body">${msg.message}</div>
+                    ${msg.attachments && msg.attachments.length ? `<div class="msg-attachments"><i class="fas fa-paperclip"></i> ${msg.attachments.length} مرفق</div>` : ''}
+                    <div class="msg-status ${isRead ? 'read' : 'unread'}">
+                        ${isRead ? '✅ مقروءة' : '🕐 غير مقروءة'}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        const msgCountEl = safeGetElement('accountMessages');
+        if (msgCountEl) msgCountEl.textContent = myMessages.length;
+    }
+
+    function renderAllMessages() {
+        const container = safeGetElement('allMessagesContainer');
+        if (!container) return;
+
+        if (contactMessages.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:0.5rem 0;font-size:.8rem;">لا توجد رسائل</p>';
+            return;
+        }
+
+        let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
+        contactMessages.slice().reverse().forEach(msg => {
+            const isRead = msg.read || false;
+            html += `
+                <div style="background:var(--bg);border-radius:8px;padding:0.6rem 0.8rem;border-right:3px solid ${isRead ? '#22c55e' : '#f59e0b'};">
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);flex-wrap:wrap;">
+                        <span><i class="fas fa-user"></i> <strong>من:</strong> ${msg.senderName} (${msg.sender})</span>
+                        <span><i class="fas fa-user-tie"></i> <strong>إلى:</strong> ${msg.recipient}</span>
+                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
+                    </div>
+                    <div style="font-weight:600;font-size:0.85rem;">${msg.subject}</div>
+                    <div style="font-size:0.75rem;color:var(--text-light);">${msg.message}</div>
+                    ${msg.attachments && msg.attachments.length ? `<div style="font-size:0.6rem;color:var(--primary);"><i class="fas fa-paperclip"></i> ${msg.attachments.length} مرفق</div>` : ''}
+                    <div style="font-size:0.6rem;color:${isRead ? '#22c55e' : '#f59e0b'};">
+                        ${isRead ? '✅ مقروءة' : '🕐 غير مقروءة'}
+                        <button onclick="markMessageAsRead(${msg.id})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;margin-right:0.5rem;">
+                            ${isRead ? '✅ مقروءة' : '📖 تعليم كمقروءة'}
+                        </button>
+                        <button onclick="deleteMessage(${msg.id})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    window.markMessageAsRead = function(id) {
+        const msg = contactMessages.find(m => m.id === id);
+        if (msg) {
+            msg.read = true;
+            saveContactMessages();
+            renderAllMessages();
+            renderMyMessages();
+            renderTeacherMessages(chatRecipient);
+            updateContactBadge();
+            showToast('success', '✅ تم تعليم الرسالة كمقروءة');
+        }
+    };
+
+    window.deleteMessage = function(id) {
+        if (!confirm('⚠️ هل أنت متأكد من حذف هذه الرسالة؟')) return;
+        contactMessages = contactMessages.filter(m => m.id !== id);
+        saveContactMessages();
+        renderAllMessages();
+        renderMyMessages();
+        renderTeacherMessages(chatRecipient);
+        updateContactBadge();
+        showToast('success', '✅ تم حذف الرسالة');
+    };
+
+    function updateContactBadge() {
+        const unread = contactMessages.filter(m => !m.read).length;
+        const badge = safeGetElement('contactBadge');
+        if (badge) {
+            if (unread > 0) {
+                badge.style.display = 'inline';
+                badge.textContent = unread;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function checkContactMessages() {
+        updateContactBadge();
+    }
+
+    // ============================================================
+    // ===== لوحة تحكم المدرس =====
+    // ============================================================
+
+    function getManagedTeacher() {
+        const userEmail = currentUser?.email;
+        if (!userEmail) return null;
+        const managed = getMyManagedTeachers(userEmail);
+        if (managed.length === 0) return null;
+        const admin = managed[0];
+        return {
+            sectionIndex: admin.sectionIndex,
+            teacherIndex: admin.teacherIndex,
+            teacher: data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex]
+        };
+    }
+
+    window.openTeacherAdmin = function() {
+        const userEmail = currentUser?.email;
+        if (!userEmail) {
+            showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
+            return;
+        }
+
+        const managedTeachers = getMyManagedTeachers(userEmail);
+        if (managedTeachers.length === 0) {
+            showToast('warning', '⚠️ لا يوجد لديك صلاحية إدارة أي مدرس');
+            return;
+        }
+
+        const teacherAdminName = safeGetElement('teacherAdminName');
+        const teacherAdminModal = safeGetElement('teacherAdminModal');
+
+        if (managedTeachers.length === 1) {
+            const admin = managedTeachers[0];
+            const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+            if (teacher && teacherAdminName) {
+                teacherAdminName.textContent = `👨‍🏫 ${teacher.name} (${admin.sectionName})`;
+                if (teacherAdminModal) {
+                    teacherAdminModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+                updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
+                renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
+                renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
+                return;
+            }
+        }
+
+        let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
+        managedTeachers.forEach(admin => {
+            const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+            if (teacher) {
+                html += `
+                    <button onclick="openTeacherAdminDirect(${admin.sectionIndex}, ${admin.teacherIndex})" 
+                        style="padding:0.6rem;background:var(--bg-card);border:2px solid var(--border);border-radius:8px;cursor:pointer;text-align:right;transition:all 0.3s;">
+                        <div style="font-weight:700;">${teacher.name}</div>
+                        <div style="font-size:0.7rem;color:var(--text-light);">${admin.sectionName}</div>
+                    </button>
+                `;
+            }
+        });
+        html += '</div>';
+
+        if (teacherAdminName) {
+            teacherAdminName.innerHTML = html;
+            teacherAdminName.style.textAlign = 'right';
+        }
+        if (teacherAdminModal) {
+            teacherAdminModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    window.openTeacherAdminDirect = function(sectionIndex, teacherIndex) {
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+        const section = data.sections[sectionIndex];
+        const teacherAdminName = safeGetElement('teacherAdminName');
+        if (teacherAdminName) {
+            teacherAdminName.innerHTML = `👨‍🏫 ${teacher.name} (${section.name})`;
+            teacherAdminName.style.textAlign = 'center';
+        }
+        const teacherAdminModal = safeGetElement('teacherAdminModal');
+        if (teacherAdminModal) {
+            teacherAdminModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        updateTeacherSemesterSelect(sectionIndex, teacherIndex);
+        renderTeacherCodes(sectionIndex, teacherIndex);
+        renderTeacherLectures(sectionIndex, teacherIndex);
+    };
+
+    function updateTeacherSemesterSelect(sectionIndex, teacherIndex) {
+        const select = safeGetElement('teacherLectureSemester');
+        if (!select) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) {
+            select.innerHTML = '<option value="">اختر الفصل...</option>';
+            return;
+        }
+
+        const currentValue = select.value;
+        let options = '<option value="">اختر الفصل...</option>';
+
+        if (teacher.semesters) {
+            teacher.semesters.forEach((s, i) => {
+                options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
+            });
+        }
+
+        select.innerHTML = options;
+        select.dataset.sectionIndex = sectionIndex;
+        select.dataset.teacherIndex = teacherIndex;
+        if (currentValue && teacher.semesters[parseInt(currentValue)]) {
+            select.value = currentValue;
+        }
+    }
+
+    function renderTeacherCodes(sectionIndex, teacherIndex) {
+        const container = safeGetElement('teacherCodesContainer');
+        if (!container) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher || !teacher.codes || teacher.codes.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا توجد أكواد</p>';
+            return;
+        }
+
+        let html = '<div style="display:flex;flex-direction:column;gap:0.3rem;">';
+        teacher.codes.forEach((c, index) => {
+            const status = c.used ? '✅ مستخدم' : '🟢 متاح';
+            const statusColor = c.used ? '#22c55e' : '#22c55e';
+            const userEmail = c.userEmail || '—';
+            html += `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:0.3rem 0.6rem;border-radius:6px;flex-wrap:wrap;gap:0.2rem;border:1px solid var(--border);">
+                    <span style="font-family:monospace;font-weight:700;font-size:0.85rem;color:var(--primary);">${c.code}</span>
+                    <span style="font-size:0.7rem;color:${statusColor};">${status}</span>
+                    ${c.used ? `<span style="font-size:0.6rem;color:var(--text-light);">${userEmail}</span>` : ''}
+                    ${!c.used ? `<button onclick="teacherDeleteCode(${sectionIndex}, ${teacherIndex}, ${index})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.05rem 0.4rem;cursor:pointer;font-size:0.6rem;">🗑️</button>` : ''}
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function renderTeacherLectures(sectionIndex, teacherIndex) {
+        const container = safeGetElement('teacherLecturesList');
+        if (!container) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher || !teacher.semesters || teacher.semesters.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا توجد محاضرات</p>';
+            return;
+        }
+
+        let html = '';
+        teacher.semesters.forEach((semester, sIndex) => {
+            if (semester.lectures && semester.lectures.length > 0) {
+                semester.lectures.forEach((lecture, lIndex) => {
+                    const isFree = lecture.isFree ? '🆓 مجانية' : '🔒 مقفلة';
+                    html += `
+                        <div style="background:var(--bg);padding:0.5rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid var(--primary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.3rem;">
+                            <div>
+                                <span style="font-weight:700;font-size:0.85rem;">📖 الفصل ${semester.number}</span>
+                                <span style="font-weight:600;font-size:0.85rem;margin-right:0.5rem;">#${lecture.number}</span>
+                                <span style="font-size:0.85rem;">${lecture.title}</span>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap;">
+                                <span style="font-size:0.65rem;background:${isFree.includes('مجانية') ? '#22c55e' : '#f59e0b'};color:white;padding:0.1rem 0.4rem;border-radius:4px;">${isFree}</span>
+                                <button onclick="openEditLecture(${sectionIndex}, ${teacherIndex}, ${sIndex}, ${lIndex})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.6rem;">✏️</button>
+                                <button onclick="deleteTeacherLecture(${sectionIndex}, ${teacherIndex}, ${sIndex}, ${lIndex})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.6rem;">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        });
+
+        if (!html) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا توجد محاضرات</p>';
+            return;
+        }
+
+        container.innerHTML = html;
+    }
+
+    document.getElementById('teacherAddSemesterForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const userEmail = currentUser?.email;
+        if (!userEmail) {
+            showToast('error', '❌ يرجى تسجيل الدخول');
+            return;
+        }
+
+        const managedTeachers = getMyManagedTeachers(userEmail);
+        if (managedTeachers.length === 0) {
+            showToast('error', '❌ لا يوجد صلاحية');
+            return;
+        }
+
+        const admin = managedTeachers[0];
+        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const numberInput = safeGetElement('teacherSemesterNumber');
+        const descInput = safeGetElement('teacherSemesterDesc');
+        
+        if (!numberInput || !descInput) return;
+        
+        const number = parseInt(numberInput.value);
+        const description = descInput.value.trim();
+
+        if (!number || number < 1) {
+            showToast('warning', '⚠️ يرجى إدخال رقم فصل صحيح');
+            return;
+        }
+
+        if (teacher.semesters && teacher.semesters.some(s => s.number === number)) {
+            showToast('warning', '⚠️ الفصل رقم ' + number + ' موجود بالفعل');
+            return;
+        }
+
+        if (!teacher.semesters) teacher.semesters = [];
+
+        teacher.semesters.push({
+            number: number,
+            description: description || `الفصل ${number}`,
+            lectures: []
+        });
+
+        saveData();
+        renderAllData();
+        renderAccount();
+        renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
+        updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
+
+        if (currentUser) {
+            addNotification(
+                '📀 فصل جديد',
+                `تم إضافة الفصل ${number} في ${teacher.name}`,
+                'lecture'
+            );
+        }
+
+        this.reset();
+        showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+    });
+
+    document.getElementById('teacherAddLectureForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const userEmail = currentUser?.email;
+        if (!userEmail) {
+            showToast('error', '❌ يرجى تسجيل الدخول');
+            return;
+        }
+
+        const managedTeachers = getMyManagedTeachers(userEmail);
+        if (managedTeachers.length === 0) {
+            showToast('error', '❌ لا يوجد صلاحية');
+            return;
+        }
+
+        const admin = managedTeachers[0];
+        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const semesterSelect = safeGetElement('teacherLectureSemester');
+        const numberInput = safeGetElement('teacherLectureNumber');
+        const titleInput = safeGetElement('teacherLectureTitle');
+        const urlInput = safeGetElement('teacherLectureUrl');
+        const freeSelect = safeGetElement('teacherLectureFree');
+
+        if (!semesterSelect || !numberInput || !titleInput || !urlInput || !freeSelect) return;
+
+        const semesterIndex = parseInt(semesterSelect.value);
+        const number = parseInt(numberInput.value);
+        const title = titleInput.value.trim();
+        const youtubeUrl = urlInput.value.trim();
+        const isFree = freeSelect.value === 'true';
+
+        if (isNaN(semesterIndex) || semesterIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
+            return;
+        }
+
+        if (!number || number < 1) {
+            showToast('warning', '⚠️ يرجى إدخال رقم محاضرة صحيح');
+            return;
+        }
+
+        if (!title) {
+            showToast('warning', '⚠️ يرجى إدخال عنوان المحاضرة');
+            return;
+        }
+
+        if (!youtubeUrl) {
+            showToast('warning', '⚠️ يرجى إدخال رابط الفيديو');
+            return;
+        }
+
+        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+            youtubeUrl.includes('youtube') ||
+            youtubeUrl.includes('youtu.be') ||
+            youtubeUrl.includes('player.') ||
+            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+
+        if (!isValidUrl) {
+            showToast('warning', '⚠️ رابط الفيديو غير صحيح');
+            return;
+        }
+
+        if (!teacher.semesters[semesterIndex].lectures) {
+            teacher.semesters[semesterIndex].lectures = [];
+        }
+
+        if (teacher.semesters[semesterIndex].lectures.some(l => l.number === number)) {
+            showToast('warning', '⚠️ المحاضرة رقم ' + number + ' موجودة بالفعل في هذا الفصل');
+            return;
+        }
+
+        teacher.semesters[semesterIndex].lectures.push({
+            number: number,
+            title: title,
+            youtubeUrl: youtubeUrl,
+            isFree: isFree
+        });
+
+        saveData();
+        renderAllData();
+        renderAccount();
+        renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
+
+        if (currentUser) {
+            addNotification(
+                '📚 محاضرة جديدة',
+                `تم إضافة محاضرة "${title}" في ${teacher.name}`,
+                'lecture'
+            );
+        }
+
+        this.reset();
+        updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
+        showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+    });
+
+    window.deleteTeacherLecture = function(sectionIndex, teacherIndex, semesterIndex, lectureIndex) {
+        if (!confirm('⚠️ هل أنت متأكد من حذف هذه المحاضرة؟')) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const lecture = teacher.semesters[semesterIndex]?.lectures[lectureIndex];
+        if (!lecture) {
+            showToast('error', '❌ المحاضرة غير موجودة');
+            return;
+        }
+
+        teacher.semesters[semesterIndex].lectures.splice(lectureIndex, 1);
+        saveData();
+        renderAllData();
+        renderAccount();
+        renderTeacherLectures(sectionIndex, teacherIndex);
+        showToast('success', '✅ تم حذف المحاضرة');
+    };
+
+    window.teacherDeleteCode = function(sectionIndex, teacherIndex, codeIndex) {
+        if (!confirm('⚠️ هل أنت متأكد من حذف هذا الكود؟')) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher) return;
+
+        if (teacher.codes[codeIndex].used) {
+            showToast('warning', '⚠️ لا يمكن حذف كود مستخدم');
+            return;
+        }
+
+        teacher.codes.splice(codeIndex, 1);
+        saveData();
+        renderTeacherCodes(sectionIndex, teacherIndex);
+        renderAccount();
+        showToast('success', '✅ تم حذف الكود');
+    };
+
+    window.teacherAddCode = function() {
+        const userEmail = currentUser?.email;
+        if (!userEmail) {
+            showToast('error', '❌ يرجى تسجيل الدخول');
+            return;
+        }
+
+        const managedTeachers = getMyManagedTeachers(userEmail);
+        if (managedTeachers.length === 0) {
+            showToast('error', '❌ لا يوجد صلاحية');
+            return;
+        }
+
+        const admin = managedTeachers[0];
+        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        const codeInput = safeGetElement('teacherManualCode');
+        if (!codeInput) return;
+        
+        const code = codeInput.value.trim().toUpperCase();
+
+        if (!code) {
+            showToast('warning', '⚠️ يرجى إدخال الكود');
+            return;
+        }
+
+        if (code.length < 4) {
+            showToast('warning', '⚠️ الكود قصير جداً');
+            return;
+        }
+
+        if (!teacher.codes) teacher.codes = [];
+
+        if (teacher.codes.some(c => c.code === code)) {
+            showToast('warning', '⚠️ هذا الكود موجود بالفعل');
+            return;
+        }
+
+        teacher.codes.push({
+            code: code,
+            used: false,
+            locked: false,
+            deviceId: null,
+            userId: null,
+            userEmail: null,
+            usedAt: null
+        });
+
+        saveData();
+        renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
+        renderAccount();
+        codeInput.value = '';
+        showToast('success', `✅ تم إضافة الكود: ${code}`);
+    };
+
+    window.teacherGenerateCodes = function(count = 5) {
+        const userEmail = currentUser?.email;
+        if (!userEmail) {
+            showToast('error', '❌ يرجى تسجيل الدخول');
+            return;
+        }
+
+        const managedTeachers = getMyManagedTeachers(userEmail);
+        if (managedTeachers.length === 0) {
+            showToast('error', '❌ لا يوجد صلاحية');
+            return;
+        }
+
+        const admin = managedTeachers[0];
+        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
+        if (!teacher) {
+            showToast('error', '❌ المدرس غير موجود');
+            return;
+        }
+
+        if (!teacher.codes) teacher.codes = [];
+        const newCodes = [];
+
+        for (let i = 0; i < count; i++) {
+            const prefix = teacher.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let random = '';
+            for (let j = 0; j < 8; j++) {
+                random += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const newCode = `${prefix}-${random}`;
+            teacher.codes.push({
+                code: newCode,
+                used: false,
+                locked: false,
+                deviceId: null,
+                userId: null,
+                userEmail: null,
+                usedAt: null
+            });
+            newCodes.push(newCode);
+        }
+
+        saveData();
+        renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
+        renderAccount();
+        showToast('success', `✅ تم توليد ${newCodes.length} أكواد جديدة`);
+    };
+
+    window.openTeacherStudents = function() {
+        const teacher = getManagedTeacher();
+        if (!teacher) {
+            showToast('warning', '⚠️ لا يوجد حساب مدرس مرتبط بك');
+            return;
+        }
+
+        const nameEl = safeGetElement('teacherStudentsName');
+        if (nameEl) nameEl.textContent = `👨‍🏫 ${teacher.teacher.name}`;
+        
+        const modal = safeGetElement('teacherStudentsModal');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        renderTeacherStudents(teacher.sectionIndex, teacher.teacherIndex);
+    };
+
+    function renderTeacherStudents(sectionIndex, teacherIndex) {
+        const container = safeGetElement('teacherStudentsList');
+        if (!container) return;
+
+        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
+        if (!teacher || !teacher.codes) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا يوجد طلاب مسجلين</p>';
+            return;
+        }
+
+        const students = [];
+        teacher.codes.forEach(c => {
+            if (c.used && c.userEmail) {
+                if (!students.some(s => s.email === c.userEmail)) {
+                    students.push({
+                        email: c.userEmail,
+                        code: c.code,
+                        usedAt: c.usedAt
+                    });
+                }
+            }
+        });
+
+        if (students.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا يوجد طلاب مسجلين</p>';
+            return;
+        }
+
+        let html = '';
+        students.forEach((s, index) => {
+            html += `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:0.5rem 0.8rem;border-radius:6px;margin-bottom:0.3rem;border-right:3px solid var(--primary);flex-wrap:wrap;gap:0.3rem;">
+                    <span style="font-weight:600;font-size:0.9rem;">${index + 1}. ${s.email}</span>
+                    <span style="font-size:0.7rem;color:var(--text-light);">الكود: <code style="font-family:monospace;background:var(--bg-card);padding:0.05rem 0.3rem;border-radius:4px;">${s.code}</code></span>
+                    <span style="font-size:0.65rem;color:var(--text-light);">${s.usedAt ? new Date(s.usedAt).toLocaleString('ar') : ''}</span>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.openTeacherMessages = function() {
+        const teacher = getManagedTeacher();
+        if (!teacher) {
+            showToast('warning', '⚠️ لا يوجد حساب مدرس مرتبط بك');
+            return;
+        }
+
+        const nameEl = safeGetElement('teacherMessagesName');
+        if (nameEl) nameEl.textContent = `👨‍🏫 ${teacher.teacher.name}`;
+        
+        const modal = safeGetElement('teacherMessagesModal');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        renderTeacherMessages(teacher.teacher.name);
+    };
+
+    function renderTeacherMessages(teacherName) {
+        const container = safeGetElement('teacherMessagesList');
+        if (!container) return;
+
+        const messages = contactMessages.filter(m => m.recipient === teacherName || m.recipient === currentUser?.email);
+
+        if (messages.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">لا توجد رسائل من الطلاب</p>';
+            return;
+        }
+
+        let html = '';
+        messages.slice().reverse().forEach(msg => {
+            const isRead = msg.read || false;
+            const senderName = msg.senderName || msg.sender || 'مستخدم';
+            html += `
+                <div style="background:var(--bg);padding:0.6rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid ${isRead ? '#22c55e' : '#f59e0b'};">
+                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);flex-wrap:wrap;">
+                        <span><i class="fas fa-user"></i> ${senderName}</span>
+                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
+                    </div>
+                    <div style="font-weight:600;font-size:0.85rem;">${msg.subject}</div>
+                    <div style="font-size:0.75rem;color:var(--text-light);">${msg.message}</div>
+                    ${msg.attachments && msg.attachments.length ? `<div style="font-size:0.6rem;color:var(--primary);"><i class="fas fa-paperclip"></i> ${msg.attachments.length} مرفق</div>` : ''}
+                    <div style="font-size:0.6rem;color:${isRead ? '#22c55e' : '#f59e0b'};margin-top:0.2rem;">
+                        ${isRead ? '✅ مقروءة' : '🕐 جديدة'}
+                        ${!isRead ? `<button onclick="markInboxMessageRead(${msg.id})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;margin-right:0.3rem;">📖 تعليم كمقروءة</button>` : ''}
+                        <button onclick="deleteInboxMessage(${msg.id})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    window.openTeacherCodes = function() {
+        const teacher = getManagedTeacher();
+        if (!teacher) {
+            showToast('warning', '⚠️ لا يوجد حساب مدرس مرتبط بك');
+            return;
+        }
+
+        const modal = safeGetElement('teacherAdminModal');
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        const nameEl = safeGetElement('teacherAdminName');
+        if (nameEl) nameEl.textContent = `👨‍🏫 ${teacher.teacher.name}`;
+
+        document.querySelectorAll('#teacherAdminModal .tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('#teacherAdminModal .tab-btn[data-tab="teacher-codes"]')?.classList.add('active');
+        document.querySelectorAll('#teacherAdminModal .tab-content').forEach(t => t.classList.remove('active'));
+        const codesTab = safeGetElement('tab-teacher-codes');
+        if (codesTab) codesTab.classList.add('active');
+
+        renderTeacherCodes(teacher.sectionIndex, teacher.teacherIndex);
+    };
+
+    // ============================================================
+    // DATA FUNCTIONS
+    // ============================================================
+
     function normalizeDataStructure(courseData) {
-        if (!courseData || !Array.isArray(courseData.sections)) {
+        if (!courseData || typeof courseData !== 'object') {
+            courseData = { sections: [] };
+        }
+        if (!courseData.sections || !Array.isArray(courseData.sections)) {
             courseData.sections = [];
         }
+        
         courseData.sections.forEach(section => {
             if (!Array.isArray(section.teachers)) { section.teachers = []; }
             section.teachers.forEach(teacher => {
@@ -610,36 +2629,139 @@
         });
     }
 
+    // ===== تحميل البيانات من Supabase فقط =====
     async function loadData() {
         try {
-            if (supabaseClient) {
-                const remoteData = await getSupabaseAcademyData();
-                if (remoteData && remoteData.sections && Array.isArray(remoteData.sections)) {
-                    data = remoteData;
-                    normalizeDataStructure(data);
-                    localStorage.setItem('academyData', JSON.stringify(data));
-                    console.log('✅ تم تحميل البيانات من Supabase');
-                    return;
+            if (!supabaseClient) {
+                console.error('❌ Supabase غير متاح');
+                showToast('error', '⚠️ فشل الاتصال بقاعدة البيانات');
+                data = { sections: [] };
+                normalizeDataStructure(data);
+                renderAllData();
+                return;
+            }
+
+            const remoteData = await getSupabaseAcademyData();
+            
+            if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
+                data = remoteData;
+                normalizeDataStructure(data);
+                localStorage.setItem('academyData', JSON.stringify(data));
+                console.log('✅ تم تحميل البيانات من Supabase بنجاح');
+                showToast('success', `✅ تم تحميل ${data.sections.length} قسم من قاعدة البيانات`);
+            } else {
+                console.log('📝 لا توجد بيانات في Supabase، جارٍ تهيئة هيكل فارغ...');
+                data = { sections: [] };
+                normalizeDataStructure(data);
+                localStorage.removeItem('academyData');
+                showToast('info', '📝 لا توجد بيانات حالياً، قم بإضافة أقسام من لوحة التحكم');
+                
+                if (teachersGridContainer) {
+                    teachersGridContainer.innerHTML = `
+                        <div class="empty-teachers" style="text-align:center;padding:3rem 1rem;">
+                            <span class="empty-icon" style="font-size:4rem;display:block;margin-bottom:1rem;">📚</span>
+                            <h3 style="font-size:1.2rem;color:var(--text);">لا توجد بيانات</h3>
+                            <p style="color:var(--text-light);font-size:0.9rem;max-width:400px;margin:0 auto;">
+                                ⚠️ لا توجد أقسام أو مدرسين في قاعدة البيانات حتى الآن
+                            </p>
+                            <button onclick="navigateTo('account')" style="margin-top:1rem;padding:0.5rem 1.5rem;background:var(--primary-gradient);color:white;border:none;border-radius:30px;font-weight:600;cursor:pointer;">
+                                <i class="fas fa-cog"></i> اذهب إلى لوحة التحكم
+                            </button>
+                        </div>
+                    `;
                 }
             }
-            const savedData = localStorage.getItem('academyData');
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
-                        data = parsed;
-                        normalizeDataStructure(data);
-                        console.log('✅ تم تحميل البيانات من localStorage');
-                        return;
-                    }
-                } catch (e) { console.warn('⚠️ بيانات localStorage تالفة'); }
-            }
-            data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
-            normalizeDataStructure(data);
-            localStorage.setItem('academyData', JSON.stringify(data));
-            showToast('info', '📝 تم تحميل الأقسام الافتراضية');
+            
+            renderAllData();
+            renderMyCourses();
+            renderAccount();
+            renderContactTeachers();
+            renderTeacherInbox();
+            updateBadge();
+            updateContactBadge();
+            updateAllAdminSelects();
+            
         } catch (error) {
-            console.warn('⚠️ استخدام البيانات الافتراضية:', error.message);
+            console.error('❌ خطأ في تحميل البيانات:', error);
+            showToast('error', '⚠️ حدث خطأ أثناء تحميل البيانات');
+            data = { sections: [] };
+            normalizeDataStructure(data);
+            localStorage.removeItem('academyData');
+            renderAllData();
+        }
+    }
+
+    // ===== جلب البيانات من Supabase =====
+    async function getSupabaseAcademyData() {
+        if (!supabaseClient) return null;
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('academy_data')
+                .select('content')
+                .eq('id', 'main')
+                .maybeSingle();
+            
+            if (error) {
+                console.warn('⚠️ خطأ في جلب البيانات من Supabase:', error.message || error);
+                return null;
+            }
+            
+            if (!data || !data.content) {
+                console.log('📝 لا توجد بيانات مخزنة في Supabase');
+                return null;
+            }
+            
+            const content = data.content;
+            if (!content.sections || !Array.isArray(content.sections)) {
+                console.warn('⚠️ هيكل البيانات غير صحيح في Supabase');
+                return null;
+            }
+            
+            return content;
+            
+        } catch (error) {
+            console.warn('⚠️ استثناء في جلب بيانات Supabase:', error);
+            return null;
+        }
+    }
+
+    // ===== حفظ البيانات في Supabase =====
+    async function saveSupabaseAcademyData() {
+        if (!supabaseClient) {
+            return { success: false, error: 'Supabase غير متاح' };
+        }
+        
+        try {
+            if (!data || !data.sections || !Array.isArray(data.sections)) {
+                return { success: false, error: 'بيانات غير صالحة للحفظ' };
+            }
+            
+            const cleanData = JSON.parse(JSON.stringify(data));
+            normalizeDataStructure(cleanData);
+            
+            const record = { 
+                id: 'main', 
+                content: cleanData, 
+                updated_at: new Date().toISOString() 
+            };
+            
+            const { error } = await supabaseClient
+                .from('academy_data')
+                .upsert(record, { onConflict: 'id' });
+            
+            if (error) {
+                console.error('❌ خطأ في حفظ البيانات في Supabase:', error);
+                return { success: false, error: error };
+            }
+            
+            localStorage.setItem('academyData', JSON.stringify(cleanData));
+            console.log('✅ تم حفظ البيانات في Supabase بنجاح');
+            return { success: true };
+            
+        } catch (error) {
+            console.error('❌ استثناء في حفظ بيانات Supabase:', error);
+            return { success: false, error: error };
         }
     }
 
@@ -651,29 +2773,6 @@
             console.error('❌ خطأ في حفظ البيانات:', error);
             showToast('error', '⚠️ فشل حفظ البيانات محلياً');
         }
-    }
-
-    async function getSupabaseAcademyData() {
-        if (!supabaseClient) return null;
-        try {
-            const { data, error } = await supabaseClient
-                .from('academy_data').select('content').eq('id', 'main').maybeSingle();
-            if (error) { console.warn('Supabase academy data lookup failed:', error.message || error); return null; }
-            return data?.content || null;
-        } catch (error) { console.warn('Supabase academy data exception:', error); return null; }
-    }
-
-    async function saveSupabaseAcademyData() {
-        if (!supabaseClient) return { success: false, error: 'Supabase غير متاح' };
-        try {
-            const record = { id: 'main', content: data, updated_at: new Date().toISOString() };
-            const { error } = await supabaseClient.from('academy_data').upsert(record, { onConflict: 'id' });
-            if (error) { console.warn('Supabase academy data save failed:', error.message || error); return { success: false,
-                    error }; }
-            localStorage.setItem('academyData', JSON.stringify(data));
-            return { success: true };
-        } catch (error) { console.warn('Supabase academy data save exception:', error); return { success: false,
-                error }; }
     }
 
     // ============================================================
@@ -766,7 +2865,8 @@
 
         teachers.forEach((teacher) => {
             const hasAccess = hasAccessToTeacher(teacher);
-            const imageUrl = teacher.image || '';
+            const canContact = canUserContact() && hasAccess;
+            const imageUrl = getSafeImageUrl(teacher.image);
             const emoji = teacher.emoji || '👨‍🏫';
             const name = teacher.name || 'مدرس';
             const subject = teacher.subject || '';
@@ -790,6 +2890,11 @@
                         <i class="fas fa-chevron-left"></i>
                         <span>عرض</span>
                     </div>
+                    ${canContact ? `
+                        <button class="btn-contact" onclick="event.stopPropagation();openChat('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${imageUrl || ''}')">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    ` : ''}
                 </div>
             `;
         });
@@ -823,7 +2928,7 @@
         activeSectionIndex = sectionIndex;
 
         const hasAccess = hasAccessToTeacher(teacher);
-        modalTeacherTitle.textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
+        if (modalTeacherTitle) modalTeacherTitle.textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
 
         const semesters = Array.isArray(teacher.semesters) ? teacher.semesters : [];
         let html = '';
@@ -867,14 +2972,19 @@
             </div>
         `;
 
-        semestersList.innerHTML = html;
-        semestersModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        if (semestersList) semestersList.innerHTML = html;
+        if (semestersModal) {
+            semestersModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
     };
 
     window.activateCodeFromTeacher = async function() {
-        const codeInput = document.getElementById('codeInputTeacher');
-        const codeMessage = document.getElementById('codeMessageTeacher');
+        const codeInput = safeGetElement('codeInputTeacher');
+        const codeMessage = safeGetElement('codeMessageTeacher');
+        
+        if (!codeInput || !codeMessage) return;
+        
         const code = codeInput.value.trim().toUpperCase();
 
         if (!code) {
@@ -927,7 +3037,7 @@
         if (!semester) return;
 
         const hasAccess = hasAccessToTeacher(teacher);
-        modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
+        if (modalSemesterTitle) modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
         let html = '';
         const lectures = Array.isArray(semester.lectures) ? semester.lectures : [];
@@ -953,9 +3063,11 @@
             `;
         });
 
-        lecturesList.innerHTML = html;
-        lecturesModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        if (lecturesList) lecturesList.innerHTML = html;
+        if (lecturesModal) {
+            lecturesModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
     };
 
     // ===== MY COURSES =====
@@ -971,7 +3083,7 @@
                         courses.push({
                             teacherName: teacher.name,
                             teacherEmoji: teacher.emoji || '👨‍🏫',
-                            teacherImage: teacher.image || '',
+                            teacherImage: getSafeImageUrl(teacher.image) || '',
                             sectionName: section.name,
                             sectionIndex: data.sections.indexOf(section),
                             teacherIndex: teacherIndex,
@@ -986,8 +3098,8 @@
     }
 
     function renderMyCourses() {
-        const container = document.getElementById('myCoursesContainer');
-        const countSpan = document.getElementById('myCoursesCount');
+        const container = safeGetElement('myCoursesContainer');
+        const countSpan = safeGetElement('myCoursesCount');
         if (!container) return;
 
         const courses = getMyCourses();
@@ -1024,29 +3136,33 @@
         container.innerHTML = html;
     }
 
-    // ===== ACCOUNT - تم إصلاحها بالكامل =====
+    // ===== ACCOUNT =====
     function renderAccount() {
         if (!currentUser) {
-            accountName.textContent = 'غير مسجل';
-            accountEmail.textContent = 'يرجى تسجيل الدخول';
-            accountAvatar.textContent = '👤';
-            accountRegistered.textContent = '--';
-            accountCourses.textContent = '0';
-            accountCodes.textContent = '0';
-            adminPanelBtn.style.display = 'none';
+            if (accountName) accountName.textContent = 'غير مسجل';
+            if (accountEmail) accountEmail.textContent = 'يرجى تسجيل الدخول';
+            if (accountAvatar) accountAvatar.textContent = '👤';
+            if (accountRegistered) accountRegistered.textContent = '--';
+            if (accountCourses) accountCourses.textContent = '0';
+            if (accountCodes) accountCodes.textContent = '0';
+            if (accountMessages) accountMessages.textContent = '0';
+            if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+
+            const teacherDashboard = safeGetElement('teacherDashboard');
+            if (teacherDashboard) teacherDashboard.style.display = 'none';
             return;
         }
 
         const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
-        accountName.textContent = name;
-        accountEmail.textContent = currentUser.email;
-        accountAvatar.textContent = name.charAt(0).toUpperCase();
+        if (accountName) accountName.textContent = name;
+        if (accountEmail) accountEmail.textContent = currentUser.email;
+        if (accountAvatar) accountAvatar.textContent = name.charAt(0).toUpperCase();
 
         const registered = currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString('ar') : 'غير معروف';
-        accountRegistered.textContent = 'مسجل منذ: ' + registered;
+        if (accountRegistered) accountRegistered.textContent = 'مسجل منذ: ' + registered;
 
         const courses = getMyCourses();
-        accountCourses.textContent = courses.length;
+        if (accountCourses) accountCourses.textContent = courses.length;
 
         let codesCount = 0;
         data.sections.forEach(section => {
@@ -1056,46 +3172,41 @@
                 }
             });
         });
-        accountCodes.textContent = codesCount;
+        if (accountCodes) accountCodes.textContent = codesCount;
 
-        // ✅ الحل النهائي: التحقق المباشر من قائمة المشرفين + قاعدة البيانات
+        const userMessages = contactMessages.filter(m => m.sender === currentUser.email);
+        if (accountMessages) accountMessages.textContent = userMessages.length;
+
         const userEmail = currentUser.email;
-        
-        // أولاً: التحقق من القائمة المحددة مباشرة
+
         if (ADMIN_EMAILS.includes(userEmail)) {
-            adminPanelBtn.style.display = 'flex';
-            console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من القائمة المحددة)');
-            return;
+            if (adminPanelBtn) adminPanelBtn.style.display = 'flex';
+        } else {
+            isUserAdmin(userEmail).then(isAdmin => {
+                if (adminPanelBtn) adminPanelBtn.style.display = isAdmin ? 'flex' : 'none';
+            }).catch(() => {
+                if (adminPanelBtn) adminPanelBtn.style.display = 'none';
+            });
         }
-        
-        // ثانياً: محاولة التحقق من قاعدة البيانات
-        isUserAdmin(userEmail).then(isAdmin => {
-            if (isAdmin) {
-                adminPanelBtn.style.display = 'flex';
-                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من قاعدة البيانات)');
-            } else {
-                adminPanelBtn.style.display = 'none';
-                console.log('👤 مستخدم عادي، زر الإدارة مخفي');
-            }
-        }).catch(err => {
-            console.warn('⚠️ خطأ في التحقق من المشرف:', err);
-            // في حالة الخطأ، نتحقق من القائمة مرة أخرى
-            if (ADMIN_EMAILS.includes(userEmail)) {
-                adminPanelBtn.style.display = 'flex';
-                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (حل بديل)');
-            } else {
-                adminPanelBtn.style.display = 'none';
-            }
-        });
+
+        const isTeacherAdmin = isAnyTeacherAdmin(userEmail);
+        const teacherDashboard = safeGetElement('teacherDashboard');
+        if (teacherDashboard) {
+            teacherDashboard.style.display = isTeacherAdmin ? 'block' : 'none';
+        }
+
+        renderTeacherInbox();
     }
 
     function updateBadge() {
         const courses = getMyCourses();
-        if (courses.length > 0) {
-            coursesBadge.style.display = 'inline';
-            coursesBadge.textContent = courses.length;
-        } else {
-            coursesBadge.style.display = 'none';
+        if (coursesBadge) {
+            if (courses.length > 0) {
+                coursesBadge.style.display = 'inline';
+                coursesBadge.textContent = courses.length;
+            } else {
+                coursesBadge.style.display = 'none';
+            }
         }
     }
 
@@ -1116,6 +3227,16 @@
             if (lecturesModal) lecturesModal.classList.remove('active');
             if (teachersModal) teachersModal.classList.remove('active');
             if (editLectureModal) editLectureModal.classList.remove('active');
+            const chatPage = safeGetElement('chatPage');
+            if (chatPage) chatPage.classList.remove('active');
+            const chatPopup = safeGetElement('chatPopup');
+            if (chatPopup) chatPopup.classList.remove('active');
+            const teacherAdminModal = safeGetElement('teacherAdminModal');
+            if (teacherAdminModal) teacherAdminModal.classList.remove('active');
+            const teacherStudentsModal = safeGetElement('teacherStudentsModal');
+            if (teacherStudentsModal) teacherStudentsModal.classList.remove('active');
+            const teacherMessagesModal = safeGetElement('teacherMessagesModal');
+            if (teacherMessagesModal) teacherMessagesModal.classList.remove('active');
             renderMyCourses();
             renderAccount();
             updateBadge();
@@ -1130,15 +3251,14 @@
         }
     }
 
-    // ===== UPDATE UI =====
     function updateUI() {
         if (currentUser) {
             const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
-            userNameDisplay.textContent = name;
-            userAvatar.textContent = name.charAt(0).toUpperCase();
+            if (userNameDisplay) userNameDisplay.textContent = name;
+            if (userAvatar) userAvatar.textContent = name.charAt(0).toUpperCase();
         } else {
-            userNameDisplay.textContent = 'غير مسجل';
-            userAvatar.textContent = '👤';
+            if (userNameDisplay) userNameDisplay.textContent = 'غير مسجل';
+            if (userAvatar) userAvatar.textContent = '👤';
         }
     }
 
@@ -1150,7 +3270,7 @@
         }
 
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-        const targetPage = document.getElementById('page-' + page);
+        const targetPage = safeGetElement('page-' + page);
         if (targetPage) targetPage.style.display = 'block';
 
         document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
@@ -1160,7 +3280,7 @@
             item.classList.toggle('active', item.dataset.page === page);
         });
 
-        const hero = document.getElementById('hero');
+        const hero = safeGetElement('hero');
         if (hero) {
             hero.style.display = page === 'home' ? 'flex' : 'none';
         }
@@ -1171,9 +3291,17 @@
         }
         if (page === 'account') {
             renderAccount();
+            renderMyMessages();
         }
         if (page === 'teachers' || page === 'home') {
             renderAllData();
+        }
+        if (page === 'contact') {
+            renderContactTeachers();
+            checkContactMessages();
+            // عرض قائمة المحادثات
+            renderChatList();
+            updateChatBadge();
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1193,66 +3321,71 @@
         });
     });
 
-    // ===== USER PROFILE CLICK =====
-    document.getElementById('userProfileBtn')?.addEventListener('click', function() {
-        if (!currentUser) {
-            window.location.href = 'index.html';
-            return;
-        }
-        navigateTo('account');
-    });
+    const userProfileBtn = safeGetElement('userProfileBtn');
+    if (userProfileBtn) {
+        userProfileBtn.addEventListener('click', function() {
+            if (!currentUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+            navigateTo('account');
+        });
+    }
 
-    // ===== LOGOUT =====
-    logoutAccountBtn?.addEventListener('click', signOut);
+    if (logoutAccountBtn) logoutAccountBtn.addEventListener('click', signOut);
 
-    // ===== ADMIN PANEL BUTTON =====
-    adminPanelBtn?.addEventListener('click', function() {
-        if (!currentUser) {
-            showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
-            return;
-        }
-        
-        // التحقق المباشر أولاً
-        if (ADMIN_EMAILS.includes(currentUser.email)) {
-            adminPanel.classList.add('active');
-            updateAllAdminSelects();
-            updatePendingChanges();
-            loadAdminsList();
-            showToast('success', '🔓 مرحباً بك في لوحة التحكم');
-            return;
-        }
-        
-        // ثم التحقق من قاعدة البيانات
-        isUserAdmin(currentUser.email).then(isAdmin => {
-            if (isAdmin) {
-                adminPanel.classList.add('active');
+    if (adminPanelBtn) {
+        adminPanelBtn.addEventListener('click', function() {
+            if (!currentUser) {
+                showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
+                return;
+            }
+
+            if (ADMIN_EMAILS.includes(currentUser.email)) {
+                if (adminPanel) adminPanel.classList.add('active');
                 updateAllAdminSelects();
                 updatePendingChanges();
                 loadAdminsList();
+                renderAllMessages();
+                renderTeacherAdminsList();
                 showToast('success', '🔓 مرحباً بك في لوحة التحكم');
-            } else {
-                showToast('error', '❌ غير مصرح لك بالدخول إلى لوحة التحكم');
+                return;
             }
+
+            isUserAdmin(currentUser.email).then(isAdmin => {
+                if (isAdmin) {
+                    if (adminPanel) adminPanel.classList.add('active');
+                    updateAllAdminSelects();
+                    updatePendingChanges();
+                    loadAdminsList();
+                    renderAllMessages();
+                    renderTeacherAdminsList();
+                    showToast('success', '🔓 مرحباً بك في لوحة التحكم');
+                } else {
+                    showToast('error', '❌ غير مصرح لك بالدخول إلى لوحة التحكم');
+                }
+            });
         });
-    });
+    }
 
-    adminClose?.addEventListener('click', function() {
-        adminPanel.classList.remove('active');
-    });
+    if (adminClose) {
+        adminClose.addEventListener('click', function() {
+            if (adminPanel) adminPanel.classList.remove('active');
+        });
+    }
 
-    // ===== THEME =====
     function toggleTheme() {
         isDarkMode = !isDarkMode;
         document.body.classList.toggle('dark-mode', isDarkMode);
-        themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        if (themeToggle) themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
         localStorage.setItem('devAcademicTheme', isDarkMode ? 'dark' : 'light');
         showToast('info', isDarkMode ? '🌙 تم تفعيل الوضع المظلم' : '☀️ تم تفعيل الوضع الفاتح');
     }
 
-    themeToggle.addEventListener('click', toggleTheme);
+    if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
 
-    // ===== SEARCH =====
     function applyFilters() {
+        if (!searchInput) return;
         const term = searchInput.value.trim().toLowerCase();
         if (term === '') {
             renderAllData();
@@ -1271,45 +3404,79 @@
         renderTeachers(filtered, teachersGridContainer2);
     }
 
-    searchBtn.addEventListener('click', applyFilters);
-    searchInput.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') applyFilters();
-    });
+    if (searchBtn) searchBtn.addEventListener('click', applyFilters);
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') applyFilters();
+        });
+    }
 
-    // ===== MODALS =====
     function closeModal(modal) {
+        if (!modal) return;
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
 
-    closeTeachersModal?.addEventListener('click', () => closeModal(teachersModal));
-    closeSemestersModal?.addEventListener('click', () => closeModal(semestersModal));
-    closeLecturesModal?.addEventListener('click', () => closeModal(lecturesModal));
+    if (closeTeachersModal) closeTeachersModal.addEventListener('click', () => closeModal(teachersModal));
+    if (closeSemestersModal) closeSemestersModal.addEventListener('click', () => closeModal(semestersModal));
+    if (closeLecturesModal) closeLecturesModal.addEventListener('click', () => closeModal(lecturesModal));
 
-    teachersModal?.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
-    semestersModal?.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
-    lecturesModal?.addEventListener('click', function(e) {
-        if (e.target === this) closeModal(this);
-    });
+    if (teachersModal) {
+        teachersModal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this);
+        });
+    }
+    if (semestersModal) {
+        semestersModal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this);
+        });
+    }
+    if (lecturesModal) {
+        lecturesModal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this);
+        });
+    }
 
-    // ===== VIDEO PLAYER EVENTS =====
-    closePlayer.addEventListener('click', closeVideoPlayer);
-    videoPlayer.addEventListener('click', function(e) {
-        if (e.target === this) closeVideoPlayer();
-    });
+    if (closePlayer) closePlayer.addEventListener('click', closeVideoPlayer);
+    if (videoPlayer) {
+        videoPlayer.addEventListener('click', function(e) {
+            if (e.target === this) closeVideoPlayer();
+        });
+    }
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            if (videoPlayer.classList.contains('active')) closeVideoPlayer();
-            if (teachersModal.classList.contains('active')) closeModal(teachersModal);
-            if (semestersModal.classList.contains('active')) closeModal(semestersModal);
-            if (lecturesModal.classList.contains('active')) closeModal(lecturesModal);
-            if (editLectureModal.classList.contains('active')) closeEditLectureModal();
-            if (adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
+            if (videoPlayer && videoPlayer.classList.contains('active')) closeVideoPlayer();
+            if (teachersModal && teachersModal.classList.contains('active')) closeModal(teachersModal);
+            if (semestersModal && semestersModal.classList.contains('active')) closeModal(semestersModal);
+            if (lecturesModal && lecturesModal.classList.contains('active')) closeModal(lecturesModal);
+            if (editLectureModal && editLectureModal.classList.contains('active')) closeEditLectureModal();
+            if (adminPanel && adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
+            const chatPage = safeGetElement('chatPage');
+            if (chatPage && chatPage.classList.contains('active')) {
+                chatPage.classList.remove('active');
+                document.body.style.overflow = 'auto';
+                if (chatRecipient) saveChatMessages(chatRecipient);
+            }
+            const chatPopup = safeGetElement('chatPopup');
+            if (chatPopup && chatPopup.classList.contains('active')) {
+                chatPopup.classList.remove('active');
+            }
+            const teacherAdminModal = safeGetElement('teacherAdminModal');
+            if (teacherAdminModal && teacherAdminModal.classList.contains('active')) {
+                teacherAdminModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+            const teacherStudentsModal = safeGetElement('teacherStudentsModal');
+            if (teacherStudentsModal && teacherStudentsModal.classList.contains('active')) {
+                teacherStudentsModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+            const teacherMessagesModal = safeGetElement('teacherMessagesModal');
+            if (teacherMessagesModal && teacherMessagesModal.classList.contains('active')) {
+                teacherMessagesModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
         }
     });
 
@@ -1326,6 +3493,7 @@
         updateEditSelects();
         updateCodeSelects();
         updateCodesManagement();
+        updateTeacherAdminSelects();
     }
 
     function updateBasicSelects() {
@@ -1333,11 +3501,11 @@
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
             'deleteSection', 'deleteTeacherSection', 'deleteSemesterSection',
-            'deleteLectureSection'
+            'deleteLectureSection', 'teacherAdminSection'
         ];
 
         selectIds.forEach(id => {
-            const select = document.getElementById(id);
+            const select = safeGetElement(id);
             if (!select) return;
             const currentValue = select.value;
             let options = '<option value="">اختر القسم...</option>';
@@ -1349,6 +3517,28 @@
                 select.value = currentValue;
             }
         });
+    }
+
+    function updateTeacherAdminSelects() {
+        const sectionSelect = safeGetElement('teacherAdminSection');
+        const teacherSelect = safeGetElement('teacherAdminTeacher');
+        if (!sectionSelect || !teacherSelect) return;
+
+        const sectionIndex = parseInt(sectionSelect.value);
+        const currentValue = teacherSelect.value;
+        let options = '<option value="">اختر المدرس...</option>';
+
+        if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
+            data.sections[sectionIndex].teachers.forEach((t, i) => {
+                options += `<option value="${i}">${t.name}</option>`;
+            });
+        }
+
+        teacherSelect.innerHTML = options;
+        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
+            data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
+            teacherSelect.value = currentValue;
+        }
     }
 
     function updateTeacherSelects() {
@@ -1363,8 +3553,8 @@
         ];
 
         teacherSelects.forEach(({ selectId, sectionId }) => {
-            const select = document.getElementById(selectId);
-            const sectionSelect = document.getElementById(sectionId);
+            const select = safeGetElement(selectId);
+            const sectionSelect = safeGetElement(sectionId);
             if (!select || !sectionSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
@@ -1394,9 +3584,9 @@
         ];
 
         semesterSelects.forEach(({ selectId, teacherId, sectionId }) => {
-            const select = document.getElementById(selectId);
-            const teacherSelect = document.getElementById(teacherId);
-            const sectionSelect = document.getElementById(sectionId);
+            const select = safeGetElement(selectId);
+            const teacherSelect = safeGetElement(teacherId);
+            const sectionSelect = safeGetElement(sectionId);
             if (!select || !teacherSelect || !sectionSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
@@ -1431,10 +3621,10 @@
         ];
 
         lectureSelects.forEach(({ selectId, semesterId, sectionId, teacherId }) => {
-            const select = document.getElementById(selectId);
-            const semesterSelect = document.getElementById(semesterId);
-            const sectionSelect = document.getElementById(sectionId);
-            const teacherSelect = document.getElementById(teacherId);
+            const select = safeGetElement(selectId);
+            const semesterSelect = safeGetElement(semesterId);
+            const sectionSelect = safeGetElement(sectionId);
+            const teacherSelect = safeGetElement(teacherId);
             if (!select || !semesterSelect || !sectionSelect || !teacherSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
@@ -1464,8 +3654,8 @@
     }
 
     function updateDeleteSelects() {
-        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
-        const deleteTeacherSection = document.getElementById('deleteTeacherSection');
+        const deleteTeacherSelect = safeGetElement('deleteTeacherSelect');
+        const deleteTeacherSection = safeGetElement('deleteTeacherSection');
         if (deleteTeacherSelect && deleteTeacherSection) {
             const sectionIndex = parseInt(deleteTeacherSection.value);
             const currentValue = deleteTeacherSelect.value;
@@ -1484,8 +3674,8 @@
     }
 
     function updateEditSelects() {
-        const editTeacherSelect = document.getElementById('editTeacherSelect');
-        const editTeacherSection = document.getElementById('editTeacherSection');
+        const editTeacherSelect = safeGetElement('editTeacherSelect');
+        const editTeacherSection = safeGetElement('editTeacherSection');
         if (editTeacherSelect && editTeacherSection) {
             const sectionIndex = parseInt(editTeacherSection.value);
             const currentValue = editTeacherSelect.value;
@@ -1505,8 +3695,8 @@
     }
 
     function updateCodeSelects() {
-        const sectionSelect = document.getElementById('codeSection');
-        const teacherSelect = document.getElementById('codeTeacherSelect');
+        const sectionSelect = safeGetElement('codeSection');
+        const teacherSelect = safeGetElement('codeTeacherSelect');
         if (!sectionSelect || !teacherSelect) return;
 
         const sectionIndex = parseInt(sectionSelect.value);
@@ -1527,29 +3717,35 @@
     }
 
     function updateEditTeacherData() {
-        const sectionSelect = document.getElementById('editTeacherSection');
-        const teacherSelect = document.getElementById('editTeacherSelect');
+        const sectionSelect = safeGetElement('editTeacherSection');
+        const teacherSelect = safeGetElement('editTeacherSelect');
 
         if (!sectionSelect || !teacherSelect) return;
 
         const sectionIndex = parseInt(sectionSelect.value);
         const teacherIndex = parseInt(teacherSelect.value);
 
+        const nameInput = safeGetElement('editTeacherName');
+        const subjectInput = safeGetElement('editTeacherSubject');
+        const descInput = safeGetElement('editTeacherDesc');
+        const imageInput = safeGetElement('editTeacherImage');
+        const messageEl = safeGetElement('editTeacherMessage');
+
         if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
             !data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            document.getElementById('editTeacherName').value = '';
-            document.getElementById('editTeacherSubject').value = '';
-            document.getElementById('editTeacherDesc').value = '';
-            document.getElementById('editTeacherImage').value = '';
+            if (nameInput) nameInput.value = '';
+            if (subjectInput) subjectInput.value = '';
+            if (descInput) descInput.value = '';
+            if (imageInput) imageInput.value = '';
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        document.getElementById('editTeacherName').value = teacher.name || '';
-        document.getElementById('editTeacherSubject').value = teacher.subject || '';
-        document.getElementById('editTeacherDesc').value = teacher.description || '';
-        document.getElementById('editTeacherImage').value = teacher.image || '';
-        document.getElementById('editTeacherMessage').innerHTML = '';
+        if (nameInput) nameInput.value = teacher.name || '';
+        if (subjectInput) subjectInput.value = teacher.subject || '';
+        if (descInput) descInput.value = teacher.description || '';
+        if (imageInput) imageInput.value = getSafeImageUrl(teacher.image) || '';
+        if (messageEl) messageEl.innerHTML = '';
     }
 
     function updatePendingChanges() {
@@ -1564,202 +3760,246 @@
     // ============================================================
     // ===== إضافة قسم =====
     // ============================================================
-    addSectionForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const name = document.getElementById('sectionName').value.trim();
+    if (addSectionForm) {
+        addSectionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nameInput = safeGetElement('sectionName');
+            if (!nameInput) return;
+            const name = nameInput.value.trim();
 
-        if (!name) {
-            showToast('warning', '⚠️ يرجى إدخال اسم القسم');
-            return;
-        }
+            if (!name) {
+                showToast('warning', '⚠️ يرجى إدخال اسم القسم');
+                return;
+            }
 
-        const newSection = {
-            id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-            name: name,
-            teachers: []
-        };
+            const newSection = {
+                id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+                name: name,
+                teachers: []
+            };
 
-        data.sections.push(newSection);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addSectionForm.reset();
-        showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
-        adminPanel.classList.add('active');
-    });
+            data.sections.push(newSection);
+            saveData();
+            renderAllData();
+            updateAllAdminSelects();
+            addChange();
+            addSectionForm.reset();
+            showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
+            if (adminPanel) adminPanel.classList.add('active');
+        });
+    }
 
     // ============================================================
     // ===== إضافة مدرس =====
     // ============================================================
-    addTeacherForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('teacherSection');
-        const sectionIndex = parseInt(sectionSelect?.value);
+    if (addTeacherForm) {
+        addTeacherForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sectionSelect = safeGetElement('teacherSection');
+            if (!sectionSelect) return;
+            const sectionIndex = parseInt(sectionSelect?.value);
 
-        if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '⚠️ يرجى اختيار القسم');
-            return;
-        }
+            if (isNaN(sectionIndex) || sectionIndex < 0) {
+                showToast('warning', '⚠️ يرجى اختيار القسم');
+                return;
+            }
 
-        const name = document.getElementById('teacherName').value.trim();
-        const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
-        const subject = document.getElementById('teacherSubject').value.trim();
-        const description = document.getElementById('teacherDesc').value.trim();
-        const image = document.getElementById('teacherImage').value.trim();
+            const nameInput = safeGetElement('teacherName');
+            const emojiInput = safeGetElement('teacherEmoji');
+            const subjectInput = safeGetElement('teacherSubject');
+            const descInput = safeGetElement('teacherDesc');
+            const imageInput = safeGetElement('teacherImage');
 
-        if (!name) {
-            showToast('warning', '⚠️ يرجى إدخال اسم المدرس');
-            return;
-        }
+            if (!nameInput) return;
 
-        const newTeacher = {
-            name,
-            emoji,
-            subject: subject || 'مدرس',
-            description: description || '',
-            image: image || '',
-            codes: [],
-            semesters: []
-        };
+            const name = nameInput.value.trim();
+            const emoji = emojiInput?.value.trim() || '🧑‍🏫';
+            const subject = subjectInput?.value.trim();
+            const description = descInput?.value.trim();
+            const image = imageInput?.value.trim();
 
-        data.sections[sectionIndex].teachers.push(newTeacher);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addTeacherForm.reset();
-        showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
-        adminPanel.classList.add('active');
-    });
+            if (!name) {
+                showToast('warning', '⚠️ يرجى إدخال اسم المدرس');
+                return;
+            }
+
+            const newTeacher = {
+                name,
+                emoji,
+                subject: subject || 'مدرس',
+                description: description || '',
+                image: getSafeImageUrl(image) || '',
+                codes: [],
+                semesters: []
+            };
+
+            data.sections[sectionIndex].teachers.push(newTeacher);
+            saveData();
+            renderAllData();
+            updateAllAdminSelects();
+            addChange();
+            addTeacherForm.reset();
+            showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+            if (adminPanel) adminPanel.classList.add('active');
+        });
+    }
 
     // ============================================================
     // ===== إضافة فصل =====
     // ============================================================
-    addSemesterForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('semesterSection');
-        const teacherSelect = document.getElementById('semesterTeacher');
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const number = parseInt(document.getElementById('semesterNumber').value);
-        const description = document.getElementById('semesterDesc').value.trim();
+    if (addSemesterForm) {
+        addSemesterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sectionSelect = safeGetElement('semesterSection');
+            const teacherSelect = safeGetElement('semesterTeacher');
+            const numberInput = safeGetElement('semesterNumber');
+            const descInput = safeGetElement('semesterDesc');
 
-        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
-            showToast('warning', '⚠️ يرجى اختيار القسم والمدرس وإدخال رقم الفصل');
-            return;
-        }
+            if (!sectionSelect || !teacherSelect || !numberInput) return;
 
-        const newSemester = {
-            number: number,
-            description: description || `الفصل ${number}`,
-            lectures: []
-        };
+            const sectionIndex = parseInt(sectionSelect?.value);
+            const teacherIndex = parseInt(teacherSelect?.value);
+            const number = parseInt(numberInput.value);
+            const description = descInput?.value.trim();
 
-        data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addSemesterForm.reset();
-        showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
-        adminPanel.classList.add('active');
-    });
+            if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
+                showToast('warning', '⚠️ يرجى اختيار القسم والمدرس وإدخال رقم الفصل');
+                return;
+            }
+
+            const newSemester = {
+                number: number,
+                description: description || `الفصل ${number}`,
+                lectures: []
+            };
+
+            data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
+            saveData();
+            renderAllData();
+            updateAllAdminSelects();
+            addChange();
+            addSemesterForm.reset();
+            showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+            if (adminPanel) adminPanel.classList.add('active');
+        });
+    }
 
     // ============================================================
     // ===== إضافة محاضرة =====
     // ============================================================
-    addLectureForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const sectionSelect = document.getElementById('lectureSection');
-        const teacherSelect = document.getElementById('lectureTeacher');
-        const semesterSelect = document.getElementById('lectureSemester');
+    if (addLectureForm) {
+        addLectureForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sectionSelect = safeGetElement('lectureSection');
+            const teacherSelect = safeGetElement('lectureTeacher');
+            const semesterSelect = safeGetElement('lectureSemester');
+            const numberInput = safeGetElement('lectureNumber');
+            const titleInput = safeGetElement('lectureTitle');
+            const urlInput = safeGetElement('lectureUrl');
+            const freeSelect = safeGetElement('lectureFree');
 
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const semesterIndex = parseInt(semesterSelect?.value);
-        const number = parseInt(document.getElementById('lectureNumber').value);
-        const title = document.getElementById('lectureTitle').value.trim();
-        const youtubeUrl = document.getElementById('lectureUrl').value.trim();
-        const isFree = document.getElementById('lectureFree').value === 'true';
+            if (!sectionSelect || !teacherSelect || !semesterSelect || !numberInput || !titleInput || !urlInput || !freeSelect) return;
 
-        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
-            isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
-            showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
-            return;
-        }
+            const sectionIndex = parseInt(sectionSelect?.value);
+            const teacherIndex = parseInt(teacherSelect?.value);
+            const semesterIndex = parseInt(semesterSelect?.value);
+            const number = parseInt(numberInput.value);
+            const title = titleInput.value.trim();
+            const youtubeUrl = urlInput.value.trim();
+            const isFree = freeSelect.value === 'true';
 
-        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
-            youtubeUrl.includes('youtube') ||
-            youtubeUrl.includes('youtu.be') ||
-            youtubeUrl.includes('player.') ||
-            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+            if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
+                isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
+                showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
 
-        if (!isValidUrl) {
-            showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
-            return;
-        }
+            const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+                youtubeUrl.includes('youtube') ||
+                youtubeUrl.includes('youtu.be') ||
+                youtubeUrl.includes('player.') ||
+                youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
-        const newLecture = { number, title, youtubeUrl, isFree };
-        data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
-        addLectureForm.reset();
-        showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
-        adminPanel.classList.add('active');
-    });
+            if (!isValidUrl) {
+                showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
+                return;
+            }
+
+            const newLecture = { number, title, youtubeUrl, isFree };
+            data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
+            saveData();
+            renderAllData();
+            updateAllAdminSelects();
+            addChange();
+            addLectureForm.reset();
+            showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+            if (adminPanel) adminPanel.classList.add('active');
+        });
+    }
 
     // ============================================================
     // ===== إدارة الأكواد =====
     // ============================================================
     window.addManualCode = function() {
-        const sectionSelect = document.getElementById('codeSection');
-        const teacherSelect = document.getElementById('codeTeacherSelect');
-        const codeInput = document.getElementById('manualCodeInput');
-        const codeMessage = document.getElementById('manualCodeMessage');
+        const sectionSelect = safeGetElement('codeSection');
+        const teacherSelect = safeGetElement('codeTeacherSelect');
+        const codeInput = safeGetElement('manualCodeInput');
+        const codeMessage = safeGetElement('manualCodeMessage');
+
+        if (!sectionSelect || !teacherSelect || !codeInput) return;
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
         const code = codeInput?.value.trim().toUpperCase();
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            codeMessage.innerHTML = '⚠️ يرجى اختيار القسم أولاً';
-            codeMessage.style.color = '#f59e0b';
+            if (codeMessage) {
+                codeMessage.innerHTML = '⚠️ يرجى اختيار القسم أولاً';
+                codeMessage.style.color = '#f59e0b';
+            }
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            codeMessage.innerHTML = '⚠️ يرجى اختيار المدرس أولاً';
-            codeMessage.style.color = '#f59e0b';
+            if (codeMessage) {
+                codeMessage.innerHTML = '⚠️ يرجى اختيار المدرس أولاً';
+                codeMessage.style.color = '#f59e0b';
+            }
             return;
         }
 
         if (!code) {
-            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
-            codeMessage.style.color = '#f59e0b';
+            if (codeMessage) {
+                codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
+                codeMessage.style.color = '#f59e0b';
+            }
             return;
         }
 
         if (code.length < 4) {
-            codeMessage.innerHTML = '⚠️ الكود قصير جداً';
-            codeMessage.style.color = '#f59e0b';
+            if (codeMessage) {
+                codeMessage.innerHTML = '⚠️ الكود قصير جداً';
+                codeMessage.style.color = '#f59e0b';
+            }
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
         if (!teacher) {
-            codeMessage.innerHTML = '❌ المدرس غير موجود';
-            codeMessage.style.color = '#ef4444';
+            if (codeMessage) {
+                codeMessage.innerHTML = '❌ المدرس غير موجود';
+                codeMessage.style.color = '#ef4444';
+            }
             return;
         }
 
         if (!teacher.codes) teacher.codes = [];
         const exists = teacher.codes.some(c => c.code === code);
         if (exists) {
-            codeMessage.innerHTML = '⚠️ هذا الكود موجود بالفعل';
-            codeMessage.style.color = '#f59e0b';
+            if (codeMessage) {
+                codeMessage.innerHTML = '⚠️ هذا الكود موجود بالفعل';
+                codeMessage.style.color = '#f59e0b';
+            }
             return;
         }
 
@@ -1777,15 +4017,19 @@
         addChange();
         updateCodesManagement();
         if (codeInput) codeInput.value = '';
-        codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
-        codeMessage.style.color = '#22c55e';
+        if (codeMessage) {
+            codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
+            codeMessage.style.color = '#22c55e';
+        }
         showToast('success', `✅ تم إضافة الكود: ${code}`);
         updateAllAdminSelects();
     };
 
     window.generateCodes = function(count = 5) {
-        const sectionSelect = document.getElementById('codeSection');
-        const teacherSelect = document.getElementById('codeTeacherSelect');
+        const sectionSelect = safeGetElement('codeSection');
+        const teacherSelect = safeGetElement('codeTeacherSelect');
+        if (!sectionSelect || !teacherSelect) return;
+        
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
 
@@ -1833,9 +4077,11 @@
     };
 
     function updateCodesManagement() {
-        const sectionSelect = document.getElementById('codeSection');
-        const teacherSelect = document.getElementById('codeTeacherSelect');
-        const container = document.getElementById('codesListContainer');
+        const sectionSelect = safeGetElement('codeSection');
+        const teacherSelect = safeGetElement('codeTeacherSelect');
+        const container = safeGetElement('codesListContainer');
+
+        if (!container) return;
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -1875,9 +4121,7 @@
                 const isUsed = c.used;
                 const isLocked = c.locked || false;
                 const isMyCode = c.userEmail === currentUser?.email;
-                let statusText = '',
-                    statusColor = '#22c55e',
-                    usedAtDisplay = '—';
+                let statusText = '', statusColor = '#22c55e', usedAtDisplay = '—';
 
                 if (isLocked) { statusText = '🔒 مقفل';
                     statusColor = '#f59e0b'; } else if (isUsed) {
@@ -1948,75 +4192,93 @@
     // ============================================================
     // ===== EDIT TEACHER =====
     // ============================================================
-    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
+    const editTeacherSection = safeGetElement('editTeacherSection');
+    if (editTeacherSection) {
+        editTeacherSection.addEventListener('change', function() {
+            updateAllAdminSelects();
+        });
+    }
 
-    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
-        updateEditTeacherData();
-    });
+    const editTeacherSelect = safeGetElement('editTeacherSelect');
+    if (editTeacherSelect) {
+        editTeacherSelect.addEventListener('change', function() {
+            updateEditTeacherData();
+        });
+    }
 
-    editTeacherForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
+    if (editTeacherForm) {
+        editTeacherForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        const sectionSelect = document.getElementById('editTeacherSection');
-        const teacherSelect = document.getElementById('editTeacherSelect');
-        const messageEl = document.getElementById('editTeacherMessage');
+            const sectionSelect = safeGetElement('editTeacherSection');
+            const teacherSelect = safeGetElement('editTeacherSelect');
+            const messageEl = safeGetElement('editTeacherMessage');
 
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
+            if (!sectionSelect || !teacherSelect || !messageEl) return;
 
-        if (isNaN(sectionIndex) || sectionIndex < 0) {
-            messageEl.innerHTML = '⚠️ يرجى اختيار القسم';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
+            const sectionIndex = parseInt(sectionSelect?.value);
+            const teacherIndex = parseInt(teacherSelect?.value);
 
-        if (isNaN(teacherIndex) || teacherIndex < 0) {
-            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
+            if (isNaN(sectionIndex) || sectionIndex < 0) {
+                messageEl.innerHTML = '⚠️ يرجى اختيار القسم';
+                messageEl.style.color = '#f59e0b';
+                return;
+            }
 
-        const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        if (!teacher) {
-            messageEl.innerHTML = '❌ المدرس غير موجود';
-            messageEl.style.color = '#ef4444';
-            return;
-        }
+            if (isNaN(teacherIndex) || teacherIndex < 0) {
+                messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
+                messageEl.style.color = '#f59e0b';
+                return;
+            }
 
-        const newName = document.getElementById('editTeacherName').value.trim();
-        const newSubject = document.getElementById('editTeacherSubject').value.trim();
-        const newDesc = document.getElementById('editTeacherDesc').value.trim();
-        const newImage = document.getElementById('editTeacherImage').value.trim();
+            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
+            if (!teacher) {
+                messageEl.innerHTML = '❌ المدرس غير موجود';
+                messageEl.style.color = '#ef4444';
+                return;
+            }
 
-        if (!newName) {
-            messageEl.innerHTML = '⚠️ يرجى إدخال اسم المدرس';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
+            const nameInput = safeGetElement('editTeacherName');
+            const subjectInput = safeGetElement('editTeacherSubject');
+            const descInput = safeGetElement('editTeacherDesc');
+            const imageInput = safeGetElement('editTeacherImage');
 
-        teacher.name = newName;
-        teacher.subject = newSubject || 'مدرس';
-        teacher.description = newDesc || '';
-        teacher.image = newImage || '';
+            if (!nameInput) return;
 
-        saveData();
-        renderAllData();
-        updateAllAdminSelects();
-        addChange();
+            const newName = nameInput.value.trim();
+            const newSubject = subjectInput?.value.trim();
+            const newDesc = descInput?.value.trim();
+            const newImage = imageInput?.value.trim();
 
-        messageEl.innerHTML = `✅ تم تعديل بيانات المدرس "${newName}" بنجاح!`;
-        messageEl.style.color = '#22c55e';
-        showToast('success', `✅ تم تعديل بيانات المدرس "${newName}"`);
-    });
+            if (!newName) {
+                messageEl.innerHTML = '⚠️ يرجى إدخال اسم المدرس';
+                messageEl.style.color = '#f59e0b';
+                return;
+            }
+
+            teacher.name = newName;
+            teacher.subject = newSubject || 'مدرس';
+            teacher.description = newDesc || '';
+            teacher.image = getSafeImageUrl(newImage) || '';
+
+            saveData();
+            renderAllData();
+            updateAllAdminSelects();
+            addChange();
+
+            messageEl.innerHTML = `✅ تم تعديل بيانات المدرس "${newName}" بنجاح!`;
+            messageEl.style.color = '#22c55e';
+            showToast('success', `✅ تم تعديل بيانات المدرس "${newName}"`);
+        });
+    }
 
     // ============================================================
     // ===== DELETE FUNCTIONS =====
     // ============================================================
 
     window.deleteSelectedSection = function() {
-        const select = document.getElementById('deleteSection');
+        const select = safeGetElement('deleteSection');
+        if (!select) return;
         const sectionIndex = parseInt(select?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
@@ -2035,15 +4297,17 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = document.getElementById('deleteSectionMessage');
+        const msg = safeGetElement('deleteSectionMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف القسم "${section.name}" بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف القسم "${section.name}"`);
     };
 
     window.deleteSelectedTeacherFromTab = function() {
-        const sectionSelect = document.getElementById('deleteTeacherSection');
-        const teacherSelect = document.getElementById('deleteTeacherSelect');
+        const sectionSelect = safeGetElement('deleteTeacherSection');
+        const teacherSelect = safeGetElement('deleteTeacherSelect');
+        if (!sectionSelect || !teacherSelect) return;
+        
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
 
@@ -2068,16 +4332,18 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = document.getElementById('deleteTeacherMessage');
+        const msg = safeGetElement('deleteTeacherMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف المدرس "${teacher.name}"`);
     };
 
     window.deleteSelectedSemesterFromTab = function() {
-        const sectionSelect = document.getElementById('deleteSemesterSection');
-        const teacherSelect = document.getElementById('deleteSemesterTeacher');
-        const semesterSelect = document.getElementById('deleteSemesterSelect');
+        const sectionSelect = safeGetElement('deleteSemesterSection');
+        const teacherSelect = safeGetElement('deleteSemesterTeacher');
+        const semesterSelect = safeGetElement('deleteSemesterSelect');
+
+        if (!sectionSelect || !teacherSelect || !semesterSelect) return;
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -2109,7 +4375,7 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = document.getElementById('deleteSemesterMessage');
+        const msg = safeGetElement('deleteSemesterMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف الفصل ${semester.number}`);
@@ -2117,10 +4383,12 @@
     };
 
     window.deleteSelectedLectureFromTab = function() {
-        const sectionSelect = document.getElementById('deleteLectureSection');
-        const teacherSelect = document.getElementById('deleteLectureTeacher');
-        const semesterSelect = document.getElementById('deleteLectureSemester');
-        const lectureSelect = document.getElementById('deleteLectureSelect');
+        const sectionSelect = safeGetElement('deleteLectureSection');
+        const teacherSelect = safeGetElement('deleteLectureTeacher');
+        const semesterSelect = safeGetElement('deleteLectureSemester');
+        const lectureSelect = safeGetElement('deleteLectureSelect');
+
+        if (!sectionSelect || !teacherSelect || !semesterSelect || !lectureSelect) return;
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -2158,7 +4426,7 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = document.getElementById('deleteLectureMessage');
+        const msg = safeGetElement('deleteLectureMessage');
         if (msg) { msg.innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
             msg.style.color = '#22c55e'; }
         showToast('success', `✅ تم حذف المحاضرة "${lecture.title}"`);
@@ -2179,24 +4447,31 @@
         if (!lecture) return;
 
         editTarget = { sectionIndex, teacherIndex, semesterIndex, lectureIndex };
-        editLectureTitle.value = lecture.title || '';
-        editLectureUrl.value = lecture.youtubeUrl || '';
-        editLectureIsFree.value = lecture.isFree ? 'true' : 'false';
+        if (editLectureTitle) editLectureTitle.value = lecture.title || '';
+        if (editLectureUrl) editLectureUrl.value = lecture.youtubeUrl || '';
+        if (editLectureIsFree) editLectureIsFree.value = lecture.isFree ? 'true' : 'false';
 
-        document.querySelector('#editLectureModal h2').textContent = `✏️ تعديل المحاضرة #${lecture.number}`;
-        const infoSpan = document.getElementById('editLectureInfo');
-        infoSpan.textContent = `📚 ${section.name} | 👨‍🏫 ${teacher.name} | 📖 الفصل ${semester.number}`;
-        editLectureMessage.innerHTML = '';
-        editLectureModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        const titleEl = document.querySelector('#editLectureModal h2');
+        if (titleEl) titleEl.textContent = `✏️ تعديل المحاضرة #${lecture.number}`;
+        
+        const infoSpan = safeGetElement('editLectureInfo');
+        if (infoSpan) infoSpan.textContent = `📚 ${section.name} | 👨‍🏫 ${teacher.name} | 📖 الفصل ${semester.number}`;
+        
+        if (editLectureMessage) editLectureMessage.innerHTML = '';
+        if (editLectureModal) {
+            editLectureModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     window.openEditLectureFromAdmin = function() {
-        const sectionSelect = document.getElementById('editLectureSection');
-        const teacherSelect = document.getElementById('editLectureTeacher');
-        const semesterSelect = document.getElementById('editLectureSemester');
-        const lectureSelect = document.getElementById('editLectureSelect');
-        const messageEl = document.getElementById('editLectureAdminMessage');
+        const sectionSelect = safeGetElement('editLectureSection');
+        const teacherSelect = safeGetElement('editLectureTeacher');
+        const semesterSelect = safeGetElement('editLectureSemester');
+        const lectureSelect = safeGetElement('editLectureSelect');
+        const messageEl = safeGetElement('editLectureAdminMessage');
+
+        if (!sectionSelect || !teacherSelect || !semesterSelect || !lectureSelect || !messageEl) return;
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -2238,87 +4513,98 @@
         openEditLecture(sectionIndex, teacherIndex, semesterIndex, lectureIndex);
     };
 
-    editLectureForm?.addEventListener('submit', function(e) {
-        e.preventDefault();
+    if (editLectureForm) {
+        editLectureForm.addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        const { sectionIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
+            const { sectionIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
 
-        if (sectionIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
-            editLectureMessage.innerHTML = '⚠️ لم يتم تحديد المحاضرة بشكل صحيح';
-            editLectureMessage.style.color = '#f59e0b';
-            return;
-        }
+            if (sectionIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
+                if (editLectureMessage) {
+                    editLectureMessage.innerHTML = '⚠️ لم يتم تحديد المحاضرة بشكل صحيح';
+                    editLectureMessage.style.color = '#f59e0b';
+                }
+                return;
+            }
 
-        const newTitle = editLectureTitle.value.trim();
-        const newUrl = editLectureUrl.value.trim();
-        const newIsFree = editLectureIsFree.value === 'true';
+            if (!editLectureTitle || !editLectureUrl || !editLectureIsFree || !editLectureMessage) return;
 
-        if (!newTitle) {
-            editLectureMessage.innerHTML = '⚠️ يرجى إدخال عنوان المحاضرة';
-            editLectureMessage.style.color = '#f59e0b';
-            return;
-        }
+            const newTitle = editLectureTitle.value.trim();
+            const newUrl = editLectureUrl.value.trim();
+            const newIsFree = editLectureIsFree.value === 'true';
 
-        if (!newUrl) {
-            editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط الفيديو';
-            editLectureMessage.style.color = '#f59e0b';
-            return;
-        }
+            if (!newTitle) {
+                editLectureMessage.innerHTML = '⚠️ يرجى إدخال عنوان المحاضرة';
+                editLectureMessage.style.color = '#f59e0b';
+                return;
+            }
 
-        const isValidUrl = newUrl.includes('mediadelivery') ||
-            newUrl.includes('youtube') ||
-            newUrl.includes('youtu.be') ||
-            newUrl.includes('player.') ||
-            newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+            if (!newUrl) {
+                editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط الفيديو';
+                editLectureMessage.style.color = '#f59e0b';
+                return;
+            }
 
-        if (!isValidUrl) {
-            editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube';
-            editLectureMessage.style.color = '#f59e0b';
-            return;
-        }
+            const isValidUrl = newUrl.includes('mediadelivery') ||
+                newUrl.includes('youtube') ||
+                newUrl.includes('youtu.be') ||
+                newUrl.includes('player.') ||
+                newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
-        const lecture = data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
-        if (!lecture) {
-            editLectureMessage.innerHTML = '❌ المحاضرة غير موجودة';
-            editLectureMessage.style.color = '#ef4444';
-            return;
-        }
+            if (!isValidUrl) {
+                editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube';
+                editLectureMessage.style.color = '#f59e0b';
+                return;
+            }
 
-        lecture.title = newTitle;
-        lecture.youtubeUrl = newUrl;
-        lecture.isFree = newIsFree;
+            const lecture = data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
+            if (!lecture) {
+                editLectureMessage.innerHTML = '❌ المحاضرة غير موجودة';
+                editLectureMessage.style.color = '#ef4444';
+                return;
+            }
 
-        saveData();
-        renderAllData();
-        addChange();
+            lecture.title = newTitle;
+            lecture.youtubeUrl = newUrl;
+            lecture.isFree = newIsFree;
 
-        editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
-        editLectureMessage.style.color = '#22c55e';
-        showToast('success', `✅ تم تعديل المحاضرة "${newTitle}" بنجاح`);
+            saveData();
+            renderAllData();
+            addChange();
 
-        setTimeout(() => { closeEditLectureModal(); }, 1200);
-    });
+            editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
+            editLectureMessage.style.color = '#22c55e';
+            showToast('success', `✅ تم تعديل المحاضرة "${newTitle}" بنجاح`);
+
+            setTimeout(() => { closeEditLectureModal(); }, 1200);
+        });
+    }
 
     function closeEditLectureModal() {
-        editLectureModal.classList.remove('active');
+        if (editLectureModal) editLectureModal.classList.remove('active');
         document.body.style.overflow = 'auto';
         editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
         if (editLectureMessage) editLectureMessage.innerHTML = '';
     }
 
-    closeEditLecture?.addEventListener('click', closeEditLectureModal);
-    cancelEditLecture?.addEventListener('click', closeEditLectureModal);
-    editLectureModal?.addEventListener('click', function(e) {
-        if (e.target === this) closeEditLectureModal();
-    });
+    if (closeEditLecture) closeEditLecture.addEventListener('click', closeEditLectureModal);
+    if (cancelEditLecture) cancelEditLecture.addEventListener('click', closeEditLectureModal);
+    if (editLectureModal) {
+        editLectureModal.addEventListener('click', function(e) {
+            if (e.target === this) closeEditLectureModal();
+        });
+    }
 
     // ============================================================
     // ===== ADMIN MANAGEMENT =====
     // ============================================================
 
     window.addNewAdmin = async function() {
-        const emailInput = document.getElementById('adminEmailInput');
-        const messageEl = document.getElementById('addAdminMessage');
+        const emailInput = safeGetElement('adminEmailInput');
+        const messageEl = safeGetElement('addAdminMessage');
+        
+        if (!emailInput || !messageEl) return;
+        
         const email = emailInput.value.trim();
 
         if (!email) {
@@ -2394,7 +4680,8 @@
     };
 
     window.fixUserAndAddAdmin = async function(email) {
-        const messageEl = document.getElementById('addAdminMessage');
+        const messageEl = safeGetElement('addAdminMessage');
+        if (!messageEl) return;
 
         if (!supabaseClient) {
             messageEl.innerHTML = '❌ Supabase غير متاح';
@@ -2483,7 +4770,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
     };
 
     async function loadAdminsList() {
-        const container = document.getElementById('adminsListContainer');
+        const container = safeGetElement('adminsListContainer');
         if (!container) return;
 
         if (!supabaseClient) {
@@ -2575,60 +4862,63 @@ grant execute on function add_user_and_admin(text) to authenticated;
     };
 
     // ============================================================
-    // ===== PUBLISH - تم إصلاحها =====
+    // ===== PUBLISH =====
     // ============================================================
-    publishBtn?.addEventListener('click', async function() {
-        if (pendingChanges === 0) {
-            showToast('info', '📌 لا توجد تغييرات لنشرها');
-            return;
-        }
-
-        if (!supabaseClient) {
-            showToast('error', '❌ Supabase غير متاح');
-            return;
-        }
-
-        // التحقق المباشر من المشرف
-        if (!ADMIN_EMAILS.includes(currentUser?.email)) {
-            const isAdmin = await isUserAdmin(currentUser?.email);
-            if (!isAdmin) {
-                showToast('error', '❌ يجب تسجيل الدخول كمشرف');
+    if (publishBtn) {
+        publishBtn.addEventListener('click', async function() {
+            if (pendingChanges === 0) {
+                showToast('info', '📌 لا توجد تغييرات لنشرها');
                 return;
             }
-        }
 
-        const result = await saveSupabaseAcademyData();
-        if (!result.success) {
-            showToast('error', '❌ فشل النشر: ' + (result.error?.message || 'خطأ غير معروف'));
-            return;
-        }
+            if (!supabaseClient) {
+                showToast('error', '❌ Supabase غير متاح');
+                return;
+            }
 
-        pendingChanges = 0;
-        updatePendingChanges();
-        showToast('success', '✅ تم نشر التغييرات بنجاح');
+            if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+                const isAdmin = await isUserAdmin(currentUser?.email);
+                if (!isAdmin) {
+                    showToast('error', '❌ يجب تسجيل الدخول كمشرف');
+                    return;
+                }
+            }
 
-        const msg = document.getElementById('publishMessage');
-        if (msg) { msg.textContent = '✅ تم نشر التغييرات بنجاح';
-            msg.style.color = '#22c55e'; }
-        setTimeout(() => { if (msg) msg.textContent = ''; }, 5000);
-    });
+            const result = await saveSupabaseAcademyData();
+            if (!result.success) {
+                showToast('error', '❌ فشل النشر: ' + (result.error?.message || 'خطأ غير معروف'));
+                return;
+            }
 
-    createTableBtn?.addEventListener('click', async function() {
-        const sql =
-            `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
-        try {
-            await navigator.clipboard.writeText(sql);
-            showToast('info', '✅ تم نسخ SQL إلى الحافظة');
-        } catch (err) {
-            showToast('error', '❌ فشل نسخ SQL');
-        }
-    });
+            pendingChanges = 0;
+            updatePendingChanges();
+            showToast('success', '✅ تم نشر التغييرات بنجاح');
+
+            const msg = safeGetElement('publishMessage');
+            if (msg) { msg.textContent = '✅ تم نشر التغييرات بنجاح';
+                msg.style.color = '#22c55e'; }
+            setTimeout(() => { if (msg) msg.textContent = ''; }, 5000);
+        });
+    }
+
+    if (createTableBtn) {
+        createTableBtn.addEventListener('click', async function() {
+            const sql =
+                `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
+            try {
+                await navigator.clipboard.writeText(sql);
+                showToast('info', '✅ تم نسخ SQL إلى الحافظة');
+            } catch (err) {
+                showToast('error', '❌ فشل نسخ SQL');
+            }
+        });
+    }
 
     // ============================================================
     // ===== USERS TABLE =====
     // ============================================================
     function renderUsersTable() {
-        const tbody = document.getElementById('usersTableBody');
+        const tbody = safeGetElement('usersTableBody');
         if (!tbody) return;
 
         const usersMap = new Map();
@@ -2686,7 +4976,8 @@ grant execute on function add_user_and_admin(text) to authenticated;
             tabBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            const tabContent = safeGetElement('tab-' + this.dataset.tab);
+            if (tabContent) tabContent.classList.add('active');
 
             if (this.dataset.tab === 'manage-codes') {
                 updateAllAdminSelects();
@@ -2707,6 +4998,11 @@ grant execute on function add_user_and_admin(text) to authenticated;
             if (this.dataset.tab === 'edit-teacher') {
                 updateAllAdminSelects();
             }
+            if (this.dataset.tab === 'teacher-admins') {
+                updateAllAdminSelects();
+                renderTeacherAdminsList();
+            }
+            if (this.dataset.tab === 'publish') {}
             if (this.dataset.tab === 'add-teacher' || this.dataset.tab === 'add-semester' ||
                 this.dataset.tab === 'add-lecture' || this.dataset.tab === 'add-section') {
                 updateAllAdminSelects();
@@ -2718,184 +5014,142 @@ grant execute on function add_user_and_admin(text) to authenticated;
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
     // ============================================================
 
-    document.getElementById('teacherSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
+    const selectListeners = [
+        'teacherSection', 'semesterSection', 'lectureSection',
+        'codeSection', 'editTeacherSection', 'editLectureSection',
+        'deleteTeacherSection', 'deleteSemesterSection', 'deleteLectureSection',
+        'semesterTeacher', 'lectureTeacher', 'codeTeacherSelect',
+        'editTeacherSelect', 'editLectureTeacher', 'deleteSemesterTeacher',
+        'deleteLectureTeacher', 'lectureSemester', 'editLectureSemester',
+        'deleteSemesterSelect', 'deleteLectureSemester', 'teacherAdminSection'
+    ];
 
-    document.getElementById('semesterSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('lectureSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('codeSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('editLectureSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteTeacherSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteSemesterSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteLectureSection')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('semesterTeacher')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('lectureTeacher')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('codeTeacherSelect')?.addEventListener('change', function() {
-        updateCodesManagement();
-    });
-
-    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
-        updateEditTeacherData();
-    });
-
-    document.getElementById('editLectureTeacher')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteSemesterTeacher')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteLectureTeacher')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('lectureSemester')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('editLectureSemester')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteSemesterSelect')?.addEventListener('change', function() {
-        updateAllAdminSelects();
-    });
-
-    document.getElementById('deleteLectureSemester')?.addEventListener('change', function() {
-        updateAllAdminSelects();
+    selectListeners.forEach(id => {
+        const el = safeGetElement(id);
+        if (el) {
+            el.addEventListener('change', function() {
+                updateAllAdminSelects();
+            });
+        }
     });
 
     // ============================================================
     // ===== NAVBAR SCROLL =====
     // ============================================================
     window.addEventListener('scroll', function() {
-        if (window.scrollY > 50) {
-            navbar?.classList.add('scrolled');
-        } else {
-            navbar?.classList.remove('scrolled');
+        if (navbar) {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
         }
     });
 
     // ============================================================
-    // ===== INIT =====
+    // ===== THEME =====
     // ============================================================
     const savedTheme = localStorage.getItem('devAcademicTheme');
     if (savedTheme === 'dark') {
         isDarkMode = true;
         document.body.classList.add('dark-mode');
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        if (themeToggle) themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
 
+    // ============================================================
+    // ===== INIT - النسخة المعدلة النهائية =====
+    // ============================================================
     async function init() {
-        if (supabaseClient) {
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session?.user) {
-                    currentUser = session.user;
-                    localStorage.setItem('devAcademicUser', JSON.stringify({
-                        email: currentUser.email,
-                        name: currentUser.user_metadata?.full_name || ''
-                    }));
-                    updateUI();
-                    await loadUserCodesFromSupabase();
-                    renderAllData();
-                    renderMyCourses();
-                    renderAccount();
-                    updateBadge();
+        console.log('🚀 بدء تحميل ديف أكاديمي...');
 
-                    loadingScreen.style.display = 'none';
-                    navbar.style.display = 'flex';
-                    bottomNav.style.display = 'flex';
-                    footer.style.display = 'block';
+        if (!supabaseClient) {
+            console.error('❌ Supabase غير متاح');
+            showToast('error', '⚠️ فشل الاتصال بقاعدة البيانات');
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            return;
+        }
 
-                    navigateTo('home');
-                    showToast('success', '✅ مرحباً بعودتك');
-                    console.log('👤 المستخدم:', currentUser.email);
-                    console.log('👑 قائمة المشرفين:', ADMIN_EMAILS);
-                } else {
-                    window.location.href = 'index.html';
+        try {
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            
+            if (sessionError) {
+                console.error('❌ خطأ في جلب الجلسة:', sessionError);
+                throw sessionError;
+            }
+
+            if (session?.user) {
+                currentUser = session.user;
+                localStorage.setItem('devAcademicUser', JSON.stringify({
+                    email: currentUser.email,
+                    name: currentUser.user_metadata?.full_name || ''
+                }));
+                
+                updateUI();
+                
+                await loadUserCodesFromSupabase();
+                loadContactMessages();
+                loadTeacherAdmins();
+                loadNotifications();
+                loadConversations(); // تحميل المحادثات
+                
+                renderAllData();
+                renderMyCourses();
+                renderAccount();
+                renderMyMessages();
+                renderContactTeachers();
+                renderAllMessages();
+                renderTeacherInbox();
+                renderTeacherAdminsList();
+                renderNotifications();
+                renderChatList(); // عرض قائمة المحادثات
+                updateBadge();
+                updateContactBadge();
+                updateNotificationBadge();
+                updateNotificationToggleUI();
+                updateChatBadge();
+
+                if (loadingScreen) loadingScreen.style.display = 'none';
+                if (navbar) navbar.style.display = 'flex';
+                if (bottomNav) bottomNav.style.display = 'flex';
+                if (footer) footer.style.display = 'block';
+
+                navigateTo('home');
+                showToast('success', '✅ مرحباً بعودتك');
+                console.log('👤 المستخدم:', currentUser.email);
+                console.log('👑 قائمة المشرفين:', ADMIN_EMAILS);
+                console.log('👨‍🏫 المدرسين المسؤولين:', teacherAdmins.length);
+                
+            } else {
+                if (!isRedirecting) {
+                    isRedirecting = true;
+                    console.log('👤 لا يوجد مستخدم مسجل، جارٍ التوجيه إلى صفحة تسجيل الدخول...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 500);
                 }
-            } catch (error) {
-                console.warn('Session check error:', error);
-                window.location.href = 'index.html';
             }
-        } else {
-            window.location.href = 'index.html';
+            
+        } catch (error) {
+            console.error('❌ خطأ في التهيئة:', error);
+            showToast('error', '⚠️ حدث خطأ أثناء تحميل التطبيق');
+            
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (navbar) navbar.style.display = 'flex';
+            if (bottomNav) bottomNav.style.display = 'flex';
         }
-
-        if (supabaseClient && currentUser) {
-            try {
-                const channel = supabaseClient
-                    .channel('public:academy_data')
-                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data',
-                        filter: 'id=eq.main' }, (payload) => {
-                        if (!payload?.new?.content) return;
-                        try {
-                            const remoteData = payload.new.content;
-                            if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
-                                data = remoteData;
-                                normalizeDataStructure(data);
-                                saveData();
-                                renderAllData();
-                                renderMyCourses();
-                                renderAccount();
-                                updateBadge();
-                                showToast('info', '🔄 تم تحديث البيانات تلقائياً');
-                            }
-                        } catch (err) { console.warn('Realtime parse error:', err); }
-                    })
-                    .subscribe();
-                console.log('✅ مشترك في تحديثات Supabase');
-            } catch (error) {
-                console.warn('Supabase realtime subscription failed:', error);
-            }
-        }
-
-        renderUsersTable();
-        updateAllAdminSelects();
-        loadAdminsList();
-        console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام والفلتر');
-        console.log('🔒 جميع الميزات محمية وآمنة');
-        console.log('🎥 دعم منصة mediadelivery للتشغيل');
-        console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
     }
 
+    // ============================================================
+    // ===== بدء التطبيق =====
+    // ============================================================
     loadData().then(init).catch((error) => {
         console.error('Initialization failed:', error);
-        window.location.href = 'index.html';
+        if (!isRedirecting) {
+            isRedirecting = true;
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 500);
+        }
     });
 
 })();
