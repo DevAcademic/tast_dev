@@ -1,31 +1,7 @@
 (function() {
     'use strict';
 
-    // =====    =====
-    let isRedirecting = false;
-
-    // =====    =====
-    function safeGetElement(id) {
-        const el = document.getElementById(id);
-        if (!el) console.warn(`  : #${id}`);
-        return el;
-    }
-
-    function safeSetDisplay(id, value) {
-        const el = document.getElementById(id);
-        if (el) { el.style.display = value; return true; }
-        console.warn(`   display : #${id}`);
-        return false;
-    }
-
-    function safeSetStyle(id, property, value) {
-        const el = document.getElementById(id);
-        if (el) { el.style[property] = value; return true; }
-        console.warn(`   style : #${id}`);
-        return false;
-    }
-
-    // =====  F12   =====
+    // ===== حماية F12 وأدوات المطور =====
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12' ||
             (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
@@ -33,14 +9,14 @@
             (e.ctrlKey && (e.key === 'U' || e.key === 'u')) ||
             (e.ctrlKey && (e.key === 'S' || e.key === 's'))) {
             e.preventDefault();
-            showToast('warning', '    ');
+            showToast('warning', '⚠️ هذه الميزة غير متاحة');
             return false;
         }
     });
 
     document.addEventListener('contextmenu', function(e) {
         e.preventDefault();
-        showToast('warning', '    ');
+        showToast('warning', '⚠️ هذه الميزة غير متاحة');
         return false;
     });
 
@@ -69,225 +45,100 @@
     let activeSectionIndex = null;
     let currentFilter = 'all';
 
-    // =====   =====
+    // ===== الأقسام الافتراضية =====
     const defaultSections = [
-        { id: 'first-intermediate', name: ' ', teachers: [] },
-        { id: 'second-intermediate', name: ' ', teachers: [] },
-        { id: 'third-intermediate', name: ' ', teachers: [] },
-        { id: 'fourth-scientific', name: ' ', teachers: [] },
-        { id: 'fourth-literary', name: ' ', teachers: [] },
-        { id: 'fifth-scientific', name: ' ', teachers: [] },
-        { id: 'fifth-literary', name: ' ', teachers: [] },
-        { id: 'sixth-scientific', name: ' ', teachers: [] },
-        { id: 'sixth-literary', name: ' ', teachers: [] }
+        { id: 'first-intermediate', name: 'أول متوسط', teachers: [] },
+        { id: 'second-intermediate', name: 'ثاني متوسط', teachers: [] },
+        { id: 'third-intermediate', name: 'ثالث متوسط', teachers: [] },
+        { id: 'fourth-scientific', name: 'رابع علمي', teachers: [] },
+        { id: 'fourth-literary', name: 'رابع أدبي', teachers: [] },
+        { id: 'fifth-scientific', name: 'خامس علمي', teachers: [] },
+        { id: 'fifth-literary', name: 'خامس أدبي', teachers: [] },
+        { id: 'sixth-scientific', name: 'سادس علمي', teachers: [] },
+        { id: 'sixth-literary', name: 'سادس أدبي', teachers: [] }
     ];
 
-    // =====    () =====
-    let contactMessages = [];
-    let chatMessages = [];
-    let chatRecipient = '';
-    let chatRecipientImage = '';
-    let chatRecipientEmoji = '';
-    let chatTheme = 'light';
-    let chatAttachments = [];
-    let currentChatTeacher = null;
+    // ===== DOM Elements =====
+    const loadingScreen = document.getElementById('loadingScreen');
+    const navbar = document.getElementById('navbar');
+    const bottomNav = document.getElementById('bottomNav');
+    const footer = document.getElementById('footer');
+    const teachersContainer = document.getElementById('teachersContainer');
+    const teachersGridContainer = document.getElementById('teachersGridContainer');
+    const teachersGridContainer2 = document.getElementById('teachersGridContainer2');
+    const sectionFilter = document.getElementById('sectionFilter');
+    const sectionFilter2 = document.getElementById('sectionFilter2');
+    const teachersCount = document.getElementById('teachersCount');
+    const teachersCount2 = document.getElementById('teachersCount2');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const closePlayer = document.getElementById('closePlayer');
+    const videoWrapper = document.getElementById('videoWrapper');
+    const themeToggle = document.getElementById('themeToggle');
+    const toastContainer = document.getElementById('toastContainer');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const userAvatar = document.getElementById('userAvatar');
 
-    let teacherAdmins = [];
-    let notifications = [];
-    let notificationsEnabled = true;
-
-    // =====    ( TikTok) =====
-    let chatConversations = {};
-
-    // ===== DOM Elements   =====
-    const loadingScreen = safeGetElement('loadingScreen');
-    const navbar = safeGetElement('navbar');
-    const bottomNav = safeGetElement('bottomNav');
-    const footer = safeGetElement('footer');
-    const teachersContainer = safeGetElement('teachersContainer');
-    const teachersGridContainer = safeGetElement('teachersGridContainer');
-    const teachersGridContainer2 = safeGetElement('teachersGridContainer2');
-    const sectionFilter = safeGetElement('sectionFilter');
-    const sectionFilter2 = safeGetElement('sectionFilter2');
-    const teachersCount = safeGetElement('teachersCount');
-    const teachersCount2 = safeGetElement('teachersCount2');
-    const searchInput = safeGetElement('searchInput');
-    const searchBtn = safeGetElement('searchBtn');
-    const videoPlayer = safeGetElement('videoPlayer');
-    const closePlayer = safeGetElement('closePlayer');
-    const videoWrapper = safeGetElement('videoWrapper');
-    const themeToggle = safeGetElement('themeToggle');
-    const toastContainer = safeGetElement('toastContainer');
-    const userNameDisplay = safeGetElement('userNameDisplay');
-    const userAvatar = safeGetElement('userAvatar');
-
-    const adminPanel = safeGetElement('adminPanel');
-    const adminClose = safeGetElement('adminClose');
+    // ===== Admin Elements =====
+    const adminPanel = document.getElementById('adminPanel');
+    const adminClose = document.getElementById('adminClose');
     const tabBtns = document.querySelectorAll('.tab-btn');
-    const publishBtn = safeGetElement('publishBtn');
-    const pendingChangesSpan = safeGetElement('pendingChanges');
-    const createTableBtn = safeGetElement('createTableBtn');
+    const publishBtn = document.getElementById('publishBtn');
+    const pendingChangesSpan = document.getElementById('pendingChanges');
+    const createTableBtn = document.getElementById('createTableBtn');
 
-    const addSectionForm = safeGetElement('addSectionForm');
-    const addTeacherForm = safeGetElement('addTeacherForm');
-    const addSemesterForm = safeGetElement('addSemesterForm');
-    const addLectureForm = safeGetElement('addLectureForm');
-    const editTeacherForm = safeGetElement('editTeacherForm');
+    // ===== Forms =====
+    const addSectionForm = document.getElementById('addSectionForm');
+    const addTeacherForm = document.getElementById('addTeacherForm');
+    const addSemesterForm = document.getElementById('addSemesterForm');
+    const addLectureForm = document.getElementById('addLectureForm');
+    const editTeacherForm = document.getElementById('editTeacherForm');
 
-    const teachersModal = safeGetElement('teachersModal');
-    const closeTeachersModal = safeGetElement('closeTeachersModal');
-    const teachersList = safeGetElement('teachersList');
-    const semestersModal = safeGetElement('semestersModal');
-    const closeSemestersModal = safeGetElement('closeSemestersModal');
-    const semestersList = safeGetElement('semestersList');
-    const modalTeacherTitle = safeGetElement('modalTeacherTitle');
-    const lecturesModal = safeGetElement('lecturesModal');
-    const closeLecturesModal = safeGetElement('closeLecturesModal');
-    const lecturesList = safeGetElement('lecturesList');
-    const modalSemesterTitle = safeGetElement('modalSemesterTitle');
+    // ===== Modals =====
+    const teachersModal = document.getElementById('teachersModal');
+    const closeTeachersModal = document.getElementById('closeTeachersModal');
+    const teachersList = document.getElementById('teachersList');
+    const semestersModal = document.getElementById('semestersModal');
+    const closeSemestersModal = document.getElementById('closeSemestersModal');
+    const semestersList = document.getElementById('semestersList');
+    const modalTeacherTitle = document.getElementById('modalTeacherTitle');
+    const lecturesModal = document.getElementById('lecturesModal');
+    const closeLecturesModal = document.getElementById('closeLecturesModal');
+    const lecturesList = document.getElementById('lecturesList');
+    const modalSemesterTitle = document.getElementById('modalSemesterTitle');
 
+    // ===== Bottom Navigation =====
     const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
 
-    const accountName = safeGetElement('accountName');
-    const accountEmail = safeGetElement('accountEmail');
-    const accountAvatar = safeGetElement('accountAvatar');
-    const accountRegistered = safeGetElement('accountRegistered');
-    const accountCourses = safeGetElement('accountCourses');
-    const accountCodes = safeGetElement('accountCodes');
-    const accountMessages = safeGetElement('accountMessages');
-    const logoutAccountBtn = safeGetElement('logoutAccountBtn');
-    const adminPanelBtn = safeGetElement('adminPanelBtn');
-    const coursesBadge = safeGetElement('coursesBadge');
-    const contactBadge = safeGetElement('contactBadge');
+    // ===== Account Page =====
+    const accountName = document.getElementById('accountName');
+    const accountEmail = document.getElementById('accountEmail');
+    const accountAvatar = document.getElementById('accountAvatar');
+    const accountRegistered = document.getElementById('accountRegistered');
+    const accountCourses = document.getElementById('accountCourses');
+    const accountCodes = document.getElementById('accountCodes');
+    const logoutAccountBtn = document.getElementById('logoutAccountBtn');
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    const coursesBadge = document.getElementById('coursesBadge');
 
-    const editLectureModal = safeGetElement('editLectureModal');
-    const closeEditLecture = safeGetElement('closeEditLecture');
-    const cancelEditLecture = safeGetElement('cancelEditLecture');
-    const editLectureForm = safeGetElement('editLectureForm');
-    const editLectureTitle = safeGetElement('editLectureTitle');
-    const editLectureUrl = safeGetElement('editLectureUrl');
-    const editLectureIsFree = safeGetElement('editLectureIsFree');
-    const editLectureMessage = safeGetElement('editLectureMessage');
+    // ===== Edit Lecture =====
+    const editLectureModal = document.getElementById('editLectureModal');
+    const closeEditLecture = document.getElementById('closeEditLecture');
+    const cancelEditLecture = document.getElementById('cancelEditLecture');
+    const editLectureForm = document.getElementById('editLectureForm');
+    const editLectureTitle = document.getElementById('editLectureTitle');
+    const editLectureUrl = document.getElementById('editLectureUrl');
+    const editLectureIsFree = document.getElementById('editLectureIsFree');
+    const editLectureMessage = document.getElementById('editLectureMessage');
 
     let editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
 
-    const ADMIN_EMAILS = ['sajadsarmd200@gmail.com', 'zzccvc99@gmail.com'];
+    // ===== قائمة المشرفين المحددة (للحل البديل) =====
+    const ADMIN_EMAILS = ['sajadsarmd200@gmail.com', 'wisaamhs90@gmail.com', 'zzccvc99@gmail.com'];
 
     // ============================================================
-    // =====     =====
-    // ============================================================
-
-    function isValidImageUrl(url) {
-        if (!url) return false;
-        if (typeof url !== 'string') return false;
-        if (url.startsWith('/storage/') || url.startsWith('file://') || url.startsWith('content://')) {
-            return false;
-        }
-        if (url.startsWith('data:image/')) {
-            return true;
-        }
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            if (url.includes('Not Found') || url.includes('404') || url.includes('error') || url.includes('null')) {
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
-    function getSafeImageUrl(url) {
-        if (!url) return null;
-        if (typeof url !== 'string') return null;
-        if (!isValidImageUrl(url)) {
-            return null;
-        }
-        const cleanUrl = url.trim();
-        return cleanUrl;
-    }
-
-    function getDefaultAvatar(name) {
-        if (!name) return '';
-        return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0EA5E9&color=fff&size=128&bold=true`;
-    }
-
-    // ============================================================
-    // =====      localStorage =====
-    // ============================================================
-    function saveCodePermanently(codeData, teacherName) {
-        try {
-            const savedCodes = JSON.parse(localStorage.getItem('permanentCodes') || '[]');
-            const exists = savedCodes.some(c => c.code === codeData.code);
-            if (!exists) {
-                savedCodes.push({
-                    code: codeData.code,
-                    teacherName: teacherName,
-                    userEmail: currentUser.email,
-                    userId: currentUser.id,
-                    usedAt: new Date().toISOString(),
-                    isAdminCode: codeData.isAdminCode || false
-                });
-                localStorage.setItem('permanentCodes', JSON.stringify(savedCodes));
-            }
-            console.log('     :', codeData.code);
-        } catch (e) {
-            console.warn('     :', e);
-        }
-    }
-
-    // =====      =====
-    function restorePermanentCodes() {
-        if (!currentUser) return;
-        try {
-            const savedCodes = JSON.parse(localStorage.getItem('permanentCodes') || '[]');
-            if (savedCodes.length === 0) return;
-            
-            let restoredCount = 0;
-            savedCodes.forEach(saved => {
-                if (saved.userEmail === currentUser.email) {
-                    data.sections.forEach(section => {
-                        section.teachers.forEach(teacher => {
-                            if (teacher.name === saved.teacherName) {
-                                if (!teacher.codes) teacher.codes = [];
-                                const exists = teacher.codes.some(c => c.code === saved.code);
-                                if (!exists) {
-                                    teacher.codes.push({
-                                        code: saved.code,
-                                        used: true,
-                                        locked: false,
-                                        deviceId: userDeviceId,
-                                        userId: saved.userId || currentUser.id,
-                                        userEmail: saved.userEmail,
-                                        usedAt: saved.usedAt || new Date().toISOString(),
-                                        isAdminCode: saved.isAdminCode || false
-                                    });
-                                    restoredCount++;
-                                } else {
-                                    const existing = teacher.codes.find(c => c.code === saved.code);
-                                    if (existing && !existing.used) {
-                                        existing.used = true;
-                                        existing.userId = saved.userId || currentUser.id;
-                                        existing.userEmail = saved.userEmail;
-                                        existing.usedAt = saved.usedAt || new Date().toISOString();
-                                        restoredCount++;
-                                    }
-                                }
-                            }
-                        });
-                    });
-                }
-            });
-            
-            if (restoredCount > 0) {
-                saveData();
-                console.log('  ', restoredCount, '   ');
-            }
-        } catch (e) {
-            console.warn('    :', e);
-        }
-    }
-
-    // ============================================================
-    //    
+    // 🔥 دوال تشغيل الفيديو - دعم mediadelivery و YouTube
     // ============================================================
 
     function extractVideoUrl(url) {
@@ -312,7 +163,7 @@
 
     window.playVideo = function(url, title) {
         if (!url) {
-            showToast('error', '    ');
+            showToast('error', '❌ رابط الفيديو غير موجود');
             return;
         }
 
@@ -331,74 +182,66 @@
             videoUrl = videoUrl.replace(/&?muted=true/g, '');
             videoUrl = videoUrl.replace(/&?muted=false/g, '');
 
-            if (videoWrapper) {
-                videoWrapper.innerHTML = `
-                    <iframe src="${videoUrl}" 
-                            loading="lazy" 
-                            style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                            allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
-                            allowfullscreen="true"
-                            webkitallowfullscreen="true"
-                            mozallowfullscreen="true">
-                    </iframe>
-                `;
-            }
+            videoWrapper.innerHTML = `
+                <iframe src="${videoUrl}" 
+                        loading="lazy" 
+                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;"
+                        allowfullscreen="true"
+                        webkitallowfullscreen="true"
+                        mozallowfullscreen="true">
+                </iframe>
+            `;
 
-            if (videoPlayer) videoPlayer.classList.add('active');
+            videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
-            showToast('info', ` : ${title || ''}`);
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
         const videoId = extractYouTubeId(videoUrl);
         if (videoId) {
             const embedUrl = getYouTubeEmbedUrl(videoId);
-            if (videoWrapper) {
-                videoWrapper.innerHTML = `
-                    <iframe src="${embedUrl}" 
-                            style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
-                            allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
-                            allowfullscreen>
-                    </iframe>
-                `;
-            }
+            videoWrapper.innerHTML = `
+                <iframe src="${embedUrl}" 
+                        style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" 
+                        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen"
+                        allowfullscreen>
+                </iframe>
+            `;
 
-            if (videoPlayer) videoPlayer.classList.add('active');
+            videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
-            showToast('info', ` : ${title || ''}`);
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
         if (videoUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i)) {
-            if (videoWrapper) {
-                videoWrapper.innerHTML = `
-                    <video controls autoplay 
-                           style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
-                           controlsList="nodownload"
-                           playsinline>
-                        <source src="${videoUrl}" type="video/mp4">
-                            
-                    </video>
-                `;
-            }
+            videoWrapper.innerHTML = `
+                <video controls autoplay 
+                       style="position:absolute;top:0;left:0;height:100%;width:100%;background:#000;"
+                       controlsList="nodownload"
+                       playsinline>
+                    <source src="${videoUrl}" type="video/mp4">
+                    متصفحك لا يدعم تشغيل الفيديو
+                </video>
+            `;
 
             setTimeout(() => {
-                if (videoWrapper) {
-                    const video = videoWrapper.querySelector('video');
-                    if (video) {
-                        video.volume = 1.0;
-                        video.muted = false;
-                    }
+                const video = videoWrapper.querySelector('video');
+                if (video) {
+                    video.volume = 1.0;
+                    video.muted = false;
                 }
             }, 500);
 
-            if (videoPlayer) videoPlayer.classList.add('active');
+            videoPlayer.classList.add('active');
             document.body.style.overflow = 'hidden';
-            showToast('info', ` : ${title || ''}`);
+            showToast('info', `🎬 تشغيل: ${title || 'محاضرة'}`);
             return;
         }
 
-        showToast('error', '    .   mediadelivery  YouTube');
+        showToast('error', '❌ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
     };
 
     function closeVideoPlayer() {
@@ -429,13 +272,9 @@
     // TOAST
     // ============================================================
     function showToast(type, message, duration = 4000) {
-        if (!toastContainer) {
-            console.warn(' Toast container  ');
-            return;
-        }
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        const icons = { success: '', error: '', warning: '', info: '' };
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
         toast.textContent = `${icons[type] || ''} ${message}`;
         toastContainer.appendChild(toast);
         setTimeout(() => {
@@ -457,54 +296,37 @@
 
     // ===== ACCESS =====
     function hasAccessToTeacher(teacher) {
-        if (!teacher) return false;
+        if (!teacher || !teacher.codes) return false;
         if (!currentUser) return false;
-        
-        //        
-        const isTeacherAdmin = isTeacherAdminForTeacher(currentUser.email, teacher.name);
-        if (isTeacherAdmin) return true;
-        
-        //   
-        if (teacher.codes) {
-            const hasAccess = teacher.codes.some(c => 
-                (c.used && c.userEmail === currentUser.email && !c.locked) ||
-                (c.isAdminCode && c.userEmail === currentUser.email)
-            );
-            if (hasAccess) return true;
-        }
-        
-        //    
-        try {
-            const savedCodes = JSON.parse(localStorage.getItem('permanentCodes') || '[]');
-            const hasSaved = savedCodes.some(c => 
-                c.userEmail === currentUser.email && 
-                c.teacherName === teacher.name
-            );
-            if (hasSaved) return true;
-        } catch (e) {}
-        
-        return false;
+        const hasAccess = teacher.codes.some(c => c.used && c.userEmail === currentUser.email && !c.locked);
+        return hasAccess;
     }
 
-    // ===== ADMIN VERIFICATION =====
+    // ===== ADMIN VERIFICATION - نسخة محسنة مع حل بديل =====
     async function isUserAdmin(email) {
         if (!supabaseClient || !email) {
+            console.log('⚠️ Supabase أو البريد غير متاح، نتحقق من القائمة المحددة');
             return ADMIN_EMAILS.includes(email);
         }
-
+        
         try {
             const { data, error } = await supabaseClient
                 .from('admins')
                 .select('email')
                 .eq('email', email)
                 .maybeSingle();
-
+            
             if (error) {
+                console.warn('⚠️ فشل التحقق من صلاحيات المشرف:', error.message);
                 return ADMIN_EMAILS.includes(email);
             }
-
-            return !!data;
+            
+            const isAdmin = !!data;
+            console.log('🔍 نتيجة التحقق من قاعدة البيانات:', email, '→', isAdmin);
+            return isAdmin;
+            
         } catch (e) {
+            console.warn('⚠️ خطأ في التحقق من المشرف:', e.message);
             return ADMIN_EMAILS.includes(email);
         }
     }
@@ -512,30 +334,30 @@
     // ===== CODE VERIFICATION =====
     async function verifyCode(teacher, code) {
         if (!teacher.codes || teacher.codes.length === 0) {
-            return { valid: false, message: '    ' };
+            return { valid: false, message: 'لا توجد أكواد لهذا المدرس' };
         }
 
         if (!currentUser) {
-            return { valid: false, message: '      ' };
+            return { valid: false, message: '⚠️ يجب تسجيل الدخول أولاً لإدخال الكود' };
         }
 
         const codeData = teacher.codes.find(c => c.code === code);
         if (!codeData) {
-            return { valid: false, message: '   ' };
+            return { valid: false, message: '❌ الكود غير صحيح' };
         }
 
         if (codeData.locked === true) {
-            return { valid: false, message: '      ' };
+            return { valid: false, message: '🔒 هذا الكود مقفل من قبل الإدارة' };
         }
 
         if (codeData.used) {
             if (codeData.userEmail === currentUser.email) {
-                return { valid: true, message: '    ' };
+                return { valid: true, message: '✅ الكود مفعل على حسابك' };
             } else {
-                const usedAt = codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : '  ';
+                const usedAt = codeData.usedAt ? new Date(codeData.usedAt).toLocaleString('ar') : 'وقت غير معروف';
                 return {
                     valid: false,
-                    message: `       \n   : ${usedAt}`
+                    message: `❌ هذا الكود مستخدم من قبل شخص آخر\n⏱️ تم الاستخدام في: ${usedAt}`
                 };
             }
         }
@@ -547,13 +369,14 @@
         codeData.usedAt = new Date().toISOString();
         saveData();
 
-        //    
-        saveCodePermanently(codeData, teacher.name);
-
         const syncResult = await syncCodeWithSupabase(teacher, codeData);
         if (!syncResult.success) {
-            console.warn('     Supabase    ');
-            savePendingSync(codeData, teacher);
+            codeData.used = false;
+            codeData.userId = null;
+            codeData.userEmail = null;
+            codeData.usedAt = null;
+            saveData();
+            return { valid: false, message: '❌ فشل حفظ الكود في قاعدة البيانات' };
         }
 
         await addCodeToUserCodes(currentUser.id, codeData.code);
@@ -563,71 +386,10 @@
         renderAccount();
         updateBadge();
 
-        return { valid: true, message: '    -     ' };
+        return { valid: true, message: '✅ تم التفعيل بنجاح - تم حفظ الكود في حسابك' };
     }
 
-    function savePendingSync(codeData, teacher) {
-        try {
-            let pending = JSON.parse(localStorage.getItem('pendingCodeSync') || '[]');
-            pending.push({
-                code: codeData.code,
-                teacherName: teacher.name,
-                userEmail: currentUser.email,
-                userId: currentUser.id,
-                deviceId: userDeviceId,
-                usedAt: codeData.usedAt,
-                timestamp: Date.now()
-            });
-            localStorage.setItem('pendingCodeSync', JSON.stringify(pending));
-        } catch (e) {
-            console.warn('      ');
-        }
-    }
-
-    async function syncPendingCodes() {
-        try {
-            const pending = JSON.parse(localStorage.getItem('pendingCodeSync') || '[]');
-            if (pending.length === 0) return;
-            
-            let synced = [];
-            for (const item of pending) {
-                let foundTeacher = null;
-                data.sections.forEach(section => {
-                    section.teachers.forEach(teacher => {
-                        if (teacher.name === item.teacherName && teacher.codes) {
-                            const codeData = teacher.codes.find(c => c.code === item.code);
-                            if (codeData) {
-                                foundTeacher = teacher;
-                            }
-                        }
-                    });
-                });
-                
-                if (foundTeacher) {
-                    const result = await syncCodeWithSupabase(foundTeacher, {
-                        code: item.code,
-                        used: true,
-                        userId: item.userId,
-                        userEmail: item.userEmail,
-                        deviceId: item.deviceId,
-                        usedAt: item.usedAt
-                    });
-                    if (result.success) {
-                        synced.push(item.code);
-                    }
-                }
-            }
-            
-            if (synced.length > 0) {
-                const remaining = pending.filter(item => !synced.includes(item.code));
-                localStorage.setItem('pendingCodeSync', JSON.stringify(remaining));
-                console.log('  ', synced.length, '  Supabase');
-            }
-        } catch (e) {
-            console.warn('    ');
-        }
-    }
-
+    // ===== SYNC CODE WITH SUPABASE =====
     async function syncCodeWithSupabase(teacher, codeData) {
         if (!currentUser || !supabaseClient) {
             return { success: false, error: 'No authenticated user or Supabase unavailable' };
@@ -646,6 +408,7 @@
 
             const { error } = await supabaseClient.from('teacher_codes').upsert(record, { onConflict: 'code' });
             if (error) {
+                console.warn('⚠️ فشل مزامنة الكود مع Supabase:', error.message || error);
                 return { success: false, error };
             }
 
@@ -658,27 +421,32 @@
             }).eq('code', codeData.code);
 
             if (updateError) {
-                console.warn('      codes:', updateError);
+                console.warn('⚠️ فشل تحديث الكود في جدول codes:', updateError);
             }
 
+            console.log('✅ تم مزامنة الكود مع Supabase:', codeData.code);
             return { success: true };
         } catch (error) {
+            console.warn('⚠️ خطأ في مزامنة الكود:', error);
             return { success: false, error };
         }
     }
 
+    // ===== ADD CODE TO USER CODES =====
     async function addCodeToUserCodes(userId, code) {
         if (!supabaseClient) return;
         try {
             const { data: codeRecord, error: codeError } = await supabaseClient
                 .from('codes').select('id').eq('code', code).single();
             if (codeError) {
+                console.warn('⚠️ الكود غير موجود في قاعدة البيانات:', codeError);
                 return;
             }
 
             const { data: existing, error: checkError } = await supabaseClient
                 .from('user_codes').select('id').eq('user_id', userId).eq('code_id', codeRecord.id).maybeSingle();
             if (existing) {
+                console.log('✅ الكود موجود مسبقاً للمستخدم');
                 return;
             }
 
@@ -688,10 +456,12 @@
                 used_at: new Date().toISOString()
             });
             if (error) {
-                console.warn('     user_codes:', error);
+                console.warn('⚠️ فشل حفظ الكود في user_codes:', error);
+            } else {
+                console.log('✅ تم حفظ الكود في حساب المستخدم:', code);
             }
         } catch (error) {
-            console.warn('    :', error);
+            console.warn('⚠️ خطأ في حفظ الكود:', error);
         }
     }
 
@@ -741,7 +511,7 @@
             });
             saveData();
         } catch (e) {
-            console.warn('      ');
+            console.warn('⚠️ فشل استعادة الأكواد من التخزين المحلي');
         }
     }
 
@@ -752,6 +522,7 @@
             const { data: userCodes, error: codesError } = await supabaseClient
                 .from('user_codes').select('code_id').eq('user_id', currentUser.id);
             if (codesError) {
+                console.warn('⚠️ فشل جلب الأكواد:', codesError);
                 return;
             }
             if (!userCodes || userCodes.length === 0) return;
@@ -759,6 +530,7 @@
             const { data: codesData, error: codesDataError } = await supabaseClient
                 .from('codes').select('*').in('id', codeIds);
             if (codesDataError) {
+                console.warn('⚠️ فشل جلب تفاصيل الأكواد:', codesDataError);
                 return;
             }
 
@@ -790,13 +562,15 @@
                 renderMyCourses();
                 renderAccount();
                 updateBadge();
-                console.log('  ', restoredCount, '  Supabase');
+                console.log('✅ تم استعادة', restoredCount, 'كود من Supabase');
+                showToast('success', `✅ تم استعادة ${restoredCount} اشتراك محفوظ`);
             }
         } catch (error) {
-            console.warn('    :', error);
+            console.warn('⚠️ خطأ في تحميل الأكواد:', error);
         }
     }
 
+    // ===== CODE MANAGEMENT =====
     function getCodesStatus(teacher) {
         if (!teacher.codes) return { total: 0, used: 0, available: 0, locked: 0 };
         const total = teacher.codes.length;
@@ -805,2364 +579,11 @@
         return { total, used, available: total - used, locked };
     }
 
-    // ============================================================
-    // =====    () =====
-    // ============================================================
-
-    function loadContactMessages() {
-        try {
-            const saved = localStorage.getItem('contactMessages');
-            if (saved) {
-                contactMessages = JSON.parse(saved);
-            }
-        } catch (e) {
-            contactMessages = [];
-        }
-    }
-
-    function saveContactMessages() {
-        try {
-            localStorage.setItem('contactMessages', JSON.stringify(contactMessages));
-        } catch (e) {
-            console.warn('  ');
-        }
-    }
-
-    function loadTeacherAdmins() {
-        try {
-            const saved = localStorage.getItem('teacherAdmins');
-            if (saved) {
-                teacherAdmins = JSON.parse(saved);
-            } else {
-                teacherAdmins = [];
-            }
-        } catch (e) {
-            teacherAdmins = [];
-        }
-    }
-
-    function saveTeacherAdmins() {
-        try {
-            localStorage.setItem('teacherAdmins', JSON.stringify(teacherAdmins));
-        } catch (e) {
-            console.warn('   ');
-        }
-    }
-
-    function loadNotifications() {
-        try {
-            const saved = localStorage.getItem('notifications');
-            if (saved) {
-                notifications = JSON.parse(saved);
-            } else {
-                notifications = [];
-            }
-        } catch (e) {
-            notifications = [];
-        }
-        const notifEnabled = localStorage.getItem('notificationsEnabled');
-        if (notifEnabled !== null) {
-            notificationsEnabled = notifEnabled === 'true';
-        }
-        updateNotificationToggleUI();
-    }
-
-    function saveNotifications() {
-        try {
-            localStorage.setItem('notifications', JSON.stringify(notifications));
-        } catch (e) {
-            console.warn('  ');
-        }
-    }
-
-    function saveNotificationSettings() {
-        try {
-            localStorage.setItem('notificationsEnabled', String(notificationsEnabled));
-        } catch (e) {
-            console.warn('   ');
-        }
-    }
-
-    function addNotification(title, description, type = 'info') {
-        if (!notificationsEnabled) {
-            return;
-        }
-        const notif = {
-            id: Date.now(),
-            title: title,
-            description: description,
-            type: type,
-            read: false,
-            createdAt: new Date().toISOString()
-        };
-        notifications.unshift(notif);
-        if (notifications.length > 50) {
-            notifications = notifications.slice(0, 50);
-        }
-        saveNotifications();
-        renderNotifications();
-        updateNotificationBadge();
-
-        if (type === 'message') {
-            showToast('info', ' ' + title + ': ' + description);
-        } else if (type === 'lecture') {
-            showToast('success', ' ' + title + ': ' + description);
-        } else {
-            showToast('info', ' ' + title);
-        }
-    }
-
-    function renderNotifications() {
-        const container = safeGetElement('notifList');
-        if (!container) return;
-
-        if (notifications.length === 0) {
-            container.innerHTML = '<div class="notif-empty">  </div>';
-            return;
-        }
-
-        let html = '';
-        notifications.forEach(notif => {
-            const time = new Date(notif.createdAt).toLocaleString('ar');
-            const isRead = notif.read ? '' : 'style="background:var(--bg-hover);"';
-            const icon = notif.type === 'message' ? '' : notif.type === 'lecture' ? '' : '';
-            html += `
-                <div class="notif-item" ${isRead} onclick="markNotificationRead(${notif.id})">
-                    <div class="notif-title">${icon} ${notif.title}</div>
-                    <div class="notif-desc">${notif.description}</div>
-                    <div class="notif-time">${time}</div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.markNotificationRead = function(id) {
-        const notif = notifications.find(n => n.id === id);
-        if (notif) {
-            notif.read = true;
-            saveNotifications();
-            renderNotifications();
-            updateNotificationBadge();
-        }
-    };
-
-    function updateNotificationBadge() {
-        const unread = notifications.filter(n => !n.read).length;
-        const badge = safeGetElement('notifCount');
-        if (badge) {
-            if (unread > 0 && notificationsEnabled) {
-                badge.style.display = 'inline';
-                badge.textContent = unread;
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    window.toggleNotificationSettings = function() {
-        notificationsEnabled = !notificationsEnabled;
-        saveNotificationSettings();
-        updateNotificationToggleUI();
-        if (notificationsEnabled) {
-            showToast('success', '   ');
-            updateNotificationBadge();
-        } else {
-            showToast('warning', '   ');
-            const badge = safeGetElement('notifCount');
-            if (badge) badge.style.display = 'none';
-        }
-    };
-
-    function updateNotificationToggleUI() {
-        const btn = safeGetElement('notifToggleBtn');
-        const text = safeGetElement('notifToggleText');
-        if (!btn || !text) return;
-        if (notificationsEnabled) {
-            btn.classList.add('active');
-            text.textContent = '';
-            btn.style.borderColor = '#22c55e';
-            btn.style.color = '#22c55e';
-        } else {
-            btn.classList.remove('active');
-            text.textContent = '';
-            btn.style.borderColor = '#ef4444';
-            btn.style.color = '#ef4444';
-        }
-        updateNotificationBadge();
-    }
-
-    window.toggleNotifications = function() {
-        const dropdown = safeGetElement('notificationDropdown');
-        if (!dropdown) return;
-        dropdown.classList.toggle('active');
-
-        if (dropdown.classList.contains('active')) {
-            renderNotifications();
-            if (notificationsEnabled) {
-                notifications.forEach(n => n.read = true);
-                saveNotifications();
-                updateNotificationBadge();
-            }
-        }
-    };
-
-    // ============================================================
-    // =====    ( TikTok) =====
-    // ============================================================
-
-    function loadConversations() {
-        try {
-            const saved = localStorage.getItem('chatConversations');
-            if (saved) {
-                chatConversations = JSON.parse(saved);
-            } else {
-                chatConversations = {};
-            }
-        } catch (e) {
-            chatConversations = {};
-        }
-        cleanOldMessages();
-    }
-
-    function saveConversations() {
-        try {
-            localStorage.setItem('chatConversations', JSON.stringify(chatConversations));
-        } catch (e) {
-            console.warn('  ');
-        }
-    }
-
-    function cleanOldMessages() {
-        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        let cleaned = false;
-        
-        Object.keys(chatConversations).forEach(chatId => {
-            const conv = chatConversations[chatId];
-            if (conv.messages && conv.messages.length > 0) {
-                const filtered = conv.messages.filter(msg => {
-                    const msgTime = new Date(msg.timestamp).getTime();
-                    return msgTime > sevenDaysAgo;
-                });
-                if (filtered.length !== conv.messages.length) {
-                    conv.messages = filtered;
-                    cleaned = true;
-                }
-            }
-        });
-        
-        if (cleaned) {
-            saveConversations();
-        }
-    }
-
-    function getUserFullName(user) {
-        if (!user) return '';
-        if (user.user_metadata?.full_name) {
-            return user.user_metadata.full_name;
-        }
-        if (user.user_metadata?.name) {
-            return user.user_metadata.name;
-        }
-        if (user.email) {
-            return user.email.split('@')[0];
-        }
-        return '';
-    }
-
-    function getUserImage(user) {
-        if (!user) return '';
-        if (user.user_metadata?.avatar_url) {
-            return user.user_metadata.avatar_url;
-        }
-        if (user.user_metadata?.picture) {
-            return user.user_metadata.picture;
-        }
-        return '';
-    }
-
-    function sendMessage(recipientId, recipientName, recipientImage, message) {
-        if (!currentUser) {
-            showToast('warning', '    ');
-            return;
-        }
-        
-        if (!message || message.trim() === '') {
-            showToast('warning', '   ');
-            return;
-        }
-        
-        const userId = currentUser.id || currentUser.email;
-        const userName = getUserFullName(currentUser);
-        const userImage = getUserImage(currentUser);
-        
-        const participants = [userId, recipientId].sort();
-        const chatId = participants.join('_');
-        
-        if (!chatConversations[chatId]) {
-            chatConversations[chatId] = {
-                participants: [userId, recipientId],
-                messages: [],
-                lastUpdated: new Date().toISOString()
-            };
-        }
-        
-        const msgData = {
-            id: Date.now() + Math.random().toString(36).substr(2, 4),
-            senderId: userId,
-            senderName: userName,
-            senderImage: userImage,
-            recipientId: recipientId,
-            recipientName: recipientName || '',
-            recipientImage: recipientImage || '',
-            message: message.trim(),
-            timestamp: new Date().toISOString(),
-            read: false
-        };
-        
-        chatConversations[chatId].messages.push(msgData);
-        chatConversations[chatId].lastUpdated = new Date().toISOString();
-        
-        saveConversations();
-        
-        addNotification(
-            `   ${userName}`,
-            message.trim().substring(0, 50) + (message.trim().length > 50 ? '...' : ''),
-            'message'
-        );
-        
-        renderChatList();
-        renderPopupMessages(chatId);
-        updateChatBadge();
-        
-        showToast('success', '   ');
-        cleanOldMessages();
-    }
-
-    function getUserConversations() {
-        if (!currentUser) return [];
-        const userId = currentUser.id || currentUser.email;
-        const conversations = [];
-        
-        Object.keys(chatConversations).forEach(chatId => {
-            const conv = chatConversations[chatId];
-            if (conv.participants && conv.participants.includes(userId)) {
-                const otherId = conv.participants.find(id => id !== userId);
-                
-                let otherName = '';
-                let otherImage = '';
-                let otherEmail = '';
-                
-                const messages = conv.messages || [];
-                if (messages.length > 0) {
-                    const lastOtherMsg = messages.filter(m => m.senderId === otherId).pop();
-                    if (lastOtherMsg) {
-                        otherName = lastOtherMsg.senderName || '';
-                        otherImage = lastOtherMsg.senderImage || '';
-                        otherEmail = lastOtherMsg.senderId || '';
-                    } else {
-                        const lastSentMsg = messages.filter(m => m.senderId === userId).pop();
-                        if (lastSentMsg) {
-                            otherName = lastSentMsg.recipientName || '';
-                            otherImage = lastSentMsg.recipientImage || '';
-                            otherEmail = lastSentMsg.recipientId || '';
-                        }
-                    }
-                }
-                
-                const unreadCount = messages.filter(m => 
-                    m.recipientId === userId && !m.read
-                ).length;
-                
-                const lastMsg = messages[messages.length - 1];
-                
-                conversations.push({
-                    chatId: chatId,
-                    otherId: otherId,
-                    otherName: otherName,
-                    otherEmail: otherEmail,
-                    otherImage: otherImage,
-                    lastMessage: lastMsg?.message || '  ',
-                    lastTime: lastMsg?.timestamp || conv.lastUpdated || new Date().toISOString(),
-                    unreadCount: unreadCount,
-                    messages: messages
-                });
-            }
-        });
-        
-        conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
-        return conversations;
-    }
-
-    function renderChatList() {
-        const container = safeGetElement('contactChatsList');
-        if (!container) return;
-        
-        const conversations = getUserConversations();
-        
-        if (conversations.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:2rem 1rem;color:var(--text-light);">
-                    <i class="fas fa-comments" style="font-size:2.5rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
-                    <p style="font-size:1rem;font-weight:600;">  </p>
-                    <p style="font-size:0.75rem;">    </p>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = '<div class="contact-chats-list">';
-        conversations.forEach(conv => {
-            const time = new Date(conv.lastTime).toLocaleString('ar', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                day: '2-digit',
-                month: '2-digit'
-            });
-            
-            const unreadBadge = conv.unreadCount > 0 
-                ? `<span class="chat-unread">${conv.unreadCount}</span>` 
-                : '';
-            
-            const firstLetter = conv.otherName.charAt(0).toUpperCase();
-            
-            const lastMsg = conv.messages && conv.messages.length > 0 
-                ? conv.messages[conv.messages.length - 1] 
-                : null;
-            const lastMsgText = lastMsg 
-                ? (lastMsg.senderId === (currentUser.id || currentUser.email) 
-                    ? `: ${lastMsg.message}` 
-                    : `${lastMsg.senderName}: ${lastMsg.message}`)
-                : '  ';
-            
-            html += `
-                <div class="contact-chat-item" onclick="openChatPopup('${conv.chatId}', '${conv.otherName.replace(/'/g, "\\'")}', '${conv.otherImage || ''}', '${conv.otherId || conv.otherEmail || ''}')">
-                    <div class="chat-avatar">
-                        ${conv.otherImage ? `<img src="${conv.otherImage}" alt="${conv.otherName}" onerror="this.style.display='none'; this.parentElement.textContent='${firstLetter}';">` : `<span class="avatar-text">${firstLetter}</span>`}
-                    </div>
-                    <div class="chat-info">
-                        <div class="chat-name">${conv.otherName}</div>
-                        <div class="chat-last-msg">${lastMsgText}</div>
-                    </div>
-                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.1rem;">
-                        <div class="chat-time">${time}</div>
-                        ${unreadBadge}
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    let currentPopupChatId = null;
-
-    window.openChatPopup = function(chatId, otherName, otherImage, otherId) {
-        currentPopupChatId = chatId;
-        
-        const popup = safeGetElement('chatPopup');
-        if (!popup) return;
-        
-        const nameEl = safeGetElement('popupName');
-        if (nameEl) nameEl.textContent = otherName;
-        
-        const avatarEl = safeGetElement('popupAvatar');
-        if (avatarEl) {
-            if (otherImage && isValidImageUrl(otherImage)) {
-                avatarEl.innerHTML = `<img src="${otherImage}" alt="${otherName}" onerror="this.style.display='none'; this.parentElement.textContent='${otherName.charAt(0).toUpperCase()}';">`;
-            } else {
-                avatarEl.textContent = otherName.charAt(0).toUpperCase();
-            }
-        }
-        
-        popup.dataset.otherId = otherId;
-        popup.dataset.otherName = otherName;
-        popup.dataset.otherImage = otherImage || '';
-        
-        renderPopupMessages(chatId);
-        
-        popup.classList.add('active');
-        const input = safeGetElement('popupInput');
-        if (input) {
-            setTimeout(() => input.focus(), 300);
-        }
-        
-        markMessagesAsRead(chatId);
-    };
-
-    window.closeChatPopup = function() {
-        const popup = safeGetElement('chatPopup');
-        if (popup) popup.classList.remove('active');
-        currentPopupChatId = null;
-    };
-
-    function renderPopupMessages(chatId) {
-        const container = safeGetElement('popupMessages');
-        if (!container) return;
-        
-        const conv = chatConversations[chatId];
-        if (!conv || !conv.messages || conv.messages.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:1.5rem 0;">
-                    <i class="fas fa-comment" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
-                        !
-                </div>
-            `;
-            return;
-        }
-        
-        const userId = currentUser?.id || currentUser?.email;
-        let html = '';
-        
-        const sortedMessages = [...conv.messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-        sortedMessages.forEach(msg => {
-            const isSent = msg.senderId === userId;
-            const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-            
-            const senderDisplay = !isSent ? `<strong>${msg.senderName}</strong><br>` : '';
-            
-            html += `
-                <div class="msg-bubble ${isSent ? 'sent' : 'received'}">
-                    ${senderDisplay}
-                    ${msg.message}
-                    <span class="msg-time">${time}</span>
-                </div>
-            `;
-        });
-        
-        container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function markMessagesAsRead(chatId) {
-        const conv = chatConversations[chatId];
-        if (!conv || !conv.messages) return;
-        
-        const userId = currentUser?.id || currentUser?.email;
-        let changed = false;
-        
-        conv.messages.forEach(msg => {
-            if (msg.recipientId === userId && !msg.read) {
-                msg.read = true;
-                changed = true;
-            }
-        });
-        
-        if (changed) {
-            saveConversations();
-            renderChatList();
-            updateChatBadge();
-        }
-    }
-
-    function updateChatBadge() {
-        const userId = currentUser?.id || currentUser?.email;
-        if (!userId) return;
-        
-        let totalUnread = 0;
-        Object.keys(chatConversations).forEach(chatId => {
-            const conv = chatConversations[chatId];
-            if (conv.messages) {
-                const unread = conv.messages.filter(m => m.recipientId === userId && !m.read).length;
-                totalUnread += unread;
-            }
-        });
-        
-        const badge = safeGetElement('chatBadge');
-        if (badge) {
-            if (totalUnread > 0) {
-                badge.style.display = 'inline';
-                badge.textContent = totalUnread;
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    window.sendPopupMessage = function() {
-        const input = safeGetElement('popupInput');
-        if (!input) return;
-        
-        const message = input.value.trim();
-        if (!message) {
-            showToast('warning', '   ');
-            return;
-        }
-        
-        const popup = safeGetElement('chatPopup');
-        if (!popup) return;
-        
-        const otherId = popup.dataset.otherId;
-        const otherName = popup.dataset.otherName || '';
-        const otherImage = popup.dataset.otherImage || '';
-        
-        if (!otherId) {
-            showToast('error', '    ');
-            return;
-        }
-        
-        sendMessage(otherId, otherName, otherImage, message);
-        input.value = '';
-    };
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && e.target.id === 'popupInput') {
-            e.preventDefault();
-            window.sendPopupMessage();
-        }
-    });
-
-    // ============================================================
-    // =====    ( ) =====
-    // ============================================================
-    let chatFullRecipient = '';
-    let chatFullRecipientImage = '';
-    let chatFullRecipientEmoji = '';
-    let chatFullMessages = [];
-    let chatFullAttachments = [];
-    let chatFullTheme = 'light';
-
-    window.openChatFull = function(teacherName, teacherEmoji, teacherSubject, teacherImage) {
-        if (!canUserContact()) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        const myCourses = getMyCourses();
-        const isSubscribed = myCourses.some(c => c.teacherName === teacherName);
-        const isTeacherAdmin = isTeacherAdminForTeacher(currentUser?.email, teacherName);
-
-        if (!isSubscribed && !isTeacherAdmin) {
-            showToast('warning', '       ');
-            return;
-        }
-
-        chatFullRecipient = teacherName;
-        chatFullRecipientImage = getSafeImageUrl(teacherImage) || '';
-        chatFullRecipientEmoji = teacherEmoji || '';
-
-        loadChatFullMessages(teacherName);
-
-        const nameEl = safeGetElement('chatFullName');
-        if (nameEl) nameEl.textContent = teacherName;
-
-        const avatarEl = safeGetElement('chatFullAvatar');
-        if (avatarEl) {
-            if (chatFullRecipientImage && isValidImageUrl(chatFullRecipientImage)) {
-                avatarEl.innerHTML = `<img src="${chatFullRecipientImage}" alt="${teacherName}" onerror="this.style.display='none'; this.parentElement.textContent='${teacherEmoji || ''}';">`;
-            } else {
-                avatarEl.textContent = teacherEmoji || '';
-            }
-        }
-
-        const statusEl = safeGetElement('chatFullStatus');
-        if (statusEl) statusEl.textContent = ' ';
-
-        renderChatFullMessages();
-
-        const chatPage = safeGetElement('chatPageFull');
-        if (chatPage) {
-            chatPage.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        setTimeout(() => {
-            const input = safeGetElement('chatFullInput');
-            if (input) input.focus();
-        }, 300);
-
-        chatFullAttachments = [];
-        const attachmentsList = safeGetElement('chatFullAttachmentsList');
-        if (attachmentsList) attachmentsList.innerHTML = '';
-    };
-
-    window.closeChatPageFull = function() {
-        const chatPage = safeGetElement('chatPageFull');
-        if (chatPage) chatPage.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        if (chatFullRecipient) {
-            saveChatFullMessages(chatFullRecipient);
-        }
-    };
-
-    function loadChatFullMessages(teacherName) {
-        if (!currentUser) return [];
-        const key = 'chat_full_' + currentUser.email + '_' + teacherName;
-        try {
-            const saved = localStorage.getItem(key);
-            if (saved) {
-                chatFullMessages = JSON.parse(saved);
-            } else {
-                chatFullMessages = [];
-            }
-        } catch (e) {
-            chatFullMessages = [];
-        }
-        return chatFullMessages;
-    }
-
-    function saveChatFullMessages(teacherName) {
-        if (!currentUser) return;
-        const key = 'chat_full_' + currentUser.email + '_' + teacherName;
-        try {
-            localStorage.setItem(key, JSON.stringify(chatFullMessages));
-        } catch (e) {
-            console.warn('   ');
-        }
-    }
-
-    function renderChatFullMessages() {
-        const container = safeGetElement('chatFullMessages');
-        if (!container) return;
-
-        if (!chatFullMessages || chatFullMessages.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:2rem 0;">
-                    <i class="fas fa-comment" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
-                        !
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        chatFullMessages.forEach((msg) => {
-            const isSent = msg.sender === currentUser?.email;
-            const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-            const senderName = msg.senderName || msg.sender || '';
-
-            html += `
-                <div class="chat-msg-full ${isSent ? 'sent' : 'received'}">
-                    ${!isSent ? `<span class="msg-sender">${senderName}</span>` : ''}
-                    <div>${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length > 0 ? msg.attachments.map(att => `
-                        <div class="msg-attachment-full" onclick="previewFullAttachment('${att.url}', '${att.type}')">
-                            <i class="fas ${att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file'}"></i>
-                            ${att.name}
-                            ${att.type === 'image' ? `<br><img src="${att.url}" alt="" />` : ''}
-                            ${att.type === 'video' ? `<br><video src="${att.url}" controls style="max-width:100%;max-height:120px;border-radius:6px;"></video>` : ''}
-                        </div>
-                    `).join('') : ''}
-                    <span class="msg-time-full">${time}</span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
-    }
-
-    window.chatFullAttach = function(type) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        if (type === 'image') input.accept = 'image/*';
-        else if (type === 'video') input.accept = 'video/*';
-        else input.accept = '*/*';
-
-        input.onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const url = event.target.result;
-                chatFullAttachments.push({
-                    name: file.name,
-                    type: type,
-                    url: url,
-                    size: file.size
-                });
-                updateChatFullAttachmentsUI();
-            };
-            reader.readAsDataURL(file);
-        };
-        input.click();
-    };
-
-    function updateChatFullAttachmentsUI() {
-        const container = safeGetElement('chatFullAttachmentsList');
-        if (!container) return;
-
-        if (chatFullAttachments.length === 0) {
-            container.innerHTML = '';
-            return;
-        }
-
-        let html = '';
-        chatFullAttachments.forEach((att, index) => {
-            const icon = att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file';
-            html += `
-                <span class="chat-attach-item-full">
-                    <i class="fas ${icon}"></i>
-                    ${att.name.length > 15 ? att.name.substring(0, 12) + '...' : att.name}
-                    <span class="remove-attach-full" onclick="removeChatFullAttachment(${index})"></span>
-                </span>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.removeChatFullAttachment = function(index) {
-        chatFullAttachments.splice(index, 1);
-        updateChatFullAttachmentsUI();
-    };
-
-    window.sendChatFullMessage = function() {
-        const input = safeGetElement('chatFullInput');
-        if (!input) return;
-        const message = input.value.trim();
-
-        if (!message && chatFullAttachments.length === 0) {
-            showToast('warning', '      ');
-            return;
-        }
-
-        if (!chatFullRecipient) {
-            showToast('error', '    ');
-            return;
-        }
-
-        const msgData = {
-            id: Date.now(),
-            sender: currentUser?.email || '',
-            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '',
-            recipient: chatFullRecipient,
-            message: message || ' ',
-            attachments: chatFullAttachments.length > 0 ? [...chatFullAttachments] : [],
-            timestamp: new Date().toISOString(),
-            read: false
-        };
-
-        chatFullMessages.push(msgData);
-        saveChatFullMessages(chatFullRecipient);
-
-        contactMessages.push({
-            id: Date.now() + 1,
-            recipient: chatFullRecipient,
-            recipientImage: chatFullRecipientImage,
-            recipientEmoji: chatFullRecipientEmoji,
-            sender: currentUser?.email || '',
-            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '',
-            subject: '  ',
-            message: message || ' ',
-            attachments: chatFullAttachments.map(a => a.name),
-            sentAt: new Date().toISOString(),
-            read: false,
-            isChat: true,
-            chatAttachments: [...chatFullAttachments]
-        });
-        saveContactMessages();
-
-        const isTeacherAdmin = isTeacherAdminForTeacher(currentUser?.email, chatFullRecipient);
-        if (!isTeacherAdmin) {
-            addNotification(
-                '  ',
-                `${msgData.senderName}   : ${message || ' '}`,
-                'message'
-            );
-        }
-
-        input.value = '';
-        chatFullAttachments = [];
-        updateChatFullAttachmentsUI();
-
-        renderChatFullMessages();
-        updateContactBadge();
-        renderMyMessages();
-        
-        sendMessage(chatFullRecipient, chatFullRecipient, chatFullRecipientImage, message || ' ');
-    };
-
-    window.previewFullAttachment = function(url, type) {
-        if (type === 'image') {
-            window.open(url, '_blank');
-        } else if (type === 'video') {
-            playVideo(url, ' ');
-        } else {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '';
-            a.click();
-        }
-    };
-
-    window.toggleChatFullTheme = function() {
-        const page = safeGetElement('chatPageFull');
-        if (!page) return;
-        chatFullTheme = chatFullTheme === 'light' ? 'dark' : 'light';
-
-        if (chatFullTheme === 'dark') {
-            page.classList.add('dark');
-            const icon = safeGetElement('chatFullThemeIcon');
-            if (icon) icon.className = 'fas fa-sun';
-        } else {
-            page.classList.remove('dark');
-            const icon = safeGetElement('chatFullThemeIcon');
-            if (icon) icon.className = 'fas fa-moon';
-        }
-    };
-
-    // ============================================================
-    // =====     =====
-    // ============================================================
-
-    function canUserContact() {
-        if (!currentUser) return false;
-        const hasCourses = getMyCourses().length > 0;
-        const isTeacherAdmin = isAnyTeacherAdmin(currentUser.email);
-        return hasCourses || isTeacherAdmin;
-    }
-
-    function isTeacherAdminForTeacher(email, teacherName) {
-        if (!email || !teacherName) return false;
-        return teacherAdmins.some(admin =>
-            admin.email === email && admin.teacherName === teacherName
-        );
-    }
-
-    function isAnyTeacherAdmin(email) {
-        if (!email) return false;
-        return teacherAdmins.some(admin => admin.email === email);
-    }
-
-    function getMyManagedTeachers(email) {
-        if (!email) return [];
-        return teacherAdmins.filter(admin => admin.email === email);
-    }
-
-    window.addTeacherAdmin = function() {
-        const sectionSelect = safeGetElement('teacherAdminSection');
-        const teacherSelect = safeGetElement('teacherAdminTeacher');
-        const emailInput = safeGetElement('teacherAdminEmail');
-        const messageEl = safeGetElement('teacherAdminMessage');
-
-        if (!sectionSelect || !teacherSelect || !emailInput || !messageEl) return;
-
-        const sectionIndex = parseInt(sectionSelect?.value);
-        const teacherIndex = parseInt(teacherSelect?.value);
-        const email = emailInput?.value.trim();
-
-        if (isNaN(sectionIndex) || sectionIndex < 0) {
-            messageEl.innerHTML = '   ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        if (isNaN(teacherIndex) || teacherIndex < 0) {
-            messageEl.innerHTML = '   ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        if (!email) {
-            messageEl.innerHTML = '    ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        if (!email.includes('@') || !email.includes('.')) {
-            messageEl.innerHTML = '    ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            messageEl.innerHTML = '   ';
-            messageEl.style.color = '#ef4444';
-            return;
-        }
-
-        if (teacherAdmins.some(t => t.sectionIndex === sectionIndex && t.teacherIndex === teacherIndex)) {
-            messageEl.innerHTML = '     ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        if (teacherAdmins.some(t => t.email === email && t.teacherName === teacher.name)) {
-            messageEl.innerHTML = '       ';
-            messageEl.style.color = '#f59e0b';
-            return;
-        }
-
-        const adminEntry = {
-            sectionIndex: sectionIndex,
-            teacherIndex: teacherIndex,
-            teacherName: teacher.name,
-            sectionName: data.sections[sectionIndex].name,
-            email: email,
-            addedAt: new Date().toISOString()
-        };
-
-        teacherAdmins.push(adminEntry);
-        saveTeacherAdmins();
-        renderTeacherAdminsList();
-        updateAllAdminSelects();
-
-        if (!teacher.codes) teacher.codes = [];
-        const adminCode = 'ADMIN_' + email.split('@')[0].toUpperCase() + '_' + Date.now().toString(36).toUpperCase();
-        const codeData = {
-            code: adminCode,
-            used: true,
-            locked: false,
-            deviceId: userDeviceId,
-            userId: currentUser?.id || 'admin',
-            userEmail: email,
-            usedAt: new Date().toISOString(),
-            isAdminCode: true
-        };
-        teacher.codes.push(codeData);
-        
-        //    
-        saveCodePermanently(codeData, teacher.name);
-        
-        saveData();
-
-        messageEl.innerHTML = `   ${teacher.name}    ${email}`;
-        messageEl.style.color = '#22c55e';
-        emailInput.value = '';
-        showToast('success', `   ${teacher.name}  `);
-
-        renderAllData();
-        renderMyCourses();
-        renderAccount();
-        updateBadge();
-        renderTeacherAdminsList();
-    };
-
-    function renderTeacherAdminsList() {
-        const container = safeGetElement('teacherAdminsList');
-        if (!container) return;
-
-        if (teacherAdmins.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">   </p>';
-            return;
-        }
-
-        let html = '';
-        teacherAdmins.forEach((admin, index) => {
-            html += `
-                <div style="background:var(--bg);padding:0.5rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid var(--primary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.3rem;">
-                    <div>
-                        <span style="font-weight:700;">${admin.teacherName}</span>
-                        <span style="font-size:0.7rem;color:var(--text-light);margin-right:0.5rem;">${admin.sectionName}</span>
-                        <span style="font-size:0.65rem;color:var(--primary);display:block;"> ${admin.email}</span>
-                    </div>
-                    <button onclick="removeTeacherAdmin(${index})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.6rem;"> </button>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.removeTeacherAdmin = function(index) {
-        if (!confirm('       ')) return;
-        
-        const admin = teacherAdmins[index];
-        if (admin) {
-            const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-            if (teacher && teacher.codes) {
-                teacher.codes = teacher.codes.filter(c => !c.isAdminCode || c.userEmail !== admin.email);
-                saveData();
-            }
-        }
-        
-        teacherAdmins.splice(index, 1);
-        saveTeacherAdmins();
-        renderTeacherAdminsList();
-        renderAllData();
-        renderMyCourses();
-        renderAccount();
-        updateBadge();
-        showToast('success', '   ');
-    };
-
-    // ============================================================
-    // =====    () =====
-    // ============================================================
-
-    function loadChatMessages(teacherName) {
-        if (!currentUser) return [];
-        const key = 'chat_' + currentUser.email + '_' + teacherName;
-        try {
-            const saved = localStorage.getItem(key);
-            if (saved) {
-                chatMessages = JSON.parse(saved);
-            } else {
-                chatMessages = [];
-            }
-        } catch (e) {
-            chatMessages = [];
-        }
-        return chatMessages;
-    }
-
-    function saveChatMessages(teacherName) {
-        if (!currentUser) return;
-        const key = 'chat_' + currentUser.email + '_' + teacherName;
-        try {
-            localStorage.setItem(key, JSON.stringify(chatMessages));
-        } catch (e) {
-            console.warn('   ');
-        }
-    }
-
-    window.openChat = function(teacherName, teacherEmoji, teacherSubject, teacherImage) {
-        if (!canUserContact()) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        const myCourses = getMyCourses();
-        const isSubscribed = myCourses.some(c => c.teacherName === teacherName);
-        const isTeacherAdmin = isTeacherAdminForTeacher(currentUser?.email, teacherName);
-
-        if (!isSubscribed && !isTeacherAdmin) {
-            showToast('warning', '       ');
-            return;
-        }
-
-        chatRecipient = teacherName;
-        chatRecipientImage = getSafeImageUrl(teacherImage) || '';
-        chatRecipientEmoji = teacherEmoji || '';
-
-        loadChatMessages(teacherName);
-
-        const chatPageName = safeGetElement('chatPageName');
-        if (chatPageName) chatPageName.textContent = teacherName;
-        
-        const avatarEl = safeGetElement('chatPageAvatar');
-        if (avatarEl) {
-            if (chatRecipientImage && isValidImageUrl(chatRecipientImage)) {
-                avatarEl.innerHTML = `<img src="${chatRecipientImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'; this.parentElement.textContent='${chatRecipientEmoji}';">`;
-            } else {
-                avatarEl.textContent = chatRecipientEmoji;
-            }
-        }
-
-        const chatPageStatus = safeGetElement('chatPageStatus');
-        if (chatPageStatus) chatPageStatus.textContent = ' ';
-        
-        renderChatPageMessages();
-
-        const chatPage = safeGetElement('chatPage');
-        if (chatPage) {
-            chatPage.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        setTimeout(() => {
-            const input = safeGetElement('chatPageInput');
-            if (input) input.focus();
-        }, 300);
-
-        chatAttachments = [];
-        const attachmentsList = safeGetElement('chatPageAttachmentsList');
-        if (attachmentsList) attachmentsList.innerHTML = '';
-    };
-
-    window.closeChatPage = function() {
-        const chatPage = safeGetElement('chatPage');
-        if (chatPage) chatPage.classList.remove('active');
-        document.body.style.overflow = 'auto';
-        if (chatRecipient) {
-            saveChatMessages(chatRecipient);
-        }
-    };
-
-    function renderChatPageMessages() {
-        const container = safeGetElement('chatPageMessages');
-        if (!container) return;
-
-        if (!chatMessages || chatMessages.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:2rem 0;">
-                    <i class="fas fa-comment" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
-                        !
-                </div>
-            `;
-            return;
-        }
-
-        let html = '';
-        chatMessages.forEach((msg) => {
-            const isSent = msg.sender === currentUser?.email;
-            const time = new Date(msg.timestamp).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
-
-            html += `
-                <div class="chat-msg ${isSent ? 'sent' : 'received'}">
-                    ${!isSent ? `<strong>${msg.senderName || msg.sender}</strong><br>` : ''}
-                    <div>${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length > 0 ? msg.attachments.map(att => `
-                        <div class="msg-attachment" onclick="previewAttachment('${att.url}', '${att.type}')">
-                            <i class="fas ${att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file'}"></i>
-                            ${att.name}
-                            ${att.type === 'image' ? `<br><img src="${att.url}" />` : ''}
-                            ${att.type === 'video' ? `<br><video src="${att.url}" controls style="max-width:100%;max-height:150px;border-radius:6px;"></video>` : ''}
-                        </div>
-                    `).join('') : ''}
-                    <span class="msg-time">${time}</span>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-        container.scrollTop = container.scrollHeight;
-    }
-
-    window.chatPageAttach = function(type) {
-        const input = document.createElement('input');
-        input.type = 'file';
-        if (type === 'image') input.accept = 'image/*';
-        else if (type === 'video') input.accept = 'video/*';
-        else input.accept = '*/*';
-
-        input.onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const url = event.target.result;
-                chatAttachments.push({
-                    name: file.name,
-                    type: type,
-                    url: url,
-                    size: file.size
-                });
-                updateChatPageAttachmentsUI();
-            };
-            reader.readAsDataURL(file);
-        };
-        input.click();
-    };
-
-    function updateChatPageAttachmentsUI() {
-        const container = safeGetElement('chatPageAttachmentsList');
-        if (!container) return;
-
-        if (chatAttachments.length === 0) {
-            container.innerHTML = '';
-            return;
-        }
-
-        let html = '';
-        chatAttachments.forEach((att, index) => {
-            const icon = att.type === 'image' ? 'fa-image' : att.type === 'video' ? 'fa-video' : 'fa-file';
-            html += `
-                <span class="chat-attach-item">
-                    <i class="fas ${icon}"></i>
-                    ${att.name.length > 15 ? att.name.substring(0, 12) + '...' : att.name}
-                    <span class="remove-attach" onclick="removeChatPageAttachment(${index})"></span>
-                </span>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.removeChatPageAttachment = function(index) {
-        chatAttachments.splice(index, 1);
-        updateChatPageAttachmentsUI();
-    };
-
-    window.sendChatPageMessage = function() {
-        const input = safeGetElement('chatPageInput');
-        if (!input) return;
-        const message = input.value.trim();
-
-        if (!message && chatAttachments.length === 0) {
-            showToast('warning', '      ');
-            return;
-        }
-
-        if (!chatRecipient) {
-            showToast('error', '    ');
-            return;
-        }
-
-        const msgData = {
-            id: Date.now(),
-            sender: currentUser?.email || '',
-            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '',
-            recipient: chatRecipient,
-            message: message || ' ',
-            attachments: chatAttachments.length > 0 ? [...chatAttachments] : [],
-            timestamp: new Date().toISOString(),
-            read: false
-        };
-
-        chatMessages.push(msgData);
-        saveChatMessages(chatRecipient);
-
-        contactMessages.push({
-            id: Date.now() + 1,
-            recipient: chatRecipient,
-            recipientImage: chatRecipientImage,
-            recipientEmoji: chatRecipientEmoji,
-            sender: currentUser?.email || '',
-            senderName: currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '',
-            subject: '  ',
-            message: message || ' ',
-            attachments: chatAttachments.map(a => a.name),
-            sentAt: new Date().toISOString(),
-            read: false,
-            isChat: true,
-            chatAttachments: [...chatAttachments]
-        });
-        saveContactMessages();
-
-        addNotification(
-            '  ',
-            `${msgData.senderName}   : ${message || ' '}`,
-            'message'
-        );
-
-        input.value = '';
-        chatAttachments = [];
-        updateChatPageAttachmentsUI();
-
-        renderChatPageMessages();
-        updateContactBadge();
-        renderMyMessages();
-        
-        const recipientId = chatRecipient;
-        sendMessage(recipientId, chatRecipient, chatRecipientImage, message || ' ');
-    };
-
-    window.toggleChatPageTheme = function() {
-        const page = safeGetElement('chatPage');
-        if (!page) return;
-        chatTheme = chatTheme === 'light' ? 'dark' : 'light';
-
-        if (chatTheme === 'dark') {
-            page.classList.add('chat-theme-dark');
-            const icon = safeGetElement('chatPageThemeIcon');
-            if (icon) icon.className = 'fas fa-sun';
-        } else {
-            page.classList.remove('chat-theme-dark');
-            const icon = safeGetElement('chatPageThemeIcon');
-            if (icon) icon.className = 'fas fa-moon';
-        }
-    };
-
-    window.previewAttachment = function(url, type) {
-        if (type === 'image') {
-            window.open(url, '_blank');
-        } else if (type === 'video') {
-            playVideo(url, ' ');
-        } else {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '';
-            a.click();
-        }
-    };
-
-    // ============================================================
-    // =====    =====
-    // ============================================================
-
-    function renderContactTeachers() {
-        const container = safeGetElement('contactTeachersGrid');
-        const countSpan = safeGetElement('contactTeachersCount');
-        if (!container) return;
-
-        const hasSubscription = canUserContact();
-        let contactTeachers = [];
-
-        if (hasSubscription) {
-            const myCourses = getMyCourses();
-            const allTeachers = getAllTeachers();
-
-            myCourses.forEach(course => {
-                const teacher = allTeachers.find(t =>
-                    t.name === course.teacherName &&
-                    t._sectionName === course.sectionName
-                );
-                if (teacher && !contactTeachers.some(t => t.name === teacher.name && t._sectionName === teacher._sectionName)) {
-                    contactTeachers.push(teacher);
-                }
-            });
-            
-            const managedTeachers = getMyManagedTeachers(currentUser?.email);
-            managedTeachers.forEach(admin => {
-                const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-                if (teacher && !contactTeachers.some(t => t.name === teacher.name && t._sectionName === admin.sectionName)) {
-                    contactTeachers.push({
-                        ...teacher,
-                        _sectionIndex: admin.sectionIndex,
-                        _teacherIndex: admin.teacherIndex,
-                        _sectionName: admin.sectionName,
-                        _sectionId: data.sections[admin.sectionIndex]?.id
-                    });
-                }
-            });
-        }
-
-        if (countSpan) countSpan.textContent = contactTeachers.length;
-
-        if (!hasSubscription || contactTeachers.length === 0) {
-            container.innerHTML = `
-                <div class="empty-teachers" style="text-align:center;padding:2rem 1rem;background:var(--bg-card);border-radius:12px;border:2px dashed var(--border);">
-                    <span class="empty-icon" style="font-size:3rem;display:block;margin-bottom:0.3rem;"></span>
-                    <h3 style="font-size:1rem;color:var(--text);"> </h3>
-                    <p style="color:var(--text-light);font-size:0.8rem;max-width:350px;margin:0 auto;">
-                        ${!currentUser ? '    ' : '         '}
-                    </p>
-                    <button onclick="navigateTo('teachers')" style="margin-top:0.8rem;padding:0.4rem 1.2rem;background:var(--primary-gradient);color:white;border:none;border-radius:30px;font-weight:600;cursor:pointer;font-size:0.8rem;">
-                        <i class="fas fa-book"></i>  
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        let html = '<div class="contact-teachers-grid">';
-        contactTeachers.forEach(teacher => {
-            const name = teacher.name || '';
-            const emoji = teacher.emoji || '';
-            const subject = teacher.subject || '';
-            const sectionName = teacher._sectionName || '';
-            const image = getSafeImageUrl(teacher.image);
-            const validImage = image && isValidImageUrl(image);
-
-            html += `
-                <div class="contact-teacher-card" onclick="openChatFull('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${image || ''}')">
-                    <div class="contact-avatar">
-                        ${validImage ? `<img src="${image}" alt="${name}" onerror="this.style.display='none'; this.parentElement.textContent='${emoji}';">` : emoji}
-                    </div>
-                    <div class="contact-name">${name}</div>
-                    ${subject ? `<div class="contact-subject">${subject}</div>` : ''}
-                    <div class="contact-section-name">${sectionName}</div>
-                    <button class="contact-btn" onclick="event.stopPropagation();openChatFull('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${image || ''}')">
-                        <i class="fas fa-comment"></i> 
-                    </button>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    // ============================================================
-    // =====   =====
-    // ============================================================
-
-    function getStudentSection(userEmail) {
-        if (!userEmail) return '';
-        let sectionName = '';
-        data.sections.forEach(section => {
-            section.teachers.forEach(teacher => {
-                if (teacher.codes) {
-                    teacher.codes.forEach(c => {
-                        if (c.used && c.userEmail === userEmail) {
-                            sectionName = section.name;
-                        }
-                    });
-                }
-            });
-        });
-        return sectionName;
-    }
-
-    function getTeacherInbox(teacherName) {
-        if (!teacherName) {
-            const userFullName = currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '';
-            return contactMessages.filter(m => m.recipient === userFullName || m.recipient === currentUser?.email);
-        }
-        return contactMessages.filter(m => m.recipient === teacherName);
-    }
-
-    function renderTeacherInbox() {
-        const container = safeGetElement('teacherInboxMessages');
-        const section = safeGetElement('teacherInboxSection');
-        const countSpan = safeGetElement('teacherInboxCount');
-
-        if (!container) return;
-
-        const teacherName = currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '';
-        const isTeacherUser = isAnyTeacherAdmin(currentUser?.email) || getTeacherInbox(teacherName).length > 0;
-
-        if (!isTeacherUser) {
-            if (section) section.style.display = 'none';
-            return;
-        }
-
-        if (section) section.style.display = 'block';
-
-        const inboxMessages = getTeacherInbox(teacherName);
-
-        if (countSpan) countSpan.textContent = inboxMessages.length;
-
-        if (inboxMessages.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">    </p>';
-            return;
-        }
-
-        let html = '';
-        inboxMessages.slice().reverse().forEach(msg => {
-            const isRead = msg.read || false;
-            const senderName = msg.senderName || msg.sender || '';
-            const studentSection = getStudentSection(msg.sender);
-            const time = new Date(msg.sentAt).toLocaleString('ar', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                day: '2-digit',
-                month: '2-digit'
-            });
-            
-            const firstLetter = senderName.charAt(0).toUpperCase();
-            const senderImage = msg.senderImage || '';
-            
-            html += `
-                <div class="teacher-inbox-item" style="${isRead ? '' : 'border-right-color: #f59e0b; background: var(--bg-hover);'}">
-                    <div class="inbox-header">
-                        <span class="inbox-sender">
-                            <span style="display:inline-flex;align-items:center;gap:0.3rem;">
-                                ${senderImage && isValidImageUrl(senderImage) 
-                                    ? `<img src="${senderImage}" alt="${senderName}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';">` 
-                                    : `<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--primary-gradient);color:white;text-align:center;line-height:24px;font-size:0.6rem;font-weight:700;">${firstLetter}</span>`
-                                }
-                                ${senderName}
-                            </span>
-                            ${studentSection ? `<span style="font-size:0.55rem;color:var(--primary);background:var(--bg);padding:0.05rem 0.4rem;border-radius:12px;"> ${studentSection}</span>` : ''}
-                        </span>
-                        <span style="font-size:0.55rem;color:var(--text-light);">${time}</span>
-                    </div>
-                    <div class="inbox-subject">${msg.subject}</div>
-                    <div class="inbox-message">${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length ? `<div class="inbox-attachments"><i class="fas fa-paperclip"></i> ${msg.attachments.length} </div>` : ''}
-                    <div class="inbox-status ${isRead ? 'read' : 'unread'}">
-                        ${isRead ? ' ' : ' '}
-                    </div>
-                    <div class="inbox-actions">
-                        ${!isRead ? `<button class="btn-mark-read" onclick="markInboxMessageRead(${msg.id})">  </button>` : ''}
-                        <button class="btn-delete-inbox" onclick="deleteInboxMessage(${msg.id})"> </button>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.markInboxMessageRead = function(id) {
-        const msg = contactMessages.find(m => m.id === id);
-        if (msg) {
-            msg.read = true;
-            saveContactMessages();
-            renderTeacherInbox();
-            renderAllMessages();
-            updateContactBadge();
-            showToast('success', '    ');
-        }
-    };
-
-    window.deleteInboxMessage = function(id) {
-        if (!confirm('       ')) return;
-        contactMessages = contactMessages.filter(m => m.id !== id);
-        saveContactMessages();
-        renderTeacherInbox();
-        renderAllMessages();
-        updateContactBadge();
-        showToast('success', '   ');
-    };
-
-    function renderMyMessages() {
-        const container = safeGetElement('myMessagesList');
-        if (!container) return;
-
-        if (!currentUser) {
-            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">  </p>';
-            return;
-        }
-
-        const myMessages = contactMessages.filter(m => m.sender === currentUser.email);
-
-        if (myMessages.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);font-size:0.8rem;text-align:center;">   </p>';
-            return;
-        }
-
-        let html = '';
-        myMessages.slice().reverse().forEach(msg => {
-            const isRead = msg.read || false;
-            html += `
-                <div class="message-item">
-                    <div class="msg-header">
-                        <span><i class="fas fa-user"></i> ${msg.recipient}</span>
-                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
-                    </div>
-                    <div class="msg-subject">${msg.subject}</div>
-                    <div class="msg-body">${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length ? `<div class="msg-attachments"><i class="fas fa-paperclip"></i> ${msg.attachments.length} </div>` : ''}
-                    <div class="msg-status ${isRead ? 'read' : 'unread'}">
-                        ${isRead ? ' ' : '  '}
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-
-        const msgCountEl = safeGetElement('accountMessages');
-        if (msgCountEl) msgCountEl.textContent = myMessages.length;
-    }
-
-    function renderAllMessages() {
-        const container = safeGetElement('allMessagesContainer');
-        if (!container) return;
-
-        if (contactMessages.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:0.5rem 0;font-size:.8rem;">  </p>';
-            return;
-        }
-
-        let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
-        contactMessages.slice().reverse().forEach(msg => {
-            const isRead = msg.read || false;
-            html += `
-                <div style="background:var(--bg);border-radius:8px;padding:0.6rem 0.8rem;border-right:3px solid ${isRead ? '#22c55e' : '#f59e0b'};">
-                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);flex-wrap:wrap;">
-                        <span><i class="fas fa-user"></i> <strong>:</strong> ${msg.senderName} (${msg.sender})</span>
-                        <span><i class="fas fa-user-tie"></i> <strong>:</strong> ${msg.recipient}</span>
-                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
-                    </div>
-                    <div style="font-weight:600;font-size:0.85rem;">${msg.subject}</div>
-                    <div style="font-size:0.75rem;color:var(--text-light);">${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length ? `<div style="font-size:0.6rem;color:var(--primary);"><i class="fas fa-paperclip"></i> ${msg.attachments.length} </div>` : ''}
-                    <div style="font-size:0.6rem;color:${isRead ? '#22c55e' : '#f59e0b'};">
-                        ${isRead ? ' ' : '  '}
-                        <button onclick="markMessageAsRead(${msg.id})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;margin-right:0.5rem;">
-                            ${isRead ? ' ' : '  '}
-                        </button>
-                        <button onclick="deleteMessage(${msg.id})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;">
-                            
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    window.markMessageAsRead = function(id) {
-        const msg = contactMessages.find(m => m.id === id);
-        if (msg) {
-            msg.read = true;
-            saveContactMessages();
-            renderAllMessages();
-            renderMyMessages();
-            renderTeacherMessages(chatRecipient);
-            updateContactBadge();
-            showToast('success', '    ');
-        }
-    };
-
-    window.deleteMessage = function(id) {
-        if (!confirm('       ')) return;
-        contactMessages = contactMessages.filter(m => m.id !== id);
-        saveContactMessages();
-        renderAllMessages();
-        renderMyMessages();
-        renderTeacherMessages(chatRecipient);
-        updateContactBadge();
-        showToast('success', '   ');
-    };
-
-    function updateContactBadge() {
-        const unread = contactMessages.filter(m => !m.read).length;
-        const badge = safeGetElement('contactBadge');
-        if (badge) {
-            if (unread > 0) {
-                badge.style.display = 'inline';
-                badge.textContent = unread;
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-    }
-
-    function checkContactMessages() {
-        updateContactBadge();
-    }
-
-    // ============================================================
-    // =====    =====
-    // ============================================================
-
-    function getManagedTeacher() {
-        const userEmail = currentUser?.email;
-        if (!userEmail) return null;
-        const managed = getMyManagedTeachers(userEmail);
-        if (managed.length === 0) return null;
-        const admin = managed[0];
-        return {
-            sectionIndex: admin.sectionIndex,
-            teacherIndex: admin.teacherIndex,
-            teacher: data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex]
-        };
-    }
-
-    window.openTeacherAdmin = function() {
-        const userEmail = currentUser?.email;
-        if (!userEmail) {
-            showToast('warning', '    ');
-            return;
-        }
-
-        const managedTeachers = getMyManagedTeachers(userEmail);
-        if (managedTeachers.length === 0) {
-            showToast('warning', '       ');
-            return;
-        }
-
-        const teacherAdminName = safeGetElement('teacherAdminName');
-        const teacherAdminModal = safeGetElement('teacherAdminModal');
-
-        if (managedTeachers.length === 1) {
-            const admin = managedTeachers[0];
-            const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-            if (teacher && teacherAdminName) {
-                teacherAdminName.textContent = ` ${teacher.name} (${admin.sectionName})`;
-                if (teacherAdminModal) {
-                    teacherAdminModal.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                }
-                updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
-                renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
-                renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
-                return;
-            }
-        }
-
-        let html = '<div style="display:flex;flex-direction:column;gap:0.5rem;">';
-        managedTeachers.forEach(admin => {
-            const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-            if (teacher) {
-                html += `
-                    <button onclick="openTeacherAdminDirect(${admin.sectionIndex}, ${admin.teacherIndex})" 
-                        style="padding:0.6rem;background:var(--bg-card);border:2px solid var(--border);border-radius:8px;cursor:pointer;text-align:right;transition:all 0.3s;">
-                        <div style="font-weight:700;">${teacher.name}</div>
-                        <div style="font-size:0.7rem;color:var(--text-light);">${admin.sectionName}</div>
-                    </button>
-                `;
-            }
-        });
-        html += '</div>';
-
-        if (teacherAdminName) {
-            teacherAdminName.innerHTML = html;
-            teacherAdminName.style.textAlign = 'right';
-        }
-        if (teacherAdminModal) {
-            teacherAdminModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    };
-
-    window.openTeacherAdminDirect = function(sectionIndex, teacherIndex) {
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-        const section = data.sections[sectionIndex];
-        const teacherAdminName = safeGetElement('teacherAdminName');
-        if (teacherAdminName) {
-            teacherAdminName.innerHTML = ` ${teacher.name} (${section.name})`;
-            teacherAdminName.style.textAlign = 'center';
-        }
-        const teacherAdminModal = safeGetElement('teacherAdminModal');
-        if (teacherAdminModal) {
-            teacherAdminModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        updateTeacherSemesterSelect(sectionIndex, teacherIndex);
-        renderTeacherCodes(sectionIndex, teacherIndex);
-        renderTeacherLectures(sectionIndex, teacherIndex);
-    };
-
-    function updateTeacherSemesterSelect(sectionIndex, teacherIndex) {
-        const select = safeGetElement('teacherLectureSemester');
-        if (!select) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            select.innerHTML = '<option value=""> ...</option>';
-            return;
-        }
-
-        const currentValue = select.value;
-        let options = '<option value=""> ...</option>';
-
-        if (teacher.semesters) {
-            teacher.semesters.forEach((s, i) => {
-                options += `<option value="${i}"> ${s.number} - ${s.description || ''}</option>`;
-            });
-        }
-
-        select.innerHTML = options;
-        select.dataset.sectionIndex = sectionIndex;
-        select.dataset.teacherIndex = teacherIndex;
-        if (currentValue && teacher.semesters[parseInt(currentValue)]) {
-            select.value = currentValue;
-        }
-    }
-
-    function renderTeacherCodes(sectionIndex, teacherIndex) {
-        const container = safeGetElement('teacherCodesContainer');
-        if (!container) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher || !teacher.codes || teacher.codes.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">  </p>';
-            return;
-        }
-
-        let html = '<div style="display:flex;flex-direction:column;gap:0.3rem;">';
-        teacher.codes.forEach((c, index) => {
-            const status = c.used ? ' ' : ' ';
-            const statusColor = c.used ? '#22c55e' : '#22c55e';
-            const userEmail = c.userEmail || '';
-            const isAdminCode = c.isAdminCode || false;
-            html += `
-                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:0.3rem 0.6rem;border-radius:6px;flex-wrap:wrap;gap:0.2rem;border:1px solid var(--border);">
-                    <span style="font-family:monospace;font-weight:700;font-size:0.85rem;color:var(--primary);">${c.code}</span>
-                    <span style="font-size:0.7rem;color:${statusColor};">${status} ${isAdminCode ? '' : ''}</span>
-                    ${c.used ? `<span style="font-size:0.6rem;color:var(--text-light);">${userEmail}</span>` : ''}
-                    ${!c.used && !isAdminCode ? `<button onclick="teacherDeleteCode(${sectionIndex}, ${teacherIndex}, ${index})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.05rem 0.4rem;cursor:pointer;font-size:0.6rem;"></button>` : ''}
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-    }
-
-    function renderTeacherLectures(sectionIndex, teacherIndex) {
-        const container = safeGetElement('teacherLecturesList');
-        if (!container) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher || !teacher.semesters || teacher.semesters.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">  </p>';
-            return;
-        }
-
-        let html = '';
-        teacher.semesters.forEach((semester, sIndex) => {
-            if (semester.lectures && semester.lectures.length > 0) {
-                semester.lectures.forEach((lecture, lIndex) => {
-                    const isFree = lecture.isFree ? ' ' : ' ';
-                    html += `
-                        <div style="background:var(--bg);padding:0.5rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid var(--primary);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.3rem;">
-                            <div>
-                                <span style="font-weight:700;font-size:0.85rem;">  ${semester.number}</span>
-                                <span style="font-weight:600;font-size:0.85rem;margin-right:0.5rem;">#${lecture.number}</span>
-                                <span style="font-size:0.85rem;">${lecture.title}</span>
-                            </div>
-                            <div style="display:flex;align-items:center;gap:0.3rem;flex-wrap:wrap;">
-                                <span style="font-size:0.65rem;background:${isFree.includes('') ? '#22c55e' : '#f59e0b'};color:white;padding:0.1rem 0.4rem;border-radius:4px;">${isFree}</span>
-                                <button onclick="openEditLecture(${sectionIndex}, ${teacherIndex}, ${sIndex}, ${lIndex})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.6rem;"></button>
-                                <button onclick="deleteTeacherLecture(${sectionIndex}, ${teacherIndex}, ${sIndex}, ${lIndex})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.6rem;"></button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-        });
-
-        if (!html) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">  </p>';
-            return;
-        }
-
-        container.innerHTML = html;
-    }
-
-    document.getElementById('teacherAddSemesterForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const userEmail = currentUser?.email;
-        if (!userEmail) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const managedTeachers = getMyManagedTeachers(userEmail);
-        if (managedTeachers.length === 0) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const admin = managedTeachers[0];
-        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const numberInput = safeGetElement('teacherSemesterNumber');
-        const descInput = safeGetElement('teacherSemesterDesc');
-        
-        if (!numberInput || !descInput) return;
-        
-        const number = parseInt(numberInput.value);
-        const description = descInput.value.trim();
-
-        if (!number || number < 1) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        if (teacher.semesters && teacher.semesters.some(s => s.number === number)) {
-            showToast('warning', '   ' + number + '  ');
-            return;
-        }
-
-        if (!teacher.semesters) teacher.semesters = [];
-
-        teacher.semesters.push({
-            number: number,
-            description: description || ` ${number}`,
-            lectures: []
-        });
-
-        saveData();
-        renderAllData();
-        renderAccount();
-        renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
-        updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
-
-        if (currentUser) {
-            addNotification(
-                '  ',
-                `   ${number}  ${teacher.name}`,
-                'lecture'
-            );
-        }
-
-        this.reset();
-        showToast('success', `    ${number} `);
-    });
-
-    document.getElementById('teacherAddLectureForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const userEmail = currentUser?.email;
-        if (!userEmail) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const managedTeachers = getMyManagedTeachers(userEmail);
-        if (managedTeachers.length === 0) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const admin = managedTeachers[0];
-        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const semesterSelect = safeGetElement('teacherLectureSemester');
-        const numberInput = safeGetElement('teacherLectureNumber');
-        const titleInput = safeGetElement('teacherLectureTitle');
-        const urlInput = safeGetElement('teacherLectureUrl');
-        const freeSelect = safeGetElement('teacherLectureFree');
-
-        if (!semesterSelect || !numberInput || !titleInput || !urlInput || !freeSelect) return;
-
-        const semesterIndex = parseInt(semesterSelect.value);
-        const number = parseInt(numberInput.value);
-        const title = titleInput.value.trim();
-        const youtubeUrl = urlInput.value.trim();
-        const isFree = freeSelect.value === 'true';
-
-        if (isNaN(semesterIndex) || semesterIndex < 0) {
-            showToast('warning', '   ');
-            return;
-        }
-
-        if (!number || number < 1) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        if (!title) {
-            showToast('warning', '    ');
-            return;
-        }
-
-        if (!youtubeUrl) {
-            showToast('warning', '    ');
-            return;
-        }
-
-        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
-            youtubeUrl.includes('youtube') ||
-            youtubeUrl.includes('youtu.be') ||
-            youtubeUrl.includes('player.') ||
-            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
-
-        if (!isValidUrl) {
-            showToast('warning', '    ');
-            return;
-        }
-
-        if (!teacher.semesters[semesterIndex].lectures) {
-            teacher.semesters[semesterIndex].lectures = [];
-        }
-
-        if (teacher.semesters[semesterIndex].lectures.some(l => l.number === number)) {
-            showToast('warning', '   ' + number + '     ');
-            return;
-        }
-
-        teacher.semesters[semesterIndex].lectures.push({
-            number: number,
-            title: title,
-            youtubeUrl: youtubeUrl,
-            isFree: isFree
-        });
-
-        saveData();
-        renderAllData();
-        renderAccount();
-        renderTeacherLectures(admin.sectionIndex, admin.teacherIndex);
-
-        if (currentUser) {
-            addNotification(
-                '  ',
-                `   "${title}"  ${teacher.name}`,
-                'lecture'
-            );
-        }
-
-        this.reset();
-        updateTeacherSemesterSelect(admin.sectionIndex, admin.teacherIndex);
-        showToast('success', `    "${title}" `);
-    });
-
-    window.deleteTeacherLecture = function(sectionIndex, teacherIndex, semesterIndex, lectureIndex) {
-        if (!confirm('       ')) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const lecture = teacher.semesters[semesterIndex]?.lectures[lectureIndex];
-        if (!lecture) {
-            showToast('error', '   ');
-            return;
-        }
-
-        teacher.semesters[semesterIndex].lectures.splice(lectureIndex, 1);
-        saveData();
-        renderAllData();
-        renderAccount();
-        renderTeacherLectures(sectionIndex, teacherIndex);
-        showToast('success', '   ');
-    };
-
-    window.teacherDeleteCode = function(sectionIndex, teacherIndex, codeIndex) {
-        if (!confirm('       ')) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) return;
-
-        if (teacher.codes[codeIndex].used) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        if (teacher.codes[codeIndex].isAdminCode) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        teacher.codes.splice(codeIndex, 1);
-        saveData();
-        renderTeacherCodes(sectionIndex, teacherIndex);
-        renderAccount();
-        showToast('success', '   ');
-    };
-
-    window.teacherAddCode = function() {
-        const userEmail = currentUser?.email;
-        if (!userEmail) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const managedTeachers = getMyManagedTeachers(userEmail);
-        if (managedTeachers.length === 0) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const admin = managedTeachers[0];
-        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const codeInput = safeGetElement('teacherManualCode');
-        if (!codeInput) return;
-        
-        const code = codeInput.value.trim().toUpperCase();
-
-        if (!code) {
-            showToast('warning', '   ');
-            return;
-        }
-
-        if (code.length < 4) {
-            showToast('warning', '   ');
-            return;
-        }
-
-        if (!teacher.codes) teacher.codes = [];
-
-        if (teacher.codes.some(c => c.code === code)) {
-            showToast('warning', '    ');
-            return;
-        }
-
-        teacher.codes.push({
-            code: code,
-            used: false,
-            locked: false,
-            deviceId: null,
-            userId: null,
-            userEmail: null,
-            usedAt: null
-        });
-
-        saveData();
-        renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
-        renderAccount();
-        codeInput.value = '';
-        showToast('success', `   : ${code}`);
-    };
-
-    window.teacherGenerateCodes = function(count = 5) {
-        const userEmail = currentUser?.email;
-        if (!userEmail) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const managedTeachers = getMyManagedTeachers(userEmail);
-        if (managedTeachers.length === 0) {
-            showToast('error', '   ');
-            return;
-        }
-
-        const admin = managedTeachers[0];
-        const teacher = data.sections[admin.sectionIndex]?.teachers[admin.teacherIndex];
-        if (!teacher) {
-            showToast('error', '   ');
-            return;
-        }
-
-        if (!teacher.codes) teacher.codes = [];
-        const newCodes = [];
-
-        for (let i = 0; i < count; i++) {
-            const prefix = teacher.name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let random = '';
-            for (let j = 0; j < 8; j++) {
-                random += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            const newCode = `${prefix}-${random}`;
-            teacher.codes.push({
-                code: newCode,
-                used: false,
-                locked: false,
-                deviceId: null,
-                userId: null,
-                userEmail: null,
-                usedAt: null
-            });
-            newCodes.push(newCode);
-        }
-
-        saveData();
-        renderTeacherCodes(admin.sectionIndex, admin.teacherIndex);
-        renderAccount();
-        showToast('success', `   ${newCodes.length}  `);
-    };
-
-    window.openTeacherStudents = function() {
-        const teacher = getManagedTeacher();
-        if (!teacher) {
-            showToast('warning', '      ');
-            return;
-        }
-
-        const nameEl = safeGetElement('teacherStudentsName');
-        if (nameEl) nameEl.textContent = ` ${teacher.teacher.name}`;
-        
-        const modal = safeGetElement('teacherStudentsModal');
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        renderTeacherStudents(teacher.sectionIndex, teacher.teacherIndex);
-    };
-
-    function renderTeacherStudents(sectionIndex, teacherIndex) {
-        const container = safeGetElement('teacherStudentsList');
-        if (!container) return;
-
-        const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher || !teacher.codes) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">   </p>';
-            return;
-        }
-
-        const students = [];
-        teacher.codes.forEach(c => {
-            if (c.used && c.userEmail && !c.isAdminCode) {
-                if (!students.some(s => s.email === c.userEmail)) {
-                    students.push({
-                        email: c.userEmail,
-                        code: c.code,
-                        usedAt: c.usedAt
-                    });
-                }
-            }
-        });
-
-        if (students.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">   </p>';
-            return;
-        }
-
-        let html = '';
-        students.forEach((s, index) => {
-            html += `
-                <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);padding:0.5rem 0.8rem;border-radius:6px;margin-bottom:0.3rem;border-right:3px solid var(--primary);flex-wrap:wrap;gap:0.3rem;">
-                    <span style="font-weight:600;font-size:0.9rem;">${index + 1}. ${s.email}</span>
-                    <span style="font-size:0.7rem;color:var(--text-light);">: <code style="font-family:monospace;background:var(--bg-card);padding:0.05rem 0.3rem;border-radius:4px;">${s.code}</code></span>
-                    <span style="font-size:0.65rem;color:var(--text-light);">${s.usedAt ? new Date(s.usedAt).toLocaleString('ar') : ''}</span>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.openTeacherMessages = function() {
-        const teacher = getManagedTeacher();
-        if (!teacher) {
-            showToast('warning', '      ');
-            return;
-        }
-
-        const nameEl = safeGetElement('teacherMessagesName');
-        if (nameEl) nameEl.textContent = ` ${teacher.teacher.name}`;
-        
-        const modal = safeGetElement('teacherMessagesModal');
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        renderTeacherMessages(teacher.teacher.name);
-    };
-
-    function renderTeacherMessages(teacherName) {
-        const container = safeGetElement('teacherMessagesList');
-        if (!container) return;
-
-        const messages = contactMessages.filter(m => m.recipient === teacherName || m.recipient === currentUser?.email);
-
-        if (messages.length === 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;font-size:0.8rem;">    </p>';
-            return;
-        }
-
-        let html = '';
-        messages.slice().reverse().forEach(msg => {
-            const isRead = msg.read || false;
-            const senderName = msg.senderName || msg.sender || '';
-            const senderImage = msg.senderImage || '';
-            const studentSection = getStudentSection(msg.sender);
-            const firstLetter = senderName.charAt(0).toUpperCase();
-            
-            html += `
-                <div style="background:var(--bg);padding:0.6rem 0.8rem;border-radius:8px;margin-bottom:0.4rem;border-right:3px solid ${isRead ? '#22c55e' : '#f59e0b'};">
-                    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:var(--text-light);flex-wrap:wrap;">
-                        <span style="display:inline-flex;align-items:center;gap:0.3rem;">
-                            ${senderImage && isValidImageUrl(senderImage) 
-                                ? `<img src="${senderImage}" alt="${senderName}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none';">` 
-                                : `<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--primary-gradient);color:white;text-align:center;line-height:20px;font-size:0.5rem;font-weight:700;">${firstLetter}</span>`
-                            }
-                            ${senderName}
-                            ${studentSection ? `<span style="font-size:0.5rem;color:var(--primary);background:var(--bg);padding:0.05rem 0.3rem;border-radius:12px;"> ${studentSection}</span>` : ''}
-                        </span>
-                        <span>${new Date(msg.sentAt).toLocaleString('ar')}</span>
-                    </div>
-                    <div style="font-weight:600;font-size:0.85rem;">${msg.subject}</div>
-                    <div style="font-size:0.75rem;color:var(--text-light);">${msg.message}</div>
-                    ${msg.attachments && msg.attachments.length ? `<div style="font-size:0.6rem;color:var(--primary);"><i class="fas fa-paperclip"></i> ${msg.attachments.length} </div>` : ''}
-                    <div style="font-size:0.6rem;color:${isRead ? '#22c55e' : '#f59e0b'};margin-top:0.2rem;">
-                        ${isRead ? ' ' : ' '}
-                        ${!isRead ? `<button onclick="markInboxMessageRead(${msg.id})" style="background:var(--primary);color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;margin-right:0.3rem;">  </button>` : ''}
-                        <button onclick="deleteInboxMessage(${msg.id})" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.1rem 0.4rem;cursor:pointer;font-size:0.55rem;"></button>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
-
-    window.openTeacherCodes = function() {
-        const teacher = getManagedTeacher();
-        if (!teacher) {
-            showToast('warning', '      ');
-            return;
-        }
-
-        const modal = safeGetElement('teacherAdminModal');
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        
-        const nameEl = safeGetElement('teacherAdminName');
-        if (nameEl) nameEl.textContent = ` ${teacher.teacher.name}`;
-
-        document.querySelectorAll('#teacherAdminModal .tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector('#teacherAdminModal .tab-btn[data-tab="teacher-codes"]')?.classList.add('active');
-        document.querySelectorAll('#teacherAdminModal .tab-content').forEach(t => t.classList.remove('active'));
-        const codesTab = safeGetElement('tab-teacher-codes');
-        if (codesTab) codesTab.classList.add('active');
-
-        renderTeacherCodes(teacher.sectionIndex, teacher.teacherIndex);
-    };
-
-    // ============================================================
-    // DATA FUNCTIONS
-    // ============================================================
-
+    // ===== DATA FUNCTIONS =====
     function normalizeDataStructure(courseData) {
-        if (!courseData || typeof courseData !== 'object') {
-            courseData = { sections: [] };
-        }
-        if (!courseData.sections || !Array.isArray(courseData.sections)) {
+        if (!courseData || !Array.isArray(courseData.sections)) {
             courseData.sections = [];
         }
-        
         courseData.sections.forEach(section => {
             if (!Array.isArray(section.teachers)) { section.teachers = []; }
             section.teachers.forEach(teacher => {
@@ -3175,7 +596,6 @@
                     if (!('usedAt' in c)) c.usedAt = null;
                     if (!('userId' in c)) c.userId = null;
                     if (!('userEmail' in c)) c.userEmail = null;
-                    if (!('isAdminCode' in c)) c.isAdminCode = false;
                 });
                 teacher.semesters.forEach(semester => {
                     if (!Array.isArray(semester.lectures)) { semester.lectures = []; }
@@ -3192,151 +612,72 @@
 
     async function loadData() {
         try {
-            if (!supabaseClient) {
-                console.error(' Supabase  ');
-                showToast('error', '    ');
-                data = { sections: [] };
-                normalizeDataStructure(data);
-                renderAllData();
-                return;
-            }
-
-            const remoteData = await getSupabaseAcademyData();
-            
-            if (remoteData && remoteData.sections && Array.isArray(remoteData.sections) && remoteData.sections.length > 0) {
-                data = remoteData;
-                normalizeDataStructure(data);
-                localStorage.setItem('academyData', JSON.stringify(data));
-                console.log('     Supabase ');
-                showToast('success', `   ${data.sections.length}    `);
-            } else {
-                console.log('     Supabase    ...');
-                data = { sections: [] };
-                normalizeDataStructure(data);
-                localStorage.removeItem('academyData');
-                showToast('info', '          ');
-                
-                if (teachersGridContainer) {
-                    teachersGridContainer.innerHTML = `
-                        <div class="empty-teachers" style="text-align:center;padding:3rem 1rem;">
-                            <span class="empty-icon" style="font-size:4rem;display:block;margin-bottom:1rem;"></span>
-                            <h3 style="font-size:1.2rem;color:var(--text);">  </h3>
-                            <p style="color:var(--text-light);font-size:0.9rem;max-width:400px;margin:0 auto;">
-                                          
-                            </p>
-                            <button onclick="navigateTo('account')" style="margin-top:1rem;padding:0.5rem 1.5rem;background:var(--primary-gradient);color:white;border:none;border-radius:30px;font-weight:600;cursor:pointer;">
-                                <i class="fas fa-cog"></i>    
-                            </button>
-                        </div>
-                    `;
+            if (supabaseClient) {
+                const remoteData = await getSupabaseAcademyData();
+                if (remoteData && remoteData.sections && Array.isArray(remoteData.sections)) {
+                    data = remoteData;
+                    normalizeDataStructure(data);
+                    localStorage.setItem('academyData', JSON.stringify(data));
+                    console.log('✅ تم تحميل البيانات من Supabase');
+                    return;
                 }
             }
-            
-            renderAllData();
-            renderMyCourses();
-            renderAccount();
-            renderContactTeachers();
-            renderTeacherInbox();
-            updateBadge();
-            updateContactBadge();
-            updateAllAdminSelects();
-            
-            await syncPendingCodes();
-            
-        } catch (error) {
-            console.error('    :', error);
-            showToast('error', '     ');
-            data = { sections: [] };
+            const savedData = localStorage.getItem('academyData');
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (parsed && parsed.sections && Array.isArray(parsed.sections)) {
+                        data = parsed;
+                        normalizeDataStructure(data);
+                        console.log('✅ تم تحميل البيانات من localStorage');
+                        return;
+                    }
+                } catch (e) { console.warn('⚠️ بيانات localStorage تالفة'); }
+            }
+            data = { sections: JSON.parse(JSON.stringify(defaultSections)) };
             normalizeDataStructure(data);
-            localStorage.removeItem('academyData');
-            renderAllData();
-        }
-    }
-
-    async function getSupabaseAcademyData() {
-        if (!supabaseClient) return null;
-        
-        try {
-            const { data, error } = await supabaseClient
-                .from('academy_data')
-                .select('content')
-                .eq('id', 'main')
-                .maybeSingle();
-            
-            if (error) {
-                console.warn('      Supabase:', error.message || error);
-                return null;
-            }
-            
-            if (!data || !data.content) {
-                console.log('      Supabase');
-                return null;
-            }
-            
-            const content = data.content;
-            if (!content.sections || !Array.isArray(content.sections)) {
-                console.warn('      Supabase');
-                return null;
-            }
-            
-            return content;
-            
+            localStorage.setItem('academyData', JSON.stringify(data));
+            showToast('info', '📝 تم تحميل الأقسام الافتراضية');
         } catch (error) {
-            console.warn('     Supabase:', error);
-            return null;
-        }
-    }
-
-    async function saveSupabaseAcademyData() {
-        if (!supabaseClient) {
-            return { success: false, error: 'Supabase  ' };
-        }
-        
-        try {
-            if (!data || !data.sections || !Array.isArray(data.sections)) {
-                return { success: false, error: '   ' };
-            }
-            
-            const cleanData = JSON.parse(JSON.stringify(data));
-            normalizeDataStructure(cleanData);
-            
-            const record = { 
-                id: 'main', 
-                content: cleanData, 
-                updated_at: new Date().toISOString() 
-            };
-            
-            const { error } = await supabaseClient
-                .from('academy_data')
-                .upsert(record, { onConflict: 'id' });
-            
-            if (error) {
-                console.error('      Supabase:', error);
-                return { success: false, error: error };
-            }
-            
-            localStorage.setItem('academyData', JSON.stringify(cleanData));
-            console.log('     Supabase ');
-            return { success: true };
-            
-        } catch (error) {
-            console.error('     Supabase:', error);
-            return { success: false, error: error };
+            console.warn('⚠️ استخدام البيانات الافتراضية:', error.message);
         }
     }
 
     function saveData() {
         try {
             localStorage.setItem('academyData', JSON.stringify(data));
-            console.log('    ');
+            console.log('✅ تم حفظ البيانات بنجاح');
         } catch (error) {
-            console.error('    :', error);
-            showToast('error', '    ');
+            console.error('❌ خطأ في حفظ البيانات:', error);
+            showToast('error', '⚠️ فشل حفظ البيانات محلياً');
         }
     }
 
+    async function getSupabaseAcademyData() {
+        if (!supabaseClient) return null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('academy_data').select('content').eq('id', 'main').maybeSingle();
+            if (error) { console.warn('Supabase academy data lookup failed:', error.message || error); return null; }
+            return data?.content || null;
+        } catch (error) { console.warn('Supabase academy data exception:', error); return null; }
+    }
+
+    async function saveSupabaseAcademyData() {
+        if (!supabaseClient) return { success: false, error: 'Supabase غير متاح' };
+        try {
+            const record = { id: 'main', content: data, updated_at: new Date().toISOString() };
+            const { error } = await supabaseClient.from('academy_data').upsert(record, { onConflict: 'id' });
+            if (error) { console.warn('Supabase academy data save failed:', error.message || error); return { success: false,
+                    error }; }
+            localStorage.setItem('academyData', JSON.stringify(data));
+            return { success: true };
+        } catch (error) { console.warn('Supabase academy data save exception:', error); return { success: false,
+                error }; }
+    }
+
     // ============================================================
-    //    
+    // عرض البيانات مع الفلتر
     // ============================================================
 
     function getAllTeachers() {
@@ -3378,7 +719,7 @@
         if (!container) return;
 
         let html = `<button class="filter-btn active" data-section="all" onclick="setFilter('all')">
-            <span class="btn-icon"></span> 
+            <span class="btn-icon">🏫</span> الكل
             <span class="btn-count">${getAllTeachers().length}</span>
         </button>`;
 
@@ -3386,7 +727,7 @@
             const teacherCount = section.teachers ? section.teachers.length : 0;
             const isActive = currentFilter === section.id;
             html += `<button class="filter-btn ${isActive ? 'active' : ''}" data-section="${section.id}" onclick="setFilter('${section.id}')">
-                <span class="btn-icon"></span> ${section.name}
+                <span class="btn-icon">📚</span> ${section.name}
                 <span class="btn-count">${teacherCount}</span>
             </button>`;
         });
@@ -3413,9 +754,9 @@
         if (!teachers || teachers.length === 0) {
             container.innerHTML = `
                 <div class="empty-teachers">
-                    <span class="empty-icon"></span>
-                    <h3>  </h3>
-                    <p>${currentFilter === 'all' ? '     ' : '     '}</p>
+                    <span class="empty-icon">👨‍🏫</span>
+                    <h3>لا يوجد مدرسون</h3>
+                    <p>${currentFilter === 'all' ? 'قم بإضافة مدرسين من لوحة التحكم' : 'لا يوجد مدرسون في هذا القسم'}</p>
                 </div>
             `;
             return;
@@ -3425,11 +766,9 @@
 
         teachers.forEach((teacher) => {
             const hasAccess = hasAccessToTeacher(teacher);
-            const canContact = canUserContact() && hasAccess;
-            const imageUrl = getSafeImageUrl(teacher.image);
-            const validImage = imageUrl && isValidImageUrl(imageUrl);
-            const emoji = teacher.emoji || '';
-            const name = teacher.name || '';
+            const imageUrl = teacher.image || '';
+            const emoji = teacher.emoji || '👨‍🏫';
+            const name = teacher.name || 'مدرس';
             const subject = teacher.subject || '';
             const semestersCount = Array.isArray(teacher.semesters) ? teacher.semesters.length : 0;
             const sectionName = teacher._sectionName || '';
@@ -3438,24 +777,19 @@
                 <div class="teacher-card" onclick="openTeacher(${teacher._sectionIndex}, ${teacher._teacherIndex})">
                     <div class="teacher-section-badge">${sectionName}</div>
                     <div class="teacher-card-image">
-                        ${validImage ? `<img src="${imageUrl}" alt="${name}" onerror="this.style.display='none'; this.parentElement.querySelector('.teacher-emoji').style.display='block';">` : ''}
-                        <span class="teacher-emoji" style="${validImage ? 'display:none;' : 'display:block;'}">${emoji}</span>
-                        ${hasAccess ? '<div class="teacher-badge"></div>' : ''}
+                        ${imageUrl ? `<img src="${imageUrl}" alt="${name}" onerror="this.style.display='none'; this.parentElement.querySelector('.teacher-emoji').style.display='block';">` : ''}
+                        <span class="teacher-emoji" style="${imageUrl ? 'display:none;' : 'display:block;'}">${emoji}</span>
+                        ${hasAccess ? '<div class="teacher-badge">✅</div>' : ''}
                     </div>
                     <div class="teacher-card-info">
                         <h3>${name}</h3>
                         ${subject ? `<div class="teacher-subject">${subject}</div>` : ''}
-                        <div class="teacher-stats"> ${semestersCount} </div>
+                        <div class="teacher-stats">📚 ${semestersCount} فصول</div>
                     </div>
                     <div class="teacher-card-overlay">
                         <i class="fas fa-chevron-left"></i>
-                        <span></span>
+                        <span>عرض</span>
                     </div>
-                    ${canContact ? `
-                        <button class="btn-contact" onclick="event.stopPropagation();openChatFull('${name.replace(/'/g, "\\'")}', '${emoji}', '${subject.replace(/'/g, "\\'")}', '${imageUrl || ''}')">
-                            <i class="fas fa-comment"></i>
-                        </button>
-                    ` : ''}
                 </div>
             `;
         });
@@ -3489,7 +823,7 @@
         activeSectionIndex = sectionIndex;
 
         const hasAccess = hasAccessToTeacher(teacher);
-        if (modalTeacherTitle) modalTeacherTitle.textContent = ` ${teacher.name} (${section.name})`;
+        modalTeacherTitle.textContent = `👨‍🏫 ${teacher.name} (${section.name})`;
 
         const semesters = Array.isArray(teacher.semesters) ? teacher.semesters : [];
         let html = '';
@@ -3503,11 +837,11 @@
                 <div class="semester-item ${isLocked ? 'locked' : ''}" 
                      onclick="${isLocked ? '' : `openLectures(${sectionIndex}, ${teacherIndex}, ${idx})`}">
                     <div>
-                        <div class="semester-number">  ${semester.number}</div>
-                        <div class="semester-desc">${semester.description || ''} (${semester.lectures.length} )</div>
+                        <div class="semester-number">📖 الفصل ${semester.number}</div>
+                        <div class="semester-desc">${semester.description || ''} (${semester.lectures.length} محاضرة)</div>
                     </div>
                     <div class="semester-status">
-                        ${isLocked ? ' ' : (hasAccess ? ' ' : ' ')}
+                        ${isLocked ? '🔒 مغلق' : (hasAccess ? '✅ مفتوح' : '🆓 جزئياً')}
                         <i class="fas fa-chevron-left"></i>
                     </div>
                 </div>
@@ -3518,58 +852,47 @@
         html += `
             <div class="codes-info">
                 <div class="access-status ${isActivated ? 'active' : 'inactive'}">
-                    ${isActivated ? '   -   ' : '    -   '}
+                    ${isActivated ? '✅ تم التفعيل - جميع المحاضرات مفتوحة' : '🔒 بعض المحاضرات مقفلة - أدخل كود التفعيل'}
                 </div>
                 ${!isActivated ? `
                     <div class="code-box-mini" style="margin-top:0.8rem;background:var(--bg);padding:0.8rem;border-radius:var(--radius-sm);">
-                        <p style="font-size:0.85rem;margin-bottom:0.3rem;">      </p>
+                        <p style="font-size:0.85rem;margin-bottom:0.3rem;">🔑 أدخل كود التفعيل لفتح جميع المحاضرات</p>
                         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                            <input type="password" id="codeInputTeacher" placeholder=" ..." maxlength="20" style="flex:1;min-width:120px;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
-                            <button onclick="activateCodeFromTeacher()" style="padding:0.5rem 1.2rem;background:var(--primary-gradient);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;"></button>
+                            <input type="password" id="codeInputTeacher" placeholder="أدخل الكود..." maxlength="20" style="flex:1;min-width:120px;padding:0.5rem 0.8rem;border:2px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);font-size:0.9rem;outline:none;text-align:center;letter-spacing:2px;font-weight:700;font-family:monospace;" />
+                            <button onclick="activateCodeFromTeacher()" style="padding:0.5rem 1.2rem;background:var(--primary-gradient);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">تفعيل</button>
                         </div>
                         <div id="codeMessageTeacher" style="margin-top:0.3rem;font-size:0.85rem;"></div>
                     </div>
                 ` : ''}
-                <div style="margin-top:1rem;text-align:center;">
-                    <button onclick="openChatFull('${teacher.name.replace(/'/g, "\\'")}', '${teacher.emoji || ''}', '${teacher.subject || ''}', '${getSafeImageUrl(teacher.image) || ''}')" 
-                            style="padding:0.5rem 2rem;background:var(--primary-gradient);color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;">
-                        <i class="fas fa-comment"></i> 
-                    </button>
-                </div>
             </div>
         `;
 
-        if (semestersList) semestersList.innerHTML = html;
-        if (semestersModal) {
-            semestersModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+        semestersList.innerHTML = html;
+        semestersModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     };
 
     window.activateCodeFromTeacher = async function() {
-        const codeInput = safeGetElement('codeInputTeacher');
-        const codeMessage = safeGetElement('codeMessageTeacher');
-        
-        if (!codeInput || !codeMessage) return;
-        
+        const codeInput = document.getElementById('codeInputTeacher');
+        const codeMessage = document.getElementById('codeMessageTeacher');
         const code = codeInput.value.trim().toUpperCase();
 
         if (!code) {
-            codeMessage.innerHTML = '   ';
+            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
             codeMessage.style.color = '#f59e0b';
             return;
         }
 
         if (!activeTeacher) {
-            codeMessage.innerHTML = '    ';
+            codeMessage.innerHTML = '⚠️ يرجى اختيار مدرس أولاً';
             codeMessage.style.color = '#f59e0b';
             return;
         }
 
         if (!currentUser) {
-            codeMessage.innerHTML = '    ';
+            codeMessage.innerHTML = '⚠️ يجب تسجيل الدخول أولاً';
             codeMessage.style.color = '#ef4444';
-            showToast('error', '    ');
+            showToast('error', '⚠️ يجب تسجيل الدخول أولاً');
             return;
         }
 
@@ -3578,7 +901,7 @@
         codeMessage.style.color = result.valid ? '#22c55e' : '#ef4444';
 
         if (result.valid) {
-            showToast('success', '   !');
+            showToast('success', '✅ تم التفعيل بنجاح!');
             renderAllData();
             renderMyCourses();
             renderAccount();
@@ -3591,7 +914,7 @@
                 }
             }, 1500);
         } else {
-            showToast('error', ' ' + result.message);
+            showToast('error', '❌ ' + result.message);
         }
     };
 
@@ -3604,7 +927,7 @@
         if (!semester) return;
 
         const hasAccess = hasAccessToTeacher(teacher);
-        if (modalSemesterTitle) modalSemesterTitle.textContent = `  ${semester.number} - ${teacher.name}`;
+        modalSemesterTitle.textContent = `📖 الفصل ${semester.number} - ${teacher.name}`;
 
         let html = '';
         const lectures = Array.isArray(semester.lectures) ? semester.lectures : [];
@@ -3622,19 +945,17 @@
                     <div class="lecture-number">#${lecture.number}</div>
                     <div class="lecture-title">${lecture.title}</div>
                     <div class="lecture-status">
-                        ${isFree ? '<span class="free-badge"> </span>' : ''}
-                        ${isMediaDelivery ? '<span style="font-size:0.6rem;color:var(--primary);margin-left:0.3rem;"></span>' : ''}
+                        ${isFree ? '<span class="free-badge">🆓 مجانية</span>' : ''}
+                        ${isMediaDelivery ? '<span style="font-size:0.6rem;color:var(--primary);margin-left:0.3rem;">📹</span>' : ''}
                         ${canWatch ? `<i class="fas ${videoIcon}" style="color:var(--primary);"></i>` : '<i class="fas fa-lock" style="color:#ef4444;"></i>'}
                     </div>
                 </div>
             `;
         });
 
-        if (lecturesList) lecturesList.innerHTML = html;
-        if (lecturesModal) {
-            lecturesModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+        lecturesList.innerHTML = html;
+        lecturesModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     };
 
     // ===== MY COURSES =====
@@ -3644,39 +965,19 @@
 
         data.sections.forEach(section => {
             section.teachers.forEach((teacher, teacherIndex) => {
-                //   
-                const hasCodeAccess = teacher.codes ? teacher.codes.some(c => 
-                    (c.used && c.userEmail === currentUser.email && !c.locked) || 
-                    (c.isAdminCode && c.userEmail === currentUser.email)
-                ) : false;
-                
-                //    
-                let hasPermanentAccess = false;
-                try {
-                    const savedCodes = JSON.parse(localStorage.getItem('permanentCodes') || '[]');
-                    hasPermanentAccess = savedCodes.some(c => 
-                        c.userEmail === currentUser.email && 
-                        c.teacherName === teacher.name
-                    );
-                } catch (e) {}
-                
-                //       
-                const isTeacherAdmin = isTeacherAdminForTeacher(currentUser.email, teacher.name);
-                
-                if (hasCodeAccess || hasPermanentAccess || isTeacherAdmin) {
-                    courses.push({
-                        teacherName: teacher.name,
-                        teacherEmoji: teacher.emoji || '',
-                        teacherImage: getSafeImageUrl(teacher.image) || '',
-                        sectionName: section.name,
-                        sectionIndex: data.sections.indexOf(section),
-                        teacherIndex: teacherIndex,
-                        codes: teacher.codes ? teacher.codes.filter(c => 
-                            (c.used && c.userEmail === currentUser.email) || 
-                            (c.isAdminCode && c.userEmail === currentUser.email)
-                        ) : [],
-                        isAdmin: isTeacherAdmin
-                    });
+                if (teacher.codes) {
+                    const hasAccess = teacher.codes.some(c => c.used && c.userEmail === currentUser.email && !c.locked);
+                    if (hasAccess) {
+                        courses.push({
+                            teacherName: teacher.name,
+                            teacherEmoji: teacher.emoji || '👨‍🏫',
+                            teacherImage: teacher.image || '',
+                            sectionName: section.name,
+                            sectionIndex: data.sections.indexOf(section),
+                            teacherIndex: teacherIndex,
+                            codes: teacher.codes.filter(c => c.used && c.userEmail === currentUser.email)
+                        });
+                    }
                 }
             });
         });
@@ -3685,21 +986,21 @@
     }
 
     function renderMyCourses() {
-        const container = safeGetElement('myCoursesContainer');
-        const countSpan = safeGetElement('myCoursesCount');
+        const container = document.getElementById('myCoursesContainer');
+        const countSpan = document.getElementById('myCoursesCount');
         if (!container) return;
 
         const courses = getMyCourses();
-        if (countSpan) countSpan.textContent = courses.length + ' ';
+        if (countSpan) countSpan.textContent = courses.length + ' دورة';
 
         if (courses.length === 0) {
             container.innerHTML = `
                 <div class="empty-courses">
-                    <span class="empty-icon"></span>
-                    <h3>     </h3>
-                    <p>      </p>
+                    <span class="empty-icon">📚</span>
+                    <h3>لم تشترك في أي دورة بعد</h3>
+                    <p>استخدم كود التفعيل للاشتراك في دورات المدرسين</p>
                     <button class="btn-primary" onclick="navigateTo('teachers')">
-                        <i class="fas fa-search"></i>  
+                        <i class="fas fa-search"></i> استعراض المدرسين
                     </button>
                 </div>
             `;
@@ -3708,19 +1009,14 @@
 
         let html = '<div class="my-courses-grid">';
         courses.forEach(course => {
-            const isAdmin = course.isAdmin || false;
-            const imageUrl = getSafeImageUrl(course.teacherImage);
-            const validImage = imageUrl && isValidImageUrl(imageUrl);
             html += `
                 <div class="course-card-mini" onclick="openTeacher(${course.sectionIndex}, ${course.teacherIndex})">
                     <div class="course-avatar">
-                        ${validImage ? `<img src="${imageUrl}" alt="${course.teacherName}" onerror="this.style.display='none'; this.parentElement.textContent='${course.teacherEmoji}';">` : course.teacherEmoji}
+                        ${course.teacherImage ? `<img src="${course.teacherImage}" />` : course.teacherEmoji}
                     </div>
                     <div class="course-name">${course.teacherName}</div>
-                    <div class="course-meta">${course.sectionName} | ${course.codes.length} </div>
-                    <div class="course-badge" style="${isAdmin ? 'background:linear-gradient(135deg,#8B5CF6,#A78BFA);' : ''}">
-                        ${isAdmin ? ' ' : ' '}
-                    </div>
+                    <div class="course-meta">${course.sectionName} | ${course.codes.length} كود</div>
+                    <div class="course-badge">✅ مشترك</div>
                 </div>
             `;
         });
@@ -3728,98 +1024,78 @@
         container.innerHTML = html;
     }
 
-    // ===== ACCOUNT =====
+    // ===== ACCOUNT - تم إصلاحها بالكامل =====
     function renderAccount() {
         if (!currentUser) {
-            if (accountName) accountName.textContent = ' ';
-            if (accountEmail) accountEmail.textContent = '  ';
-            if (accountAvatar) accountAvatar.textContent = '';
-            if (accountRegistered) accountRegistered.textContent = '--';
-            if (accountCourses) accountCourses.textContent = '0';
-            if (accountCodes) accountCodes.textContent = '0';
-            if (accountMessages) accountMessages.textContent = '0';
-            if (adminPanelBtn) adminPanelBtn.style.display = 'none';
-
-            const teacherDashboard = safeGetElement('teacherDashboard');
-            if (teacherDashboard) teacherDashboard.style.display = 'none';
+            accountName.textContent = 'غير مسجل';
+            accountEmail.textContent = 'يرجى تسجيل الدخول';
+            accountAvatar.textContent = '👤';
+            accountRegistered.textContent = '--';
+            accountCourses.textContent = '0';
+            accountCodes.textContent = '0';
+            adminPanelBtn.style.display = 'none';
             return;
         }
 
-        const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
-        if (accountName) accountName.textContent = name;
-        if (accountEmail) accountEmail.textContent = currentUser.email;
-        if (accountAvatar) accountAvatar.textContent = name.charAt(0).toUpperCase();
+        const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
+        accountName.textContent = name;
+        accountEmail.textContent = currentUser.email;
+        accountAvatar.textContent = name.charAt(0).toUpperCase();
 
-        const registered = currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString('ar') : ' ';
-        if (accountRegistered) accountRegistered.textContent = ' : ' + registered;
+        const registered = currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString('ar') : 'غير معروف';
+        accountRegistered.textContent = 'مسجل منذ: ' + registered;
 
         const courses = getMyCourses();
-        if (accountCourses) accountCourses.textContent = courses.length;
+        accountCourses.textContent = courses.length;
 
         let codesCount = 0;
         data.sections.forEach(section => {
             section.teachers.forEach(teacher => {
                 if (teacher.codes) {
-                    codesCount += teacher.codes.filter(c => 
-                        (c.used && c.userEmail === currentUser.email) || 
-                        (c.isAdminCode && c.userEmail === currentUser.email)
-                    ).length;
+                    codesCount += teacher.codes.filter(c => c.used && c.userEmail === currentUser.email).length;
                 }
             });
         });
-        //     
-        try {
-            const savedCodes = JSON.parse(localStorage.getItem('permanentCodes') || '[]');
-            codesCount += savedCodes.filter(c => c.userEmail === currentUser.email).length;
-        } catch (e) {}
-        if (accountCodes) accountCodes.textContent = codesCount;
+        accountCodes.textContent = codesCount;
 
-        const userMessages = contactMessages.filter(m => m.sender === currentUser.email);
-        if (accountMessages) accountMessages.textContent = userMessages.length;
-
+        // ✅ الحل النهائي: التحقق المباشر من قائمة المشرفين + قاعدة البيانات
         const userEmail = currentUser.email;
-
+        
+        // أولاً: التحقق من القائمة المحددة مباشرة
         if (ADMIN_EMAILS.includes(userEmail)) {
-            if (adminPanelBtn) adminPanelBtn.style.display = 'flex';
-        } else {
-            isUserAdmin(userEmail).then(isAdmin => {
-                if (adminPanelBtn) adminPanelBtn.style.display = isAdmin ? 'flex' : 'none';
-            }).catch(() => {
-                if (adminPanelBtn) adminPanelBtn.style.display = 'none';
-            });
+            adminPanelBtn.style.display = 'flex';
+            console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من القائمة المحددة)');
+            return;
         }
-
-        // =====     =====
-        const isTeacherAdmin = isAnyTeacherAdmin(userEmail);
-        const teacherDashboard = safeGetElement('teacherDashboard');
-        if (teacherDashboard) {
-            if (isTeacherAdmin) {
-                teacherDashboard.style.display = 'block';
-                const managedTeachers = getMyManagedTeachers(userEmail);
-                if (managedTeachers.length > 0) {
-                    const teacherNameEl = teacherDashboard.querySelector('.teacher-name-display');
-                    if (teacherNameEl) {
-                        const names = managedTeachers.map(t => t.teacherName).join(' ');
-                        teacherNameEl.textContent = names;
-                    }
-                }
+        
+        // ثانياً: محاولة التحقق من قاعدة البيانات
+        isUserAdmin(userEmail).then(isAdmin => {
+            if (isAdmin) {
+                adminPanelBtn.style.display = 'flex';
+                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (من قاعدة البيانات)');
             } else {
-                teacherDashboard.style.display = 'none';
+                adminPanelBtn.style.display = 'none';
+                console.log('👤 مستخدم عادي، زر الإدارة مخفي');
             }
-        }
-
-        renderTeacherInbox();
+        }).catch(err => {
+            console.warn('⚠️ خطأ في التحقق من المشرف:', err);
+            // في حالة الخطأ، نتحقق من القائمة مرة أخرى
+            if (ADMIN_EMAILS.includes(userEmail)) {
+                adminPanelBtn.style.display = 'flex';
+                console.log('👑 مرحباً أيها المشرف! زر الإدارة ظاهر (حل بديل)');
+            } else {
+                adminPanelBtn.style.display = 'none';
+            }
+        });
     }
 
     function updateBadge() {
         const courses = getMyCourses();
-        if (coursesBadge) {
-            if (courses.length > 0) {
-                coursesBadge.style.display = 'inline';
-                coursesBadge.textContent = courses.length;
-            } else {
-                coursesBadge.style.display = 'none';
-            }
+        if (courses.length > 0) {
+            coursesBadge.style.display = 'inline';
+            coursesBadge.textContent = courses.length;
+        } else {
+            coursesBadge.style.display = 'none';
         }
     }
 
@@ -3840,40 +1116,29 @@
             if (lecturesModal) lecturesModal.classList.remove('active');
             if (teachersModal) teachersModal.classList.remove('active');
             if (editLectureModal) editLectureModal.classList.remove('active');
-            const chatPage = safeGetElement('chatPage');
-            if (chatPage) chatPage.classList.remove('active');
-            const chatPopup = safeGetElement('chatPopup');
-            if (chatPopup) chatPopup.classList.remove('active');
-            const teacherAdminModal = safeGetElement('teacherAdminModal');
-            if (teacherAdminModal) teacherAdminModal.classList.remove('active');
-            const teacherStudentsModal = safeGetElement('teacherStudentsModal');
-            if (teacherStudentsModal) teacherStudentsModal.classList.remove('active');
-            const teacherMessagesModal = safeGetElement('teacherMessagesModal');
-            if (teacherMessagesModal) teacherMessagesModal.classList.remove('active');
-            const chatPageFull = safeGetElement('chatPageFull');
-            if (chatPageFull) chatPageFull.classList.remove('active');
             renderMyCourses();
             renderAccount();
             updateBadge();
             renderAllData();
-            showToast('success', '    ');
+            showToast('success', '✅ تم تسجيل الخروج بنجاح');
             setTimeout(() => {
                 window.location.href = 'index.html';
             }, 500);
         } catch (error) {
             console.warn('SignOut exception:', error);
-            showToast('error', '     ');
+            showToast('error', '❌ حدث خطأ أثناء تسجيل الخروج');
         }
     }
 
+    // ===== UPDATE UI =====
     function updateUI() {
         if (currentUser) {
-            const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || '';
-            if (userNameDisplay) userNameDisplay.textContent = name;
-            if (userAvatar) userAvatar.textContent = name.charAt(0).toUpperCase();
+            const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'مستخدم';
+            userNameDisplay.textContent = name;
+            userAvatar.textContent = name.charAt(0).toUpperCase();
         } else {
-            if (userNameDisplay) userNameDisplay.textContent = ' ';
-            if (userAvatar) userAvatar.textContent = '';
+            userNameDisplay.textContent = 'غير مسجل';
+            userAvatar.textContent = '👤';
         }
     }
 
@@ -3885,7 +1150,7 @@
         }
 
         document.querySelectorAll('[id^="page-"]').forEach(p => p.style.display = 'none');
-        const targetPage = safeGetElement('page-' + page);
+        const targetPage = document.getElementById('page-' + page);
         if (targetPage) targetPage.style.display = 'block';
 
         document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
@@ -3895,7 +1160,7 @@
             item.classList.toggle('active', item.dataset.page === page);
         });
 
-        const hero = safeGetElement('hero');
+        const hero = document.getElementById('hero');
         if (hero) {
             hero.style.display = page === 'home' ? 'flex' : 'none';
         }
@@ -3906,21 +1171,15 @@
         }
         if (page === 'account') {
             renderAccount();
-            renderMyMessages();
         }
         if (page === 'teachers' || page === 'home') {
             renderAllData();
-        }
-        if (page === 'contact') {
-            renderContactTeachers();
-            checkContactMessages();
-            renderChatList();
-            updateChatBadge();
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // ===== NAVIGATION EVENTS =====
     document.querySelectorAll('[data-page]').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -3934,71 +1193,66 @@
         });
     });
 
-    const userProfileBtn = safeGetElement('userProfileBtn');
-    if (userProfileBtn) {
-        userProfileBtn.addEventListener('click', function() {
-            if (!currentUser) {
-                window.location.href = 'index.html';
-                return;
-            }
-            navigateTo('account');
-        });
-    }
+    // ===== USER PROFILE CLICK =====
+    document.getElementById('userProfileBtn')?.addEventListener('click', function() {
+        if (!currentUser) {
+            window.location.href = 'index.html';
+            return;
+        }
+        navigateTo('account');
+    });
 
-    if (logoutAccountBtn) logoutAccountBtn.addEventListener('click', signOut);
+    // ===== LOGOUT =====
+    logoutAccountBtn?.addEventListener('click', signOut);
 
-    if (adminPanelBtn) {
-        adminPanelBtn.addEventListener('click', function() {
-            if (!currentUser) {
-                showToast('warning', '    ');
-                return;
-            }
-
-            if (ADMIN_EMAILS.includes(currentUser.email)) {
-                if (adminPanel) adminPanel.classList.add('active');
+    // ===== ADMIN PANEL BUTTON =====
+    adminPanelBtn?.addEventListener('click', function() {
+        if (!currentUser) {
+            showToast('warning', '⚠️ يرجى تسجيل الدخول أولاً');
+            return;
+        }
+        
+        // التحقق المباشر أولاً
+        if (ADMIN_EMAILS.includes(currentUser.email)) {
+            adminPanel.classList.add('active');
+            updateAllAdminSelects();
+            updatePendingChanges();
+            loadAdminsList();
+            showToast('success', '🔓 مرحباً بك في لوحة التحكم');
+            return;
+        }
+        
+        // ثم التحقق من قاعدة البيانات
+        isUserAdmin(currentUser.email).then(isAdmin => {
+            if (isAdmin) {
+                adminPanel.classList.add('active');
                 updateAllAdminSelects();
                 updatePendingChanges();
                 loadAdminsList();
-                renderAllMessages();
-                renderTeacherAdminsList();
-                showToast('success', '     ');
-                return;
+                showToast('success', '🔓 مرحباً بك في لوحة التحكم');
+            } else {
+                showToast('error', '❌ غير مصرح لك بالدخول إلى لوحة التحكم');
             }
-
-            isUserAdmin(currentUser.email).then(isAdmin => {
-                if (isAdmin) {
-                    if (adminPanel) adminPanel.classList.add('active');
-                    updateAllAdminSelects();
-                    updatePendingChanges();
-                    loadAdminsList();
-                    renderAllMessages();
-                    renderTeacherAdminsList();
-                    showToast('success', '     ');
-                } else {
-                    showToast('error', '       ');
-                }
-            });
         });
-    }
+    });
 
-    if (adminClose) {
-        adminClose.addEventListener('click', function() {
-            if (adminPanel) adminPanel.classList.remove('active');
-        });
-    }
+    adminClose?.addEventListener('click', function() {
+        adminPanel.classList.remove('active');
+    });
 
+    // ===== THEME =====
     function toggleTheme() {
         isDarkMode = !isDarkMode;
         document.body.classList.toggle('dark-mode', isDarkMode);
-        if (themeToggle) themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        themeToggle.innerHTML = isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
         localStorage.setItem('devAcademicTheme', isDarkMode ? 'dark' : 'light');
-        showToast('info', isDarkMode ? '    ' : '    ');
+        showToast('info', isDarkMode ? '🌙 تم تفعيل الوضع المظلم' : '☀️ تم تفعيل الوضع الفاتح');
     }
 
-    if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+    themeToggle.addEventListener('click', toggleTheme);
 
+    // ===== SEARCH =====
     function applyFilters() {
-        if (!searchInput) return;
         const term = searchInput.value.trim().toLowerCase();
         if (term === '') {
             renderAllData();
@@ -4017,89 +1271,50 @@
         renderTeachers(filtered, teachersGridContainer2);
     }
 
-    if (searchBtn) searchBtn.addEventListener('click', applyFilters);
-    if (searchInput) {
-        searchInput.addEventListener('keyup', function(e) {
-            if (e.key === 'Enter') applyFilters();
-        });
-    }
+    searchBtn.addEventListener('click', applyFilters);
+    searchInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') applyFilters();
+    });
 
+    // ===== MODALS =====
     function closeModal(modal) {
-        if (!modal) return;
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
     }
 
-    if (closeTeachersModal) closeTeachersModal.addEventListener('click', () => closeModal(teachersModal));
-    if (closeSemestersModal) closeSemestersModal.addEventListener('click', () => closeModal(semestersModal));
-    if (closeLecturesModal) closeLecturesModal.addEventListener('click', () => closeModal(lecturesModal));
+    closeTeachersModal?.addEventListener('click', () => closeModal(teachersModal));
+    closeSemestersModal?.addEventListener('click', () => closeModal(semestersModal));
+    closeLecturesModal?.addEventListener('click', () => closeModal(lecturesModal));
 
-    if (teachersModal) {
-        teachersModal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this);
-        });
-    }
-    if (semestersModal) {
-        semestersModal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this);
-        });
-    }
-    if (lecturesModal) {
-        lecturesModal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this);
-        });
-    }
+    teachersModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
+    semestersModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
+    lecturesModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this);
+    });
 
-    if (closePlayer) closePlayer.addEventListener('click', closeVideoPlayer);
-    if (videoPlayer) {
-        videoPlayer.addEventListener('click', function(e) {
-            if (e.target === this) closeVideoPlayer();
-        });
-    }
+    // ===== VIDEO PLAYER EVENTS =====
+    closePlayer.addEventListener('click', closeVideoPlayer);
+    videoPlayer.addEventListener('click', function(e) {
+        if (e.target === this) closeVideoPlayer();
+    });
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            if (videoPlayer && videoPlayer.classList.contains('active')) closeVideoPlayer();
-            if (teachersModal && teachersModal.classList.contains('active')) closeModal(teachersModal);
-            if (semestersModal && semestersModal.classList.contains('active')) closeModal(semestersModal);
-            if (lecturesModal && lecturesModal.classList.contains('active')) closeModal(lecturesModal);
-            if (editLectureModal && editLectureModal.classList.contains('active')) closeEditLectureModal();
-            if (adminPanel && adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
-            const chatPage = safeGetElement('chatPage');
-            if (chatPage && chatPage.classList.contains('active')) {
-                chatPage.classList.remove('active');
-                document.body.style.overflow = 'auto';
-                if (chatRecipient) saveChatMessages(chatRecipient);
-            }
-            const chatPopup = safeGetElement('chatPopup');
-            if (chatPopup && chatPopup.classList.contains('active')) {
-                chatPopup.classList.remove('active');
-            }
-            const teacherAdminModal = safeGetElement('teacherAdminModal');
-            if (teacherAdminModal && teacherAdminModal.classList.contains('active')) {
-                teacherAdminModal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
-            const teacherStudentsModal = safeGetElement('teacherStudentsModal');
-            if (teacherStudentsModal && teacherStudentsModal.classList.contains('active')) {
-                teacherStudentsModal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
-            const teacherMessagesModal = safeGetElement('teacherMessagesModal');
-            if (teacherMessagesModal && teacherMessagesModal.classList.contains('active')) {
-                teacherMessagesModal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
-            const chatPageFull = safeGetElement('chatPageFull');
-            if (chatPageFull && chatPageFull.classList.contains('active')) {
-                chatPageFull.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
+            if (videoPlayer.classList.contains('active')) closeVideoPlayer();
+            if (teachersModal.classList.contains('active')) closeModal(teachersModal);
+            if (semestersModal.classList.contains('active')) closeModal(semestersModal);
+            if (lecturesModal.classList.contains('active')) closeModal(lecturesModal);
+            if (editLectureModal.classList.contains('active')) closeEditLectureModal();
+            if (adminPanel.classList.contains('active')) adminPanel.classList.remove('active');
         }
     });
 
     // ============================================================
-    //       
+    // دوال إدارة الأقسام والمدرسين في لوحة التحكم
     // ============================================================
 
     function updateAllAdminSelects() {
@@ -4111,7 +1326,6 @@
         updateEditSelects();
         updateCodeSelects();
         updateCodesManagement();
-        updateTeacherAdminSelects();
     }
 
     function updateBasicSelects() {
@@ -4119,14 +1333,14 @@
             'teacherSection', 'semesterSection', 'lectureSection',
             'codeSection', 'editTeacherSection', 'editLectureSection',
             'deleteSection', 'deleteTeacherSection', 'deleteSemesterSection',
-            'deleteLectureSection', 'teacherAdminSection'
+            'deleteLectureSection'
         ];
 
         selectIds.forEach(id => {
-            const select = safeGetElement(id);
+            const select = document.getElementById(id);
             if (!select) return;
             const currentValue = select.value;
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر القسم...</option>';
             data.sections.forEach((s, i) => {
                 options += `<option value="${i}">${s.name}</option>`;
             });
@@ -4135,28 +1349,6 @@
                 select.value = currentValue;
             }
         });
-    }
-
-    function updateTeacherAdminSelects() {
-        const sectionSelect = safeGetElement('teacherAdminSection');
-        const teacherSelect = safeGetElement('teacherAdminTeacher');
-        if (!sectionSelect || !teacherSelect) return;
-
-        const sectionIndex = parseInt(sectionSelect.value);
-        const currentValue = teacherSelect.value;
-        let options = '<option value=""> ...</option>';
-
-        if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
-            data.sections[sectionIndex].teachers.forEach((t, i) => {
-                options += `<option value="${i}">${t.name}</option>`;
-            });
-        }
-
-        teacherSelect.innerHTML = options;
-        if (currentValue && !isNaN(sectionIndex) && sectionIndex >= 0 &&
-            data.sections[sectionIndex]?.teachers[parseInt(currentValue)]) {
-            teacherSelect.value = currentValue;
-        }
     }
 
     function updateTeacherSelects() {
@@ -4171,13 +1363,13 @@
         ];
 
         teacherSelects.forEach(({ selectId, sectionId }) => {
-            const select = safeGetElement(selectId);
-            const sectionSelect = safeGetElement(sectionId);
+            const select = document.getElementById(selectId);
+            const sectionSelect = document.getElementById(sectionId);
             if (!select || !sectionSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
             const currentValue = select.value;
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر المدرس...</option>';
 
             if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
                 data.sections[sectionIndex].teachers.forEach((t, i) => {
@@ -4202,23 +1394,23 @@
         ];
 
         semesterSelects.forEach(({ selectId, teacherId, sectionId }) => {
-            const select = safeGetElement(selectId);
-            const teacherSelect = safeGetElement(teacherId);
-            const sectionSelect = safeGetElement(sectionId);
+            const select = document.getElementById(selectId);
+            const teacherSelect = document.getElementById(teacherId);
+            const sectionSelect = document.getElementById(sectionId);
             if (!select || !teacherSelect || !sectionSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
             const teacherIndex = parseInt(teacherSelect.value);
             const currentValue = select.value;
 
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر الفصل...</option>';
             if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
                 !isNaN(teacherIndex) && teacherIndex >= 0 &&
                 data.sections[sectionIndex]?.teachers[teacherIndex]) {
                 const teacher = data.sections[sectionIndex].teachers[teacherIndex];
                 if (teacher.semesters) {
                     teacher.semesters.forEach((s, i) => {
-                        options += `<option value="${i}"> ${s.number} - ${s.description || ''}</option>`;
+                        options += `<option value="${i}">الفصل ${s.number} - ${s.description || ''}</option>`;
                     });
                 }
             }
@@ -4239,10 +1431,10 @@
         ];
 
         lectureSelects.forEach(({ selectId, semesterId, sectionId, teacherId }) => {
-            const select = safeGetElement(selectId);
-            const semesterSelect = safeGetElement(semesterId);
-            const sectionSelect = safeGetElement(sectionId);
-            const teacherSelect = safeGetElement(teacherId);
+            const select = document.getElementById(selectId);
+            const semesterSelect = document.getElementById(semesterId);
+            const sectionSelect = document.getElementById(sectionId);
+            const teacherSelect = document.getElementById(teacherId);
             if (!select || !semesterSelect || !sectionSelect || !teacherSelect) return;
 
             const sectionIndex = parseInt(sectionSelect.value);
@@ -4250,7 +1442,7 @@
             const semesterIndex = parseInt(semesterSelect.value);
             const currentValue = select.value;
 
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر المحاضرة...</option>';
             if (!isNaN(sectionIndex) && sectionIndex >= 0 &&
                 !isNaN(teacherIndex) && teacherIndex >= 0 &&
                 !isNaN(semesterIndex) && semesterIndex >= 0 &&
@@ -4272,12 +1464,12 @@
     }
 
     function updateDeleteSelects() {
-        const deleteTeacherSelect = safeGetElement('deleteTeacherSelect');
-        const deleteTeacherSection = safeGetElement('deleteTeacherSection');
+        const deleteTeacherSelect = document.getElementById('deleteTeacherSelect');
+        const deleteTeacherSection = document.getElementById('deleteTeacherSection');
         if (deleteTeacherSelect && deleteTeacherSection) {
             const sectionIndex = parseInt(deleteTeacherSection.value);
             const currentValue = deleteTeacherSelect.value;
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر المدرس...</option>';
             if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
                 data.sections[sectionIndex].teachers.forEach((t, i) => {
                     options += `<option value="${i}">${t.name}</option>`;
@@ -4292,12 +1484,12 @@
     }
 
     function updateEditSelects() {
-        const editTeacherSelect = safeGetElement('editTeacherSelect');
-        const editTeacherSection = safeGetElement('editTeacherSection');
+        const editTeacherSelect = document.getElementById('editTeacherSelect');
+        const editTeacherSection = document.getElementById('editTeacherSection');
         if (editTeacherSelect && editTeacherSection) {
             const sectionIndex = parseInt(editTeacherSection.value);
             const currentValue = editTeacherSelect.value;
-            let options = '<option value=""> ...</option>';
+            let options = '<option value="">اختر المدرس...</option>';
             if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
                 data.sections[sectionIndex].teachers.forEach((t, i) => {
                     options += `<option value="${i}">${t.name}</option>`;
@@ -4313,13 +1505,13 @@
     }
 
     function updateCodeSelects() {
-        const sectionSelect = safeGetElement('codeSection');
-        const teacherSelect = safeGetElement('codeTeacherSelect');
+        const sectionSelect = document.getElementById('codeSection');
+        const teacherSelect = document.getElementById('codeTeacherSelect');
         if (!sectionSelect || !teacherSelect) return;
 
         const sectionIndex = parseInt(sectionSelect.value);
         const currentValue = teacherSelect.value;
-        let options = '<option value=""> ...</option>';
+        let options = '<option value="">اختر المدرس...</option>';
 
         if (!isNaN(sectionIndex) && sectionIndex >= 0 && data.sections[sectionIndex]) {
             data.sections[sectionIndex].teachers.forEach((t, i) => {
@@ -4335,35 +1527,29 @@
     }
 
     function updateEditTeacherData() {
-        const sectionSelect = safeGetElement('editTeacherSection');
-        const teacherSelect = safeGetElement('editTeacherSelect');
+        const sectionSelect = document.getElementById('editTeacherSection');
+        const teacherSelect = document.getElementById('editTeacherSelect');
 
         if (!sectionSelect || !teacherSelect) return;
 
         const sectionIndex = parseInt(sectionSelect.value);
         const teacherIndex = parseInt(teacherSelect.value);
 
-        const nameInput = safeGetElement('editTeacherName');
-        const subjectInput = safeGetElement('editTeacherSubject');
-        const descInput = safeGetElement('editTeacherDesc');
-        const imageInput = safeGetElement('editTeacherImage');
-        const messageEl = safeGetElement('editTeacherMessage');
-
         if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
             !data.sections[sectionIndex]?.teachers[teacherIndex]) {
-            if (nameInput) nameInput.value = '';
-            if (subjectInput) subjectInput.value = '';
-            if (descInput) descInput.value = '';
-            if (imageInput) imageInput.value = '';
+            document.getElementById('editTeacherName').value = '';
+            document.getElementById('editTeacherSubject').value = '';
+            document.getElementById('editTeacherDesc').value = '';
+            document.getElementById('editTeacherImage').value = '';
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        if (nameInput) nameInput.value = teacher.name || '';
-        if (subjectInput) subjectInput.value = teacher.subject || '';
-        if (descInput) descInput.value = teacher.description || '';
-        if (imageInput) imageInput.value = getSafeImageUrl(teacher.image) || '';
-        if (messageEl) messageEl.innerHTML = '';
+        document.getElementById('editTeacherName').value = teacher.name || '';
+        document.getElementById('editTeacherSubject').value = teacher.subject || '';
+        document.getElementById('editTeacherDesc').value = teacher.description || '';
+        document.getElementById('editTeacherImage').value = teacher.image || '';
+        document.getElementById('editTeacherMessage').innerHTML = '';
     }
 
     function updatePendingChanges() {
@@ -4376,248 +1562,204 @@
     }
 
     // ============================================================
-    // =====   =====
+    // ===== إضافة قسم =====
     // ============================================================
-    if (addSectionForm) {
-        addSectionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nameInput = safeGetElement('sectionName');
-            if (!nameInput) return;
-            const name = nameInput.value.trim();
+    addSectionForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('sectionName').value.trim();
 
-            if (!name) {
-                showToast('warning', '    ');
-                return;
-            }
+        if (!name) {
+            showToast('warning', '⚠️ يرجى إدخال اسم القسم');
+            return;
+        }
 
-            const newSection = {
-                id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-                name: name,
-                teachers: []
-            };
+        const newSection = {
+            id: 'sec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+            name: name,
+            teachers: []
+        };
 
-            data.sections.push(newSection);
-            saveData();
-            renderAllData();
-            updateAllAdminSelects();
-            addChange();
-            addSectionForm.reset();
-            showToast('success', `    "${name}" `);
-            if (adminPanel) adminPanel.classList.add('active');
-        });
-    }
+        data.sections.push(newSection);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addSectionForm.reset();
+        showToast('success', `✅ تم إضافة القسم "${name}" بنجاح`);
+        adminPanel.classList.add('active');
+    });
 
     // ============================================================
-    // =====   =====
+    // ===== إضافة مدرس =====
     // ============================================================
-    if (addTeacherForm) {
-        addTeacherForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const sectionSelect = safeGetElement('teacherSection');
-            if (!sectionSelect) return;
-            const sectionIndex = parseInt(sectionSelect?.value);
+    addTeacherForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const sectionSelect = document.getElementById('teacherSection');
+        const sectionIndex = parseInt(sectionSelect?.value);
 
-            if (isNaN(sectionIndex) || sectionIndex < 0) {
-                showToast('warning', '   ');
-                return;
-            }
+        if (isNaN(sectionIndex) || sectionIndex < 0) {
+            showToast('warning', '⚠️ يرجى اختيار القسم');
+            return;
+        }
 
-            const nameInput = safeGetElement('teacherName');
-            const emojiInput = safeGetElement('teacherEmoji');
-            const subjectInput = safeGetElement('teacherSubject');
-            const descInput = safeGetElement('teacherDesc');
-            const imageInput = safeGetElement('teacherImage');
+        const name = document.getElementById('teacherName').value.trim();
+        const emoji = document.getElementById('teacherEmoji').value.trim() || '🧑‍🏫';
+        const subject = document.getElementById('teacherSubject').value.trim();
+        const description = document.getElementById('teacherDesc').value.trim();
+        const image = document.getElementById('teacherImage').value.trim();
 
-            if (!nameInput) return;
+        if (!name) {
+            showToast('warning', '⚠️ يرجى إدخال اسم المدرس');
+            return;
+        }
 
-            const name = nameInput.value.trim();
-            const emoji = emojiInput?.value.trim() || '';
-            const subject = subjectInput?.value.trim();
-            const description = descInput?.value.trim();
-            const image = imageInput?.value.trim();
+        const newTeacher = {
+            name,
+            emoji,
+            subject: subject || 'مدرس',
+            description: description || '',
+            image: image || '',
+            codes: [],
+            semesters: []
+        };
 
-            if (!name) {
-                showToast('warning', '    ');
-                return;
-            }
-
-            const newTeacher = {
-                name,
-                emoji,
-                subject: subject || '',
-                description: description || '',
-                image: getSafeImageUrl(image) || '',
-                codes: [],
-                semesters: []
-            };
-
-            data.sections[sectionIndex].teachers.push(newTeacher);
-            saveData();
-            renderAllData();
-            updateAllAdminSelects();
-            addChange();
-            addTeacherForm.reset();
-            showToast('success', `    "${name}" `);
-            if (adminPanel) adminPanel.classList.add('active');
-        });
-    }
+        data.sections[sectionIndex].teachers.push(newTeacher);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addTeacherForm.reset();
+        showToast('success', `✅ تم إضافة المدرس "${name}" بنجاح`);
+        adminPanel.classList.add('active');
+    });
 
     // ============================================================
-    // =====   =====
+    // ===== إضافة فصل =====
     // ============================================================
-    if (addSemesterForm) {
-        addSemesterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const sectionSelect = safeGetElement('semesterSection');
-            const teacherSelect = safeGetElement('semesterTeacher');
-            const numberInput = safeGetElement('semesterNumber');
-            const descInput = safeGetElement('semesterDesc');
+    addSemesterForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const sectionSelect = document.getElementById('semesterSection');
+        const teacherSelect = document.getElementById('semesterTeacher');
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const number = parseInt(document.getElementById('semesterNumber').value);
+        const description = document.getElementById('semesterDesc').value.trim();
 
-            if (!sectionSelect || !teacherSelect || !numberInput) return;
+        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
+            showToast('warning', '⚠️ يرجى اختيار القسم والمدرس وإدخال رقم الفصل');
+            return;
+        }
 
-            const sectionIndex = parseInt(sectionSelect?.value);
-            const teacherIndex = parseInt(teacherSelect?.value);
-            const number = parseInt(numberInput.value);
-            const description = descInput?.value.trim();
+        const newSemester = {
+            number: number,
+            description: description || `الفصل ${number}`,
+            lectures: []
+        };
 
-            if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 || !number) {
-                showToast('warning', '       ');
-                return;
-            }
-
-            const newSemester = {
-                number: number,
-                description: description || ` ${number}`,
-                lectures: []
-            };
-
-            data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
-            saveData();
-            renderAllData();
-            updateAllAdminSelects();
-            addChange();
-            addSemesterForm.reset();
-            showToast('success', `    ${number} `);
-            if (adminPanel) adminPanel.classList.add('active');
-        });
-    }
+        data.sections[sectionIndex].teachers[teacherIndex].semesters.push(newSemester);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addSemesterForm.reset();
+        showToast('success', `✅ تم إضافة الفصل ${number} بنجاح`);
+        adminPanel.classList.add('active');
+    });
 
     // ============================================================
-    // =====   =====
+    // ===== إضافة محاضرة =====
     // ============================================================
-    if (addLectureForm) {
-        addLectureForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const sectionSelect = safeGetElement('lectureSection');
-            const teacherSelect = safeGetElement('lectureTeacher');
-            const semesterSelect = safeGetElement('lectureSemester');
-            const numberInput = safeGetElement('lectureNumber');
-            const titleInput = safeGetElement('lectureTitle');
-            const urlInput = safeGetElement('lectureUrl');
-            const freeSelect = safeGetElement('lectureFree');
+    addLectureForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const sectionSelect = document.getElementById('lectureSection');
+        const teacherSelect = document.getElementById('lectureTeacher');
+        const semesterSelect = document.getElementById('lectureSemester');
 
-            if (!sectionSelect || !teacherSelect || !semesterSelect || !numberInput || !titleInput || !urlInput || !freeSelect) return;
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
+        const semesterIndex = parseInt(semesterSelect?.value);
+        const number = parseInt(document.getElementById('lectureNumber').value);
+        const title = document.getElementById('lectureTitle').value.trim();
+        const youtubeUrl = document.getElementById('lectureUrl').value.trim();
+        const isFree = document.getElementById('lectureFree').value === 'true';
 
-            const sectionIndex = parseInt(sectionSelect?.value);
-            const teacherIndex = parseInt(teacherSelect?.value);
-            const semesterIndex = parseInt(semesterSelect?.value);
-            const number = parseInt(numberInput.value);
-            const title = titleInput.value.trim();
-            const youtubeUrl = urlInput.value.trim();
-            const isFree = freeSelect.value === 'true';
+        if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
+            isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
+            showToast('warning', '⚠️ يرجى ملء جميع الحقول المطلوبة');
+            return;
+        }
 
-            if (isNaN(sectionIndex) || sectionIndex < 0 || isNaN(teacherIndex) || teacherIndex < 0 ||
-                isNaN(semesterIndex) || semesterIndex < 0 || !number || !title || !youtubeUrl) {
-                showToast('warning', '     ');
-                return;
-            }
+        const isValidUrl = youtubeUrl.includes('mediadelivery') ||
+            youtubeUrl.includes('youtube') ||
+            youtubeUrl.includes('youtu.be') ||
+            youtubeUrl.includes('player.') ||
+            youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
-            const isValidUrl = youtubeUrl.includes('mediadelivery') ||
-                youtubeUrl.includes('youtube') ||
-                youtubeUrl.includes('youtu.be') ||
-                youtubeUrl.includes('player.') ||
-                youtubeUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+        if (!isValidUrl) {
+            showToast('warning', '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube');
+            return;
+        }
 
-            if (!isValidUrl) {
-                showToast('warning', '    .   mediadelivery  YouTube');
-                return;
-            }
-
-            const newLecture = { number, title, youtubeUrl, isFree };
-            data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
-            saveData();
-            renderAllData();
-            updateAllAdminSelects();
-            addChange();
-            addLectureForm.reset();
-            showToast('success', `    "${title}" `);
-            if (adminPanel) adminPanel.classList.add('active');
-        });
-    }
+        const newLecture = { number, title, youtubeUrl, isFree };
+        data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.push(newLecture);
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
+        addLectureForm.reset();
+        showToast('success', `✅ تم إضافة المحاضرة "${title}" بنجاح`);
+        adminPanel.classList.add('active');
+    });
 
     // ============================================================
-    // =====   =====
+    // ===== إدارة الأكواد =====
     // ============================================================
     window.addManualCode = function() {
-        const sectionSelect = safeGetElement('codeSection');
-        const teacherSelect = safeGetElement('codeTeacherSelect');
-        const codeInput = safeGetElement('manualCodeInput');
-        const codeMessage = safeGetElement('manualCodeMessage');
-
-        if (!sectionSelect || !teacherSelect || !codeInput) return;
+        const sectionSelect = document.getElementById('codeSection');
+        const teacherSelect = document.getElementById('codeTeacherSelect');
+        const codeInput = document.getElementById('manualCodeInput');
+        const codeMessage = document.getElementById('manualCodeMessage');
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
         const code = codeInput?.value.trim().toUpperCase();
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '    ';
-                codeMessage.style.color = '#f59e0b';
-            }
+            codeMessage.innerHTML = '⚠️ يرجى اختيار القسم أولاً';
+            codeMessage.style.color = '#f59e0b';
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '    ';
-                codeMessage.style.color = '#f59e0b';
-            }
+            codeMessage.innerHTML = '⚠️ يرجى اختيار المدرس أولاً';
+            codeMessage.style.color = '#f59e0b';
             return;
         }
 
         if (!code) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '   ';
-                codeMessage.style.color = '#f59e0b';
-            }
+            codeMessage.innerHTML = '⚠️ يرجى إدخال الكود';
+            codeMessage.style.color = '#f59e0b';
             return;
         }
 
         if (code.length < 4) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '   ';
-                codeMessage.style.color = '#f59e0b';
-            }
+            codeMessage.innerHTML = '⚠️ الكود قصير جداً';
+            codeMessage.style.color = '#f59e0b';
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
         if (!teacher) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '   ';
-                codeMessage.style.color = '#ef4444';
-            }
+            codeMessage.innerHTML = '❌ المدرس غير موجود';
+            codeMessage.style.color = '#ef4444';
             return;
         }
 
         if (!teacher.codes) teacher.codes = [];
         const exists = teacher.codes.some(c => c.code === code);
         if (exists) {
-            if (codeMessage) {
-                codeMessage.innerHTML = '    ';
-                codeMessage.style.color = '#f59e0b';
-            }
+            codeMessage.innerHTML = '⚠️ هذا الكود موجود بالفعل';
+            codeMessage.style.color = '#f59e0b';
             return;
         }
 
@@ -4635,34 +1777,30 @@
         addChange();
         updateCodesManagement();
         if (codeInput) codeInput.value = '';
-        if (codeMessage) {
-            codeMessage.innerHTML = `   : ${code}`;
-            codeMessage.style.color = '#22c55e';
-        }
-        showToast('success', `   : ${code}`);
+        codeMessage.innerHTML = `✅ تم إضافة الكود: ${code}`;
+        codeMessage.style.color = '#22c55e';
+        showToast('success', `✅ تم إضافة الكود: ${code}`);
         updateAllAdminSelects();
     };
 
     window.generateCodes = function(count = 5) {
-        const sectionSelect = safeGetElement('codeSection');
-        const teacherSelect = safeGetElement('codeTeacherSelect');
-        if (!sectionSelect || !teacherSelect) return;
-        
+        const sectionSelect = document.getElementById('codeSection');
+        const teacherSelect = document.getElementById('codeTeacherSelect');
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '    ');
+            showToast('warning', '⚠️ يرجى اختيار القسم أولاً');
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            showToast('warning', '    ');
+            showToast('warning', '⚠️ يرجى اختيار المدرس أولاً');
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        if (!teacher) { showToast('error', '   '); return; }
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
         if (!teacher.codes) teacher.codes = [];
         const newCodes = [];
@@ -4690,47 +1828,45 @@
         saveData();
         addChange();
         updateCodesManagement();
-        showToast('success', `   ${newCodes.length}  `);
+        showToast('success', `✅ تم إنشاء ${newCodes.length} أكواد جديدة`);
         updateAllAdminSelects();
     };
 
     function updateCodesManagement() {
-        const sectionSelect = safeGetElement('codeSection');
-        const teacherSelect = safeGetElement('codeTeacherSelect');
-        const container = safeGetElement('codesListContainer');
-
-        if (!container) return;
+        const sectionSelect = document.getElementById('codeSection');
+        const teacherSelect = document.getElementById('codeTeacherSelect');
+        const container = document.getElementById('codesListContainer');
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">  </p>';
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر القسم أولاً</p>';
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">  </p>';
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">اختر المدرس أولاً</p>';
             return;
         }
 
         const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
         if (!teacher) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">  </p>';
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:1rem 0;">المدرس غير موجود</p>';
             return;
         }
 
         const status = getCodesStatus(teacher);
         let html = `
             <div class="codes-stats">
-                <span> : ${status.total}</span>
-                <span> : ${status.used}</span>
-                <span> : ${status.available}</span>
-                <span> : ${status.locked}</span>
+                <span>📊 المجموع: ${status.total}</span>
+                <span>✅ المستخدمة: ${status.used}</span>
+                <span>🟢 المتاحة: ${status.available}</span>
+                <span>🔒 المقفلة: ${status.locked}</span>
             </div>
             <div class="codes-table-wrapper">
                 <table class="codes-table">
-                    <thead><tr><th>#</th><th></th><th></th><th> </th><th></th></tr></thead>
+                    <thead><tr><th>#</th><th>الكود</th><th>الحالة</th><th>تاريخ الاستخدام</th><th>الإجراءات</th></tr></thead>
                     <tbody>
         `;
 
@@ -4739,24 +1875,17 @@
                 const isUsed = c.used;
                 const isLocked = c.locked || false;
                 const isMyCode = c.userEmail === currentUser?.email;
-                const isAdminCode = c.isAdminCode || false;
-                let statusText = '', statusColor = '#22c55e', usedAtDisplay = '';
+                let statusText = '',
+                    statusColor = '#22c55e',
+                    usedAtDisplay = '—';
 
-                if (isAdminCode) { 
-                    statusText = ' '; 
-                    statusColor = '#8B5CF6';
-                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : '';
-                } else if (isLocked) { 
-                    statusText = ' ';
-                    statusColor = '#f59e0b';
-                } else if (isUsed) {
-                    statusText = isMyCode ? ' ' : ' ';
+                if (isLocked) { statusText = '🔒 مقفل';
+                    statusColor = '#f59e0b'; } else if (isUsed) {
+                    statusText = isMyCode ? '✅ حسابك' : '❌ مستخدم';
                     statusColor = isMyCode ? '#22c55e' : '#ef4444';
-                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : ' ';
-                } else { 
-                    statusText = ' ';
-                    statusColor = '#22c55e';
-                }
+                    usedAtDisplay = c.usedAt ? new Date(c.usedAt).toLocaleString('ar') : 'غير معروف';
+                } else { statusText = '🟢 متاح';
+                    statusColor = '#22c55e'; }
 
                 html += `
                     <tr>
@@ -4765,18 +1894,16 @@
                         <td><span style="color:${statusColor};">${statusText}</span></td>
                         <td style="font-size:0.7rem;color:var(--text-light);">${usedAtDisplay}</td>
                         <td>
-                            ${!isAdminCode ? `
-                                <button onclick="toggleCodeLock('${sectionIndex}', '${teacherIndex}', '${c.code}')" style="background:${isLocked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">
-                                    ${isLocked ? ' ' : ' '}
-                                </button>
-                                ${!isUsed && !isLocked ? `<button onclick="deleteCodeAction('${sectionIndex}', '${teacherIndex}', '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;"></button>` : ''}
-                            ` : '<span style="font-size:0.6rem;color:var(--text-light);">  </span>'}
+                            <button onclick="toggleCodeLock('${sectionIndex}', '${teacherIndex}', '${c.code}')" style="background:${isLocked ? '#22c55e' : '#f59e0b'};color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">
+                                ${isLocked ? '🔓 فتح' : '🔒 قفل'}
+                            </button>
+                            ${!isUsed && !isLocked ? `<button onclick="deleteCodeAction('${sectionIndex}', '${teacherIndex}', '${c.code}')" style="background:#ef4444;color:white;border:none;border-radius:4px;padding:0.15rem 0.5rem;cursor:pointer;font-size:0.7rem;">🗑️</button>` : ''}
                         </td>
                     </tr>
                 `;
             });
         } else {
-            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">  </td></tr>`;
+            html += `<tr><td colspan="5" style="text-align:center;color:var(--text-light);padding:1rem 0;">لا توجد أكواد</td></tr>`;
         }
 
         html += `</tbody></table></div>`;
@@ -4785,39 +1912,29 @@
 
     window.toggleCodeLock = function(sectionIndex, teacherIndex, code) {
         const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '   '); return; }
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
         const codeData = teacher.codes.find(c => c.code === code);
-        if (!codeData) { showToast('error', '   '); return; }
-
-        if (codeData.isAdminCode) {
-            showToast('warning', '     ');
-            return;
-        }
+        if (!codeData) { showToast('error', '❌ الكود غير موجود'); return; }
 
         codeData.locked = !codeData.locked;
         saveData();
         addChange();
         updateCodesManagement();
-        showToast('success', `  ${codeData.locked ? '' : ''}  ${code}`);
+        showToast('success', `✅ تم ${codeData.locked ? 'قفل' : 'فتح'} الكود ${code}`);
     };
 
     window.deleteCodeAction = function(sectionIndex, teacherIndex, code) {
-        if (!confirm(`      : ${code}`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الكود: ${code}؟`)) return;
 
         const teacher = data.sections[sectionIndex]?.teachers[teacherIndex];
-        if (!teacher) { showToast('error', '   '); return; }
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
         const index = teacher.codes.findIndex(c => c.code === code);
-        if (index === -1) { showToast('error', '   '); return; }
+        if (index === -1) { showToast('error', '❌ الكود غير موجود'); return; }
 
         if (teacher.codes[index].used) {
-            showToast('warning', '     ');
-            return;
-        }
-
-        if (teacher.codes[index].isAdminCode) {
-            showToast('warning', '     ');
+            showToast('warning', '⚠️ لا يمكن حذف كود مستخدم');
             return;
         }
 
@@ -4825,110 +1942,92 @@
         saveData();
         addChange();
         updateCodesManagement();
-        showToast('success', `   : ${code}`);
+        showToast('success', `✅ تم حذف الكود: ${code}`);
     };
 
     // ============================================================
     // ===== EDIT TEACHER =====
     // ============================================================
-    const editTeacherSection = safeGetElement('editTeacherSection');
-    if (editTeacherSection) {
-        editTeacherSection.addEventListener('change', function() {
-            updateAllAdminSelects();
-        });
-    }
+    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
 
-    const editTeacherSelect = safeGetElement('editTeacherSelect');
-    if (editTeacherSelect) {
-        editTeacherSelect.addEventListener('change', function() {
-            updateEditTeacherData();
-        });
-    }
+    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
+        updateEditTeacherData();
+    });
 
-    if (editTeacherForm) {
-        editTeacherForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    editTeacherForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-            const sectionSelect = safeGetElement('editTeacherSection');
-            const teacherSelect = safeGetElement('editTeacherSelect');
-            const messageEl = safeGetElement('editTeacherMessage');
+        const sectionSelect = document.getElementById('editTeacherSection');
+        const teacherSelect = document.getElementById('editTeacherSelect');
+        const messageEl = document.getElementById('editTeacherMessage');
 
-            if (!sectionSelect || !teacherSelect || !messageEl) return;
+        const sectionIndex = parseInt(sectionSelect?.value);
+        const teacherIndex = parseInt(teacherSelect?.value);
 
-            const sectionIndex = parseInt(sectionSelect?.value);
-            const teacherIndex = parseInt(teacherSelect?.value);
+        if (isNaN(sectionIndex) || sectionIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار القسم';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
 
-            if (isNaN(sectionIndex) || sectionIndex < 0) {
-                messageEl.innerHTML = '   ';
-                messageEl.style.color = '#f59e0b';
-                return;
-            }
+        if (isNaN(teacherIndex) || teacherIndex < 0) {
+            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
 
-            if (isNaN(teacherIndex) || teacherIndex < 0) {
-                messageEl.innerHTML = '   ';
-                messageEl.style.color = '#f59e0b';
-                return;
-            }
+        const teacher = data.sections[sectionIndex].teachers[teacherIndex];
+        if (!teacher) {
+            messageEl.innerHTML = '❌ المدرس غير موجود';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
 
-            const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-            if (!teacher) {
-                messageEl.innerHTML = '   ';
-                messageEl.style.color = '#ef4444';
-                return;
-            }
+        const newName = document.getElementById('editTeacherName').value.trim();
+        const newSubject = document.getElementById('editTeacherSubject').value.trim();
+        const newDesc = document.getElementById('editTeacherDesc').value.trim();
+        const newImage = document.getElementById('editTeacherImage').value.trim();
 
-            const nameInput = safeGetElement('editTeacherName');
-            const subjectInput = safeGetElement('editTeacherSubject');
-            const descInput = safeGetElement('editTeacherDesc');
-            const imageInput = safeGetElement('editTeacherImage');
+        if (!newName) {
+            messageEl.innerHTML = '⚠️ يرجى إدخال اسم المدرس';
+            messageEl.style.color = '#f59e0b';
+            return;
+        }
 
-            if (!nameInput) return;
+        teacher.name = newName;
+        teacher.subject = newSubject || 'مدرس';
+        teacher.description = newDesc || '';
+        teacher.image = newImage || '';
 
-            const newName = nameInput.value.trim();
-            const newSubject = subjectInput?.value.trim();
-            const newDesc = descInput?.value.trim();
-            const newImage = imageInput?.value.trim();
+        saveData();
+        renderAllData();
+        updateAllAdminSelects();
+        addChange();
 
-            if (!newName) {
-                messageEl.innerHTML = '    ';
-                messageEl.style.color = '#f59e0b';
-                return;
-            }
-
-            teacher.name = newName;
-            teacher.subject = newSubject || '';
-            teacher.description = newDesc || '';
-            teacher.image = getSafeImageUrl(newImage) || '';
-
-            saveData();
-            renderAllData();
-            updateAllAdminSelects();
-            addChange();
-
-            messageEl.innerHTML = `     "${newName}" !`;
-            messageEl.style.color = '#22c55e';
-            showToast('success', `     "${newName}"`);
-        });
-    }
+        messageEl.innerHTML = `✅ تم تعديل بيانات المدرس "${newName}" بنجاح!`;
+        messageEl.style.color = '#22c55e';
+        showToast('success', `✅ تم تعديل بيانات المدرس "${newName}"`);
+    });
 
     // ============================================================
     // ===== DELETE FUNCTIONS =====
     // ============================================================
 
     window.deleteSelectedSection = function() {
-        const select = safeGetElement('deleteSection');
-        if (!select) return;
+        const select = document.getElementById('deleteSection');
         const sectionIndex = parseInt(select?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار القسم');
             return;
         }
 
         const section = data.sections[sectionIndex];
-        if (!section) { showToast('error', '   '); return; }
+        if (!section) { showToast('error', '❌ القسم غير موجود'); return; }
 
-        if (!confirm(`       "${section.name}"  `)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف القسم "${section.name}" وجميع محتوياته؟`)) return;
 
         data.sections.splice(sectionIndex, 1);
         saveData();
@@ -4936,34 +2035,32 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = safeGetElement('deleteSectionMessage');
-        if (msg) { msg.innerHTML = `    "${section.name}" `;
+        const msg = document.getElementById('deleteSectionMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف القسم "${section.name}" بنجاح`;
             msg.style.color = '#22c55e'; }
-        showToast('success', `    "${section.name}"`);
+        showToast('success', `✅ تم حذف القسم "${section.name}"`);
     };
 
     window.deleteSelectedTeacherFromTab = function() {
-        const sectionSelect = safeGetElement('deleteTeacherSection');
-        const teacherSelect = safeGetElement('deleteTeacherSelect');
-        if (!sectionSelect || !teacherSelect) return;
-        
+        const sectionSelect = document.getElementById('deleteTeacherSection');
+        const teacherSelect = document.getElementById('deleteTeacherSelect');
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار القسم');
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
         }
 
         const teacher = data.sections[sectionIndex].teachers[teacherIndex];
-        if (!teacher) { showToast('error', '   '); return; }
+        if (!teacher) { showToast('error', '❌ المدرس غير موجود'); return; }
 
-        if (!confirm(`       "${teacher.name}"`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المدرس "${teacher.name}"؟`)) return;
 
         data.sections[sectionIndex].teachers.splice(teacherIndex, 1);
         saveData();
@@ -4971,42 +2068,40 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = safeGetElement('deleteTeacherMessage');
-        if (msg) { msg.innerHTML = `    "${teacher.name}" `;
+        const msg = document.getElementById('deleteTeacherMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف المدرس "${teacher.name}" بنجاح`;
             msg.style.color = '#22c55e'; }
-        showToast('success', `    "${teacher.name}"`);
+        showToast('success', `✅ تم حذف المدرس "${teacher.name}"`);
     };
 
     window.deleteSelectedSemesterFromTab = function() {
-        const sectionSelect = safeGetElement('deleteSemesterSection');
-        const teacherSelect = safeGetElement('deleteSemesterTeacher');
-        const semesterSelect = safeGetElement('deleteSemesterSelect');
-
-        if (!sectionSelect || !teacherSelect || !semesterSelect) return;
+        const sectionSelect = document.getElementById('deleteSemesterSection');
+        const teacherSelect = document.getElementById('deleteSemesterTeacher');
+        const semesterSelect = document.getElementById('deleteSemesterSelect');
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
         const semesterIndex = parseInt(semesterSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار القسم');
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
         }
 
         if (isNaN(semesterIndex) || semesterIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
             return;
         }
 
         const semester = data.sections[sectionIndex].teachers[teacherIndex]?.semesters[semesterIndex];
-        if (!semester) { showToast('error', '   '); return; }
+        if (!semester) { showToast('error', '❌ الفصل غير موجود'); return; }
 
-        if (!confirm(`       ${semester.number}`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف الفصل ${semester.number}؟`)) return;
 
         data.sections[sectionIndex].teachers[teacherIndex].semesters.splice(semesterIndex, 1);
         saveData();
@@ -5014,20 +2109,18 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = safeGetElement('deleteSemesterMessage');
-        if (msg) { msg.innerHTML = `    ${semester.number} `;
+        const msg = document.getElementById('deleteSemesterMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف الفصل ${semester.number} بنجاح`;
             msg.style.color = '#22c55e'; }
-        showToast('success', `    ${semester.number}`);
+        showToast('success', `✅ تم حذف الفصل ${semester.number}`);
         updateAllAdminSelects();
     };
 
     window.deleteSelectedLectureFromTab = function() {
-        const sectionSelect = safeGetElement('deleteLectureSection');
-        const teacherSelect = safeGetElement('deleteLectureTeacher');
-        const semesterSelect = safeGetElement('deleteLectureSemester');
-        const lectureSelect = safeGetElement('deleteLectureSelect');
-
-        if (!sectionSelect || !teacherSelect || !semesterSelect || !lectureSelect) return;
+        const sectionSelect = document.getElementById('deleteLectureSection');
+        const teacherSelect = document.getElementById('deleteLectureTeacher');
+        const semesterSelect = document.getElementById('deleteLectureSemester');
+        const lectureSelect = document.getElementById('deleteLectureSelect');
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -5035,29 +2128,29 @@
         const lectureIndex = parseInt(lectureSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار القسم');
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار المدرس');
             return;
         }
 
         if (isNaN(semesterIndex) || semesterIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار الفصل');
             return;
         }
 
         if (isNaN(lectureIndex) || lectureIndex < 0) {
-            showToast('warning', '   ');
+            showToast('warning', '⚠️ يرجى اختيار المحاضرة');
             return;
         }
 
         const lecture = data.sections[sectionIndex].teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
-        if (!lecture) { showToast('error', '   '); return; }
+        if (!lecture) { showToast('error', '❌ المحاضرة غير موجودة'); return; }
 
-        if (!confirm(`       "${lecture.title}"`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المحاضرة "${lecture.title}"؟`)) return;
 
         data.sections[sectionIndex].teachers[teacherIndex].semesters[semesterIndex].lectures.splice(lectureIndex, 1);
         saveData();
@@ -5065,10 +2158,10 @@
         updateAllAdminSelects();
         addChange();
 
-        const msg = safeGetElement('deleteLectureMessage');
-        if (msg) { msg.innerHTML = `    "${lecture.title}" `;
+        const msg = document.getElementById('deleteLectureMessage');
+        if (msg) { msg.innerHTML = `✅ تم حذف المحاضرة "${lecture.title}" بنجاح`;
             msg.style.color = '#22c55e'; }
-        showToast('success', `    "${lecture.title}"`);
+        showToast('success', `✅ تم حذف المحاضرة "${lecture.title}"`);
         updateAllAdminSelects();
     };
 
@@ -5086,31 +2179,24 @@
         if (!lecture) return;
 
         editTarget = { sectionIndex, teacherIndex, semesterIndex, lectureIndex };
-        if (editLectureTitle) editLectureTitle.value = lecture.title || '';
-        if (editLectureUrl) editLectureUrl.value = lecture.youtubeUrl || '';
-        if (editLectureIsFree) editLectureIsFree.value = lecture.isFree ? 'true' : 'false';
+        editLectureTitle.value = lecture.title || '';
+        editLectureUrl.value = lecture.youtubeUrl || '';
+        editLectureIsFree.value = lecture.isFree ? 'true' : 'false';
 
-        const titleEl = document.querySelector('#editLectureModal h2');
-        if (titleEl) titleEl.textContent = `   #${lecture.number}`;
-        
-        const infoSpan = safeGetElement('editLectureInfo');
-        if (infoSpan) infoSpan.textContent = ` ${section.name} |  ${teacher.name} |   ${semester.number}`;
-        
-        if (editLectureMessage) editLectureMessage.innerHTML = '';
-        if (editLectureModal) {
-            editLectureModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+        document.querySelector('#editLectureModal h2').textContent = `✏️ تعديل المحاضرة #${lecture.number}`;
+        const infoSpan = document.getElementById('editLectureInfo');
+        infoSpan.textContent = `📚 ${section.name} | 👨‍🏫 ${teacher.name} | 📖 الفصل ${semester.number}`;
+        editLectureMessage.innerHTML = '';
+        editLectureModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 
     window.openEditLectureFromAdmin = function() {
-        const sectionSelect = safeGetElement('editLectureSection');
-        const teacherSelect = safeGetElement('editLectureTeacher');
-        const semesterSelect = safeGetElement('editLectureSemester');
-        const lectureSelect = safeGetElement('editLectureSelect');
-        const messageEl = safeGetElement('editLectureAdminMessage');
-
-        if (!sectionSelect || !teacherSelect || !semesterSelect || !lectureSelect || !messageEl) return;
+        const sectionSelect = document.getElementById('editLectureSection');
+        const teacherSelect = document.getElementById('editLectureTeacher');
+        const semesterSelect = document.getElementById('editLectureSemester');
+        const lectureSelect = document.getElementById('editLectureSelect');
+        const messageEl = document.getElementById('editLectureAdminMessage');
 
         const sectionIndex = parseInt(sectionSelect?.value);
         const teacherIndex = parseInt(teacherSelect?.value);
@@ -5118,32 +2204,32 @@
         const lectureIndex = parseInt(lectureSelect?.value);
 
         if (isNaN(sectionIndex) || sectionIndex < 0) {
-            messageEl.innerHTML = '   ';
+            messageEl.innerHTML = '⚠️ يرجى اختيار القسم';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         if (isNaN(teacherIndex) || teacherIndex < 0) {
-            messageEl.innerHTML = '   ';
+            messageEl.innerHTML = '⚠️ يرجى اختيار المدرس';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         if (isNaN(semesterIndex) || semesterIndex < 0) {
-            messageEl.innerHTML = '   ';
+            messageEl.innerHTML = '⚠️ يرجى اختيار الفصل';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         if (isNaN(lectureIndex) || lectureIndex < 0) {
-            messageEl.innerHTML = '   ';
+            messageEl.innerHTML = '⚠️ يرجى اختيار المحاضرة';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         const lecture = data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
         if (!lecture) {
-            messageEl.innerHTML = '   ';
+            messageEl.innerHTML = '❌ المحاضرة غير موجودة';
             messageEl.style.color = '#ef4444';
             return;
         }
@@ -5152,114 +2238,103 @@
         openEditLecture(sectionIndex, teacherIndex, semesterIndex, lectureIndex);
     };
 
-    if (editLectureForm) {
-        editLectureForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    editLectureForm?.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-            const { sectionIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
+        const { sectionIndex, teacherIndex, semesterIndex, lectureIndex } = editTarget;
 
-            if (sectionIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
-                if (editLectureMessage) {
-                    editLectureMessage.innerHTML = '      ';
-                    editLectureMessage.style.color = '#f59e0b';
-                }
-                return;
-            }
+        if (sectionIndex === -1 || teacherIndex === -1 || semesterIndex === -1 || lectureIndex === -1) {
+            editLectureMessage.innerHTML = '⚠️ لم يتم تحديد المحاضرة بشكل صحيح';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
 
-            if (!editLectureTitle || !editLectureUrl || !editLectureIsFree || !editLectureMessage) return;
+        const newTitle = editLectureTitle.value.trim();
+        const newUrl = editLectureUrl.value.trim();
+        const newIsFree = editLectureIsFree.value === 'true';
 
-            const newTitle = editLectureTitle.value.trim();
-            const newUrl = editLectureUrl.value.trim();
-            const newIsFree = editLectureIsFree.value === 'true';
+        if (!newTitle) {
+            editLectureMessage.innerHTML = '⚠️ يرجى إدخال عنوان المحاضرة';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
 
-            if (!newTitle) {
-                editLectureMessage.innerHTML = '    ';
-                editLectureMessage.style.color = '#f59e0b';
-                return;
-            }
+        if (!newUrl) {
+            editLectureMessage.innerHTML = '⚠️ يرجى إدخال رابط الفيديو';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
 
-            if (!newUrl) {
-                editLectureMessage.innerHTML = '    ';
-                editLectureMessage.style.color = '#f59e0b';
-                return;
-            }
+        const isValidUrl = newUrl.includes('mediadelivery') ||
+            newUrl.includes('youtube') ||
+            newUrl.includes('youtu.be') ||
+            newUrl.includes('player.') ||
+            newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
 
-            const isValidUrl = newUrl.includes('mediadelivery') ||
-                newUrl.includes('youtube') ||
-                newUrl.includes('youtu.be') ||
-                newUrl.includes('player.') ||
-                newUrl.match(/\.(mp4|webm|ogg|m3u8)(\?.*)?$/i);
+        if (!isValidUrl) {
+            editLectureMessage.innerHTML = '⚠️ رابط الفيديو غير صحيح. استخدم رابط mediadelivery أو YouTube';
+            editLectureMessage.style.color = '#f59e0b';
+            return;
+        }
 
-            if (!isValidUrl) {
-                editLectureMessage.innerHTML = '    .   mediadelivery  YouTube';
-                editLectureMessage.style.color = '#f59e0b';
-                return;
-            }
+        const lecture = data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
+        if (!lecture) {
+            editLectureMessage.innerHTML = '❌ المحاضرة غير موجودة';
+            editLectureMessage.style.color = '#ef4444';
+            return;
+        }
 
-            const lecture = data.sections[sectionIndex]?.teachers[teacherIndex]?.semesters[semesterIndex]?.lectures[lectureIndex];
-            if (!lecture) {
-                editLectureMessage.innerHTML = '   ';
-                editLectureMessage.style.color = '#ef4444';
-                return;
-            }
+        lecture.title = newTitle;
+        lecture.youtubeUrl = newUrl;
+        lecture.isFree = newIsFree;
 
-            lecture.title = newTitle;
-            lecture.youtubeUrl = newUrl;
-            lecture.isFree = newIsFree;
+        saveData();
+        renderAllData();
+        addChange();
 
-            saveData();
-            renderAllData();
-            addChange();
+        editLectureMessage.innerHTML = '✅ تم تعديل المحاضرة بنجاح!';
+        editLectureMessage.style.color = '#22c55e';
+        showToast('success', `✅ تم تعديل المحاضرة "${newTitle}" بنجاح`);
 
-            editLectureMessage.innerHTML = '    !';
-            editLectureMessage.style.color = '#22c55e';
-            showToast('success', `    "${newTitle}" `);
-
-            setTimeout(() => { closeEditLectureModal(); }, 1200);
-        });
-    }
+        setTimeout(() => { closeEditLectureModal(); }, 1200);
+    });
 
     function closeEditLectureModal() {
-        if (editLectureModal) editLectureModal.classList.remove('active');
+        editLectureModal.classList.remove('active');
         document.body.style.overflow = 'auto';
         editTarget = { sectionIndex: -1, teacherIndex: -1, semesterIndex: -1, lectureIndex: -1 };
         if (editLectureMessage) editLectureMessage.innerHTML = '';
     }
 
-    if (closeEditLecture) closeEditLecture.addEventListener('click', closeEditLectureModal);
-    if (cancelEditLecture) cancelEditLecture.addEventListener('click', closeEditLectureModal);
-    if (editLectureModal) {
-        editLectureModal.addEventListener('click', function(e) {
-            if (e.target === this) closeEditLectureModal();
-        });
-    }
+    closeEditLecture?.addEventListener('click', closeEditLectureModal);
+    cancelEditLecture?.addEventListener('click', closeEditLectureModal);
+    editLectureModal?.addEventListener('click', function(e) {
+        if (e.target === this) closeEditLectureModal();
+    });
 
     // ============================================================
     // ===== ADMIN MANAGEMENT =====
     // ============================================================
 
     window.addNewAdmin = async function() {
-        const emailInput = safeGetElement('adminEmailInput');
-        const messageEl = safeGetElement('addAdminMessage');
-        
-        if (!emailInput || !messageEl) return;
-        
+        const emailInput = document.getElementById('adminEmailInput');
+        const messageEl = document.getElementById('addAdminMessage');
         const email = emailInput.value.trim();
 
         if (!email) {
-            messageEl.innerHTML = '    ';
+            messageEl.innerHTML = '⚠️ يرجى إدخال البريد الإلكتروني';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         if (!email.includes('@') || !email.includes('.')) {
-            messageEl.innerHTML = '    ';
+            messageEl.innerHTML = '⚠️ البريد الإلكتروني غير صحيح';
             messageEl.style.color = '#f59e0b';
             return;
         }
 
         if (!supabaseClient) {
-            messageEl.innerHTML = ' Supabase  ';
+            messageEl.innerHTML = '❌ Supabase غير متاح';
             messageEl.style.color = '#ef4444';
             return;
         }
@@ -5273,10 +2348,10 @@
 
             if (!userData) {
                 messageEl.innerHTML = `
-                      <strong>${email}</strong>      .
+                    ⚠️ المستخدم <strong>${email}</strong> غير موجود في جدول المستخدمين العام.
                     <br><br>
                     <button onclick="fixUserAndAddAdmin('${email}')" style="background:var(--primary);color:white;border:none;padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;">
-                        <i class="fas fa-sync"></i>    
+                        <i class="fas fa-sync"></i> إصلاح المشكلة وإضافة المشرف
                     </button>
                 `;
                 messageEl.style.color = '#f59e0b';
@@ -5290,7 +2365,7 @@
                 .maybeSingle();
 
             if (existingAdmin) {
-                messageEl.innerHTML = '    ';
+                messageEl.innerHTML = '⚠️ هذا المستخدم مشرف بالفعل';
                 messageEl.style.color = '#f59e0b';
                 return;
             }
@@ -5300,30 +2375,29 @@
                 .insert({ uid: userData.id, email: email, role: 'admin' });
 
             if (insertError) {
-                messageEl.innerHTML = '   : ' + insertError.message;
+                messageEl.innerHTML = '❌ فشل إضافة المشرف: ' + insertError.message;
                 messageEl.style.color = '#ef4444';
                 return;
             }
 
-            messageEl.innerHTML = `   : ${email} !`;
+            messageEl.innerHTML = `✅ تم إضافة المشرف: ${email} بنجاح!`;
             messageEl.style.color = '#22c55e';
             emailInput.value = '';
-            showToast('success', `   : ${email}`);
+            showToast('success', `✅ تم إضافة المشرف: ${email}`);
             loadAdminsList();
 
         } catch (error) {
-            messageEl.innerHTML = '  : ' + error.message;
+            messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
             messageEl.style.color = '#ef4444';
             console.error('Error adding admin:', error);
         }
     };
 
     window.fixUserAndAddAdmin = async function(email) {
-        const messageEl = safeGetElement('addAdminMessage');
-        if (!messageEl) return;
+        const messageEl = document.getElementById('addAdminMessage');
 
         if (!supabaseClient) {
-            messageEl.innerHTML = ' Supabase  ';
+            messageEl.innerHTML = '❌ Supabase غير متاح';
             messageEl.style.color = '#ef4444';
             return;
         }
@@ -5334,10 +2408,10 @@
 
             if (rpcError) {
                 messageEl.innerHTML = `
-                       : ${rpcError.message}
+                    ❌ فشل إضافة المستخدم: ${rpcError.message}
                     <br><br>
                     <button onclick="copyRpcFunction()" style="background:var(--primary);color:white;border:none;padding:0.4rem 1rem;border-radius:8px;cursor:pointer;font-weight:600;">
-                        <i class="fas fa-copy"></i>   
+                        <i class="fas fa-copy"></i> نسخ كود الدالة
                     </button>
                 `;
                 messageEl.style.color = '#ef4444';
@@ -5345,17 +2419,17 @@
             }
 
             if (result && result.success) {
-                messageEl.innerHTML = `      <strong>${email}</strong>  !`;
+                messageEl.innerHTML = `✅ تم إصلاح المشكلة وإضافة المستخدم <strong>${email}</strong> كمشرف بنجاح!`;
                 messageEl.style.color = '#22c55e';
-                showToast('success', `     : ${email}`);
+                showToast('success', `✅ تم إصلاح المشكلة وإضافة المشرف: ${email}`);
                 loadAdminsList();
             } else {
-                messageEl.innerHTML = ' ' + (result?.message || '   ');
+                messageEl.innerHTML = '❌ ' + (result?.message || 'حدث خطأ غير معروف');
                 messageEl.style.color = '#ef4444';
             }
 
         } catch (error) {
-            messageEl.innerHTML = '  : ' + error.message;
+            messageEl.innerHTML = '❌ حدث خطأ: ' + error.message;
             messageEl.style.color = '#ef4444';
             console.error('Error fixing user:', error);
         }
@@ -5380,7 +2454,7 @@ begin
     on conflict (uid) do nothing;
     v_result := jsonb_build_object(
         'success', true,
-        'message', '    ',
+        'message', 'تم إضافة المستخدم والمشرف بنجاح',
         'user_id', v_user_id::text,
         'email', p_email
     );
@@ -5388,7 +2462,7 @@ begin
 exception when others then
     return jsonb_build_object(
         'success', false,
-        'message', ' : ' || sqlerrm
+        'message', 'حدث خطأ: ' || sqlerrm
     );
 end;
 $$;
@@ -5396,7 +2470,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
         `;
 
         navigator.clipboard.writeText(sql).then(() => {
-            showToast('success', '     RPC');
+            showToast('success', '✅ تم نسخ كود الدالة RPC');
         }).catch(() => {
             const textarea = document.createElement('textarea');
             textarea.value = sql;
@@ -5404,16 +2478,16 @@ grant execute on function add_user_and_admin(text) to authenticated;
             textarea.select();
             document.execCommand('copy');
             document.body.removeChild(textarea);
-            showToast('success', '     RPC');
+            showToast('success', '✅ تم نسخ كود الدالة RPC');
         });
     };
 
     async function loadAdminsList() {
-        const container = safeGetElement('adminsListContainer');
+        const container = document.getElementById('adminsListContainer');
         if (!container) return;
 
         if (!supabaseClient) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;"> Supabase  </p>';
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;">⚠️ Supabase غير متاح</p>';
             return;
         }
 
@@ -5424,12 +2498,12 @@ grant execute on function add_user_and_admin(text) to authenticated;
                 .order('created_at', { ascending: true });
 
             if (error) {
-                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">   </p>';
+                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">❌ فشل تحميل المشرفين</p>';
                 return;
             }
 
             if (!admins || admins.length === 0) {
-                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">    </p>';
+                container.innerHTML = '<p style="color:var(--text-light);text-align:center;">لا يوجد مشرفين حتى الآن</p>';
                 return;
             }
 
@@ -5439,9 +2513,9 @@ grant execute on function add_user_and_admin(text) to authenticated;
                         <thead>
                             <tr style="background:var(--primary-gradient);color:white;">
                                 <th style="padding:0.5rem;text-align:right;">#</th>
-                                <th style="padding:0.5rem;text-align:right;"> </th>
-                                <th style="padding:0.5rem;text-align:right;"> </th>
-                                <th style="padding:0.5rem;text-align:center;"></th>
+                                <th style="padding:0.5rem;text-align:right;">البريد الإلكتروني</th>
+                                <th style="padding:0.5rem;text-align:right;">تاريخ الإضافة</th>
+                                <th style="padding:0.5rem;text-align:center;">إجراء</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -5449,15 +2523,15 @@ grant execute on function add_user_and_admin(text) to authenticated;
 
             admins.forEach((admin, index) => {
                 const isCurrentUser = admin.email === currentUser?.email;
-                const createdAt = admin.created_at ? new Date(admin.created_at).toLocaleDateString('ar') : ' ';
+                const createdAt = admin.created_at ? new Date(admin.created_at).toLocaleDateString('ar') : 'غير معروف';
 
                 html += `
                     <tr style="border-bottom:1px solid var(--border);">
                         <td style="padding:0.4rem 0.5rem;">${index + 1}</td>
-                        <td style="padding:0.4rem 0.5rem;">${admin.email} ${isCurrentUser ? ' ()' : ''}</td>
+                        <td style="padding:0.4rem 0.5rem;">${admin.email} ${isCurrentUser ? '👑 (أنت)' : ''}</td>
                         <td style="padding:0.4rem 0.5rem;color:var(--text-light);font-size:0.75rem;">${createdAt}</td>
                         <td style="padding:0.4rem 0.5rem;text-align:center;">
-                            ${!isCurrentUser ? `<button onclick="deleteAdmin('${admin.email}')" class="btn-delete-admin"> </button>` : '<span style="color:var(--text-light);font-size:0.7rem;">   </span>'}
+                            ${!isCurrentUser ? `<button onclick="deleteAdmin('${admin.email}')" class="btn-delete-admin">🗑️ حذف</button>` : '<span style="color:var(--text-light);font-size:0.7rem;">لا يمكن حذف نفسك</span>'}
                         </td>
                     </tr>
                 `;
@@ -5467,16 +2541,16 @@ grant execute on function add_user_and_admin(text) to authenticated;
             container.innerHTML = html;
 
         } catch (error) {
-            container.innerHTML = '<p style="color:var(--text-light);text-align:center;">   </p>';
+            container.innerHTML = '<p style="color:var(--text-light);text-align:center;">❌ فشل تحميل المشرفين</p>';
             console.error('Error loading admins:', error);
         }
     }
 
     window.deleteAdmin = async function(email) {
-        if (!confirm(`      : ${email}`)) return;
+        if (!confirm(`⚠️ هل أنت متأكد من حذف المشرف: ${email}؟`)) return;
 
         if (!supabaseClient) {
-            showToast('error', ' Supabase  ');
+            showToast('error', '❌ Supabase غير متاح');
             return;
         }
 
@@ -5487,77 +2561,74 @@ grant execute on function add_user_and_admin(text) to authenticated;
                 .eq('email', email);
 
             if (error) {
-                showToast('error', '   : ' + error.message);
+                showToast('error', '❌ فشل حذف المشرف: ' + error.message);
                 return;
             }
 
-            showToast('success', `   : ${email}`);
+            showToast('success', `✅ تم حذف المشرف: ${email}`);
             loadAdminsList();
 
         } catch (error) {
-            showToast('error', '  : ' + error.message);
+            showToast('error', '❌ حدث خطأ: ' + error.message);
             console.error('Error deleting admin:', error);
         }
     };
 
     // ============================================================
-    // ===== PUBLISH =====
+    // ===== PUBLISH - تم إصلاحها =====
     // ============================================================
-    if (publishBtn) {
-        publishBtn.addEventListener('click', async function() {
-            if (pendingChanges === 0) {
-                showToast('info', '    ');
+    publishBtn?.addEventListener('click', async function() {
+        if (pendingChanges === 0) {
+            showToast('info', '📌 لا توجد تغييرات لنشرها');
+            return;
+        }
+
+        if (!supabaseClient) {
+            showToast('error', '❌ Supabase غير متاح');
+            return;
+        }
+
+        // التحقق المباشر من المشرف
+        if (!ADMIN_EMAILS.includes(currentUser?.email)) {
+            const isAdmin = await isUserAdmin(currentUser?.email);
+            if (!isAdmin) {
+                showToast('error', '❌ يجب تسجيل الدخول كمشرف');
                 return;
             }
+        }
 
-            if (!supabaseClient) {
-                showToast('error', ' Supabase  ');
-                return;
-            }
+        const result = await saveSupabaseAcademyData();
+        if (!result.success) {
+            showToast('error', '❌ فشل النشر: ' + (result.error?.message || 'خطأ غير معروف'));
+            return;
+        }
 
-            if (!ADMIN_EMAILS.includes(currentUser?.email)) {
-                const isAdmin = await isUserAdmin(currentUser?.email);
-                if (!isAdmin) {
-                    showToast('error', '    ');
-                    return;
-                }
-            }
+        pendingChanges = 0;
+        updatePendingChanges();
+        showToast('success', '✅ تم نشر التغييرات بنجاح');
 
-            const result = await saveSupabaseAcademyData();
-            if (!result.success) {
-                showToast('error', '  : ' + (result.error?.message || '  '));
-                return;
-            }
+        const msg = document.getElementById('publishMessage');
+        if (msg) { msg.textContent = '✅ تم نشر التغييرات بنجاح';
+            msg.style.color = '#22c55e'; }
+        setTimeout(() => { if (msg) msg.textContent = ''; }, 5000);
+    });
 
-            pendingChanges = 0;
-            updatePendingChanges();
-            showToast('success', '    ');
-
-            const msg = safeGetElement('publishMessage');
-            if (msg) { msg.textContent = '    ';
-                msg.style.color = '#22c55e'; }
-            setTimeout(() => { if (msg) msg.textContent = ''; }, 5000);
-        });
-    }
-
-    if (createTableBtn) {
-        createTableBtn.addEventListener('click', async function() {
-            const sql =
-                `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
-            try {
-                await navigator.clipboard.writeText(sql);
-                showToast('info', '   SQL  ');
-            } catch (err) {
-                showToast('error', '   SQL');
-            }
-        });
-    }
+    createTableBtn?.addEventListener('click', async function() {
+        const sql =
+            `create table if not exists academy_data (\n  id text primary key,\n  content jsonb not null,\n  inserted_at timestamptz not null default now(),\n  updated_at timestamptz not null default now()\n);`;
+        try {
+            await navigator.clipboard.writeText(sql);
+            showToast('info', '✅ تم نسخ SQL إلى الحافظة');
+        } catch (err) {
+            showToast('error', '❌ فشل نسخ SQL');
+        }
+    });
 
     // ============================================================
     // ===== USERS TABLE =====
     // ============================================================
     function renderUsersTable() {
-        const tbody = safeGetElement('usersTableBody');
+        const tbody = document.getElementById('usersTableBody');
         if (!tbody) return;
 
         const usersMap = new Map();
@@ -5566,11 +2637,11 @@ grant execute on function add_user_and_admin(text) to authenticated;
             section.teachers.forEach(teacher => {
                 if (teacher.codes) {
                     teacher.codes.forEach(c => {
-                        if (c.used && c.userEmail && !c.isAdminCode) {
+                        if (c.used && c.userEmail) {
                             if (!usersMap.has(c.userEmail)) {
                                 usersMap.set(c.userEmail, {
                                     email: c.userEmail,
-                                    userId: c.userId || ' ',
+                                    userId: c.userId || 'غير معروف',
                                     courses: [],
                                     registeredAt: c.usedAt || new Date().toISOString()
                                 });
@@ -5586,7 +2657,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
 
         if (usersMap.size === 0) {
             tbody.innerHTML =
-                '<tr><td colspan="5" style="text-align:center;color:var(--text-light);">   </td></tr>';
+                '<tr><td colspan="5" style="text-align:center;color:var(--text-light);">لا يوجد مستخدمين مسجلين</td></tr>';
             return;
         }
 
@@ -5598,9 +2669,9 @@ grant execute on function add_user_and_admin(text) to authenticated;
                 <tr>
                     <td>${index++}</td>
                     <td>${email}</td>
-                    <td>${user.courses.join(' ')}</td>
+                    <td>${user.courses.join('، ')}</td>
                     <td>${new Date(user.registeredAt).toLocaleDateString('ar')}</td>
-                    <td><span class="badge ${isAdmin ? 'admin' : 'user'}">${isAdmin ? '' : ''}</span></td>
+                    <td><span class="badge ${isAdmin ? 'admin' : 'user'}">${isAdmin ? 'مدير' : 'مستخدم'}</span></td>
                 </tr>
             `;
         });
@@ -5615,8 +2686,7 @@ grant execute on function add_user_and_admin(text) to authenticated;
             tabBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            const tabContent = safeGetElement('tab-' + this.dataset.tab);
-            if (tabContent) tabContent.classList.add('active');
+            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
 
             if (this.dataset.tab === 'manage-codes') {
                 updateAllAdminSelects();
@@ -5637,11 +2707,6 @@ grant execute on function add_user_and_admin(text) to authenticated;
             if (this.dataset.tab === 'edit-teacher') {
                 updateAllAdminSelects();
             }
-            if (this.dataset.tab === 'teacher-admins') {
-                updateAllAdminSelects();
-                renderTeacherAdminsList();
-            }
-            if (this.dataset.tab === 'publish') {}
             if (this.dataset.tab === 'add-teacher' || this.dataset.tab === 'add-semester' ||
                 this.dataset.tab === 'add-lecture' || this.dataset.tab === 'add-section') {
                 updateAllAdminSelects();
@@ -5653,147 +2718,184 @@ grant execute on function add_user_and_admin(text) to authenticated;
     // ===== EVENT LISTENERS FOR DEPENDENT SELECTS =====
     // ============================================================
 
-    const selectListeners = [
-        'teacherSection', 'semesterSection', 'lectureSection',
-        'codeSection', 'editTeacherSection', 'editLectureSection',
-        'deleteTeacherSection', 'deleteSemesterSection', 'deleteLectureSection',
-        'semesterTeacher', 'lectureTeacher', 'codeTeacherSelect',
-        'editTeacherSelect', 'editLectureTeacher', 'deleteSemesterTeacher',
-        'deleteLectureTeacher', 'lectureSemester', 'editLectureSemester',
-        'deleteSemesterSelect', 'deleteLectureSemester', 'teacherAdminSection'
-    ];
+    document.getElementById('teacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
 
-    selectListeners.forEach(id => {
-        const el = safeGetElement(id);
-        if (el) {
-            el.addEventListener('change', function() {
-                updateAllAdminSelects();
-            });
-        }
+    document.getElementById('semesterSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('lectureSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('codeSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editTeacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editLectureSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteTeacherSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteSemesterSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteLectureSection')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('semesterTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('lectureTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('codeTeacherSelect')?.addEventListener('change', function() {
+        updateCodesManagement();
+    });
+
+    document.getElementById('editTeacherSelect')?.addEventListener('change', function() {
+        updateEditTeacherData();
+    });
+
+    document.getElementById('editLectureTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteSemesterTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteLectureTeacher')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('lectureSemester')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('editLectureSemester')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteSemesterSelect')?.addEventListener('change', function() {
+        updateAllAdminSelects();
+    });
+
+    document.getElementById('deleteLectureSemester')?.addEventListener('change', function() {
+        updateAllAdminSelects();
     });
 
     // ============================================================
     // ===== NAVBAR SCROLL =====
     // ============================================================
     window.addEventListener('scroll', function() {
-        if (navbar) {
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
+        if (window.scrollY > 50) {
+            navbar?.classList.add('scrolled');
+        } else {
+            navbar?.classList.remove('scrolled');
         }
     });
 
     // ============================================================
-    // ===== THEME =====
+    // ===== INIT =====
     // ============================================================
     const savedTheme = localStorage.getItem('devAcademicTheme');
     if (savedTheme === 'dark') {
         isDarkMode = true;
         document.body.classList.add('dark-mode');
-        if (themeToggle) themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
     }
 
-    // ============================================================
-    // ===== INIT -    =====
-    // ============================================================
     async function init() {
-        console.log('    ...');
+        if (supabaseClient) {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session?.user) {
+                    currentUser = session.user;
+                    localStorage.setItem('devAcademicUser', JSON.stringify({
+                        email: currentUser.email,
+                        name: currentUser.user_metadata?.full_name || ''
+                    }));
+                    updateUI();
+                    await loadUserCodesFromSupabase();
+                    renderAllData();
+                    renderMyCourses();
+                    renderAccount();
+                    updateBadge();
 
-        if (!supabaseClient) {
-            console.error(' Supabase  ');
-            showToast('error', '    ');
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            return;
-        }
+                    loadingScreen.style.display = 'none';
+                    navbar.style.display = 'flex';
+                    bottomNav.style.display = 'flex';
+                    footer.style.display = 'block';
 
-        try {
-            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-            
-            if (sessionError) {
-                console.error('    :', sessionError);
-                throw sessionError;
-            }
-
-            if (session?.user) {
-                currentUser = session.user;
-                localStorage.setItem('devAcademicUser', JSON.stringify({
-                    email: currentUser.email,
-                    name: currentUser.user_metadata?.full_name || ''
-                }));
-                
-                updateUI();
-                
-                await loadUserCodesFromSupabase();
-                loadContactMessages();
-                loadTeacherAdmins();
-                loadNotifications();
-                loadConversations();
-                
-                //   
-                restorePermanentCodes();
-                
-                await syncPendingCodes();
-                
-                renderAllData();
-                renderMyCourses();
-                renderAccount();
-                renderMyMessages();
-                renderContactTeachers();
-                renderAllMessages();
-                renderTeacherInbox();
-                renderTeacherAdminsList();
-                renderNotifications();
-                renderChatList();
-                updateBadge();
-                updateContactBadge();
-                updateNotificationBadge();
-                updateNotificationToggleUI();
-                updateChatBadge();
-
-                if (loadingScreen) loadingScreen.style.display = 'none';
-                if (navbar) navbar.style.display = 'flex';
-                if (bottomNav) bottomNav.style.display = 'flex';
-                if (footer) footer.style.display = 'block';
-
-                navigateTo('home');
-                showToast('success', '  ');
-                console.log(' :', currentUser.email);
-                console.log('  :', ADMIN_EMAILS);
-                console.log('  :', teacherAdmins.length);
-                
-            } else {
-                if (!isRedirecting) {
-                    isRedirecting = true;
-                    console.log('          ...');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 500);
+                    navigateTo('home');
+                    showToast('success', '✅ مرحباً بعودتك');
+                    console.log('👤 المستخدم:', currentUser.email);
+                    console.log('👑 قائمة المشرفين:', ADMIN_EMAILS);
+                } else {
+                    window.location.href = 'index.html';
                 }
+            } catch (error) {
+                console.warn('Session check error:', error);
+                window.location.href = 'index.html';
             }
-            
-        } catch (error) {
-            console.error('   :', error);
-            showToast('error', '     ');
-            
-            if (loadingScreen) loadingScreen.style.display = 'none';
-            if (navbar) navbar.style.display = 'flex';
-            if (bottomNav) bottomNav.style.display = 'flex';
+        } else {
+            window.location.href = 'index.html';
         }
+
+        if (supabaseClient && currentUser) {
+            try {
+                const channel = supabaseClient
+                    .channel('public:academy_data')
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'academy_data',
+                        filter: 'id=eq.main' }, (payload) => {
+                        if (!payload?.new?.content) return;
+                        try {
+                            const remoteData = payload.new.content;
+                            if (JSON.stringify(remoteData) !== JSON.stringify(data)) {
+                                data = remoteData;
+                                normalizeDataStructure(data);
+                                saveData();
+                                renderAllData();
+                                renderMyCourses();
+                                renderAccount();
+                                updateBadge();
+                                showToast('info', '🔄 تم تحديث البيانات تلقائياً');
+                            }
+                        } catch (err) { console.warn('Realtime parse error:', err); }
+                    })
+                    .subscribe();
+                console.log('✅ مشترك في تحديثات Supabase');
+            } catch (error) {
+                console.warn('Supabase realtime subscription failed:', error);
+            }
+        }
+
+        renderUsersTable();
+        updateAllAdminSelects();
+        loadAdminsList();
+        console.log('📚 ديف أكاديمي - النظام جاهز مع الأقسام والفلتر');
+        console.log('🔒 جميع الميزات محمية وآمنة');
+        console.log('🎥 دعم منصة mediadelivery للتشغيل');
+        console.log('👑 قسم إدارة المشرفين مفعل مع دالة RPC');
     }
 
-    // ============================================================
-    // =====   =====
-    // ============================================================
     loadData().then(init).catch((error) => {
         console.error('Initialization failed:', error);
-        if (!isRedirecting) {
-            isRedirecting = true;
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 500);
-        }
+        window.location.href = 'index.html';
     });
 
 })();
