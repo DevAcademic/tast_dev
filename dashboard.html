@@ -1544,20 +1544,9 @@
             max-width: 180px;
         }
 
-        .contact-chat-item .chat-info .chat-time {
+        .contact-chat-item .chat-time {
             font-size: 0.55rem;
             color: var(--text-light);
-        }
-
-        .contact-chat-item .chat-badge {
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            padding: 0.05rem 0.4rem;
-            font-size: 0.55rem;
-            font-weight: 700;
-            min-width: 20px;
-            text-align: center;
         }
 
         .contact-chat-item .chat-unread {
@@ -2980,7 +2969,7 @@
         </div>
     </div>
 
-    <!-- ===== PAGE CONTACT (المعدل) ===== -->
+    <!-- ===== PAGE CONTACT ===== -->
     <div id="page-contact" style="display:none;">
         <div class="contact-section">
             <!-- رأس الصفحة -->
@@ -3015,7 +3004,7 @@
                     <span style="font-weight:600;font-size:0.8rem;color:var(--text);"><i class="fas fa-chalkboard-teacher" style="color:var(--primary);"></i> المدرسين المتاحين</span>
                     <span style="font-size:0.65rem;color:var(--text-light);background:var(--bg);padding:0.1rem 0.5rem;border-radius:20px;">👤 <span id="contactTeachersCount">0</span></span>
                 </div>
-                <div id="contactTeachersGrid" class="contact-teachers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.7rem;"></div>
+                <div id="contactTeachersGrid" class="contact-teachers-grid"></div>
             </div>
         </div>
     </div>
@@ -3052,6 +3041,9 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:2px solid var(--primary);">
                     <h3 style="font-size:0.85rem;color:var(--text);"><i class="fas fa-chalkboard-teacher" style="color:var(--primary);"></i> لوحة تحكم المدرس</h3>
                     <span style="background:var(--primary-gradient);color:white;padding:0.05rem 0.5rem;border-radius:20px;font-size:0.6rem;font-weight:700;">👨‍🏫 نشط</span>
+                </div>
+                <div style="font-size:0.7rem;color:var(--text-light);margin-bottom:0.3rem;text-align:center;">
+                    <i class="fas fa-user-tie"></i> المدرس: <span class="teacher-name-display">...</span>
                 </div>
                 <div class="account-actions" style="margin-top:0;">
                     <button class="btn-admin" onclick="openTeacherAdmin()" style="background:var(--primary-gradient);"><i class="fas fa-cog"></i> إدارة المحاضرات</button>
@@ -3128,6 +3120,47 @@
         <div class="chat-popup-input">
             <input type="text" id="popupInput" placeholder="اكتب رسالة..." />
             <button class="btn-send-popup" onclick="sendPopupMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- ===== صفحة المحادثة الكاملة (مثل واتساب) ===== -->
+    <div class="chat-page-full" id="chatPageFull">
+        <div class="chat-header-full">
+            <button class="back-btn" onclick="closeChatPageFull()">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+            <div class="chat-user-info">
+                <div class="chat-avatar-full" id="chatFullAvatar">👤</div>
+                <div>
+                    <div class="chat-name-full" id="chatFullName">المدرس</div>
+                    <div class="chat-status-full" id="chatFullStatus">🟢 متصل</div>
+                </div>
+            </div>
+            <div class="chat-actions-full">
+                <button onclick="toggleChatFullTheme()" title="تبديل المظهر">
+                    <i class="fas fa-moon" id="chatFullThemeIcon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="chat-messages-full" id="chatFullMessages">
+            <div style="text-align:center;color:var(--text-light);font-size:0.8rem;padding:2rem 0;">
+                <i class="fas fa-comment" style="font-size:2rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+                لا توجد رسائل، ابدأ المحادثة!
+            </div>
+        </div>
+        <div class="chat-input-full">
+            <div class="chat-tools-full" id="chatFullTools">
+                <button onclick="chatFullAttach('image')"><i class="fas fa-image"></i> صورة</button>
+                <button onclick="chatFullAttach('video')"><i class="fas fa-video"></i> فيديو</button>
+                <button onclick="chatFullAttach('file')"><i class="fas fa-paperclip"></i> ملف</button>
+                <span id="chatFullAttachmentsList" style="display:flex;gap:0.2rem;flex-wrap:wrap;"></span>
+            </div>
+            <div class="chat-input-row-full">
+                <textarea id="chatFullInput" rows="1" placeholder="اكتب رسالتك..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatFullMessage();}"></textarea>
+                <button class="btn-send-full" onclick="sendChatFullMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
         </div>
     </div>
 

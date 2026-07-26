@@ -1933,6 +1933,12 @@ body.dark-mode .hero .star { opacity: 0.6; }
     color: white;
     border: 2px solid var(--border);
 }
+.contact-chat-item .chat-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
 .contact-chat-item .chat-avatar .avatar-text {
     font-size: 1.1rem;
     font-weight: 700;
@@ -2010,6 +2016,12 @@ body.dark-mode .hero .star { opacity: 0.6; }
     font-size: 1.5rem;
     color: white;
     transition: all 0.3s ease;
+}
+.contact-teacher-card .contact-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 .contact-teacher-card .contact-avatar .avatar-text {
     font-size: 1.5rem;
@@ -2125,6 +2137,7 @@ body.dark-mode .hero .star { opacity: 0.6; }
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
 }
 .chat-page-full .chat-header-full .chat-user-info .chat-name-full {
     font-weight: 700;
@@ -2376,6 +2389,27 @@ body.dark-mode .hero .star { opacity: 0.6; }
     font-weight: 700;
     color: var(--text);
     font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.teacher-inbox-item .inbox-sender img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.teacher-inbox-item .inbox-sender .sender-avatar-text {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    text-align: center;
+    line-height: 24px;
+    font-size: 0.6rem;
+    font-weight: 700;
 }
 .teacher-inbox-item .inbox-subject {
     font-weight: 600;
@@ -2423,6 +2457,13 @@ body.dark-mode .hero .star { opacity: 0.6; }
 }
 .teacher-inbox-item .inbox-actions .btn-delete-inbox:hover {
     background: #dc2626;
+}
+.teacher-inbox-item .inbox-section-badge {
+    font-size: 0.5rem;
+    color: var(--primary);
+    background: var(--bg);
+    padding: 0.05rem 0.4rem;
+    border-radius: 12px;
 }
 
 /* ============================================================
